@@ -17,9 +17,6 @@
    cd MoLab
    ```
 3. Instale las dependencias del proyecto:
-   ```bash
-   npm install
-   ```
 
 ## Branching Model
 
