@@ -1,0 +1,49 @@
+root = true
+
+# General rules for all files
+[*]
+# Use Unix-style newlines, with a newline at the end of every file.
+end_of_line = lf
+insert_final_newline = true
+
+# Set character set to UTF-8 for all files.
+charset = utf-8
+
+# Remove any whitespace characters preceding newline characters.
+trim_trailing_whitespace = true
+
+
+# Rules for Python files
+[*.py]
+# PEP 8 standard: Use 4 spaces for indentation.
+indent_style = space
+indent_size = 4
+max_line_length = 99
+
+
+# Rules for C and C++ files
+[*.{c,cpp,h,hpp,cc,hh,cxx,hxx}]
+# Common convention: Use 4 spaces for indentation.
+indent_style = space
+indent_size = 4
+
+
+# Rules for Rust files
+[*.rs]
+# Official Rust style guide recommendation: Use 4 spaces for indentation.
+indent_style = space
+indent_size = 4
+
+
+# Rules for React (JavaScript/JSX/TypeScript/TSX) and web files
+[*.{js,jsx,ts,tsx}]
+# Common community standard: Use 2 spaces for indentation.
+indent_style = space
+indent_size = 2
+
+
+# Rules for common web and configuration files
+[*.{html,css,scss,json,yml,yaml,md}]
+# Common community standard: Use 2 spaces for indentation.
+indent_style = space
+indent_size = 2

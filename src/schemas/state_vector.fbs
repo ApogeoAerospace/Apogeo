@@ -1,0 +1,25 @@
+namespace state_vector;
+
+// Ejemplo básico de un esquema FlatBuffers para un cohete
+// Se tiene en cuenta posición, velocidad, orientación y combustible
+
+struct Vec3 { x:float; y:float; z:float; }
+struct Quaternion { x:float; y:float; z:float; w:float; }
+
+table GeneralState {
+  // Estado del cohete
+  position:Vec3; // Body-fixed coordinates, m
+  velocity:Vec3;
+  orientation:Quaternion;
+
+  // Estado del entorno
+  atm_density:float; // kg/m^3
+  atm_pressure:float; // Pa
+  atm_temperature:float; // K (En el centro de masa, usar una gradiente para conseguir la temperatura en otros puntos)
+  gravity:Vec3; // m/s^2
+  Time:float; // Tiempo en segundos desde el inicio de la simulación
+  UTC:float; // Tiempo en segundos desde el 1 de enero de 1970 (Epoch time)
+  wind_speed:Vec3; // m/s
+}
+
+root_type GeneralState;
