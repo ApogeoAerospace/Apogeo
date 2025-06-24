@@ -1,39 +1,34 @@
-# Contributing to MoLab
-
-We're excited that you want to contribute! This document outlines the process for contributing to the project.
-
 ## Development Workflow
 
-1.  **Create an Issue**: Before starting work on a new feature or bugfix, please create an issue in the issue tracker to discuss the proposed changes.
+1.  **Crear un Issue**: Antes de comenzar a trabajar en una nueva funcionalidad o corrección de errores, por favor cree un issue para discutir los cambios propuestos.
 
-2.  **Branching**:
-    * All new work should be done in a feature branch.
-    * Create your feature branch from the `develop` branch:
+2.  **Ramas**:
+    * Todo el trabajo nuevo debe realizarse en una rama de funcionalidad.
+    * Cree su rama de funcionalidad a partir de la rama `develop`:
         ```bash
         git checkout develop
         git pull origin develop
-        git checkout -b feature/your-feature-name
+        git checkout -b feature/nombre-de-su-funcionalidad
         ```
 
-3.  **Making Changes**:
-    * Make your changes in the feature branch.
-    * Commit your changes with a clear and descriptive commit message.
+3.  **Realización de Cambios**:
+    * Realice sus cambios en la rama de funcionalidad.
+    * Realice commits de sus cambios con un mensaje claro y descriptivo.
 
-4.  **Pushing Changes**:
-    * Push your feature branch to the remote repository:
+4.  **Subir Cambios**:
+    * Suba su rama de funcionalidad al repositorio remoto:
         ```bash
-        git push origin feature/your-feature-name
+        git push origin feature/nombre-de-su-funcionalidad
         ```
 
-5.  **Creating a Pull Request**:
-    * Create a pull request from your feature branch to the `develop` branch.
-    * In the pull request description, reference the issue you created.
-    * Ensure your pull request is reviewed by at least one other team member before merging.
+5.  **Crear un Pull Request**:
+    * Cree un pull request desde su rama de funcionalidad hacia la rama `develop`.
+    * En la descripción del pull request, haga referencia al issue que creó.
+    * Asegúrese de que su pull request sea revisado por al menos otro miembro del equipo antes de hacer el merge.
 
-## Code Style
+## Estilo de Código:
 
-[Add any code style guidelines here, e.g., "This project follows the XYZ style guide." You can also link to a style guide document.]
-
-## Questions?
-
-If you have any questions, feel free to ask in the project's communication channel (e.g., Slack, Discord, etc.).
+1. **Convenciones de Nombres**:
+    * Variables y Funciones: Utilice snake_case (mi_variable).
+    * Clases: Utilice PascalCase (o CapWords) para todos los lenguajes (MiClase).
+    * Constantes: Utilice UPPER_CASE_SNAKE_CASE (MI_CONSTANTE).
