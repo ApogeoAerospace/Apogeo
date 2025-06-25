@@ -26,4 +26,4 @@ Este proyecto utiliza un modelo de desarrollo basado en ramas:
 - **develop**: Esta es la rama principal de desarrollo. Todas las ramas de funcionalidades se crean a partir de develop y se fusionan de nuevo en ella.
 - **feature/\***: Las ramas de funcionalidades se utilizan para el desarrollo de nuevas características. Se crean a partir de `develop` y se fusionan de nuevo en `develop` mediante pull requests.
 
-Para más detalles, consulta el archivo `CONTRIBUTING.md`.
+Para más detalles, consulte el archivo `CONTRIBUTING.md`.
