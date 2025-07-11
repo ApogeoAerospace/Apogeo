@@ -1,0 +1,13 @@
+namespace state_vector;
+
+struct Vec3 { x:float; y:float; z:float; }
+struct Quaternion { x:float; y:float; z:float; w:float; }
+
+table VehicleState {
+  position:Vec3;
+  velocity:Vec3;
+  orientation:Quaternion;
+  fuel_percentage:float = 100.0;
+}
+
+root_type VehicleState;
