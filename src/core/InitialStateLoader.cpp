@@ -1,4 +1,4 @@
-#include "InitialStateGenerator.h"
+#include "InitialStateLoader.h"
 #include "flatbuffers/flatbuffers.h"
 #include "state_vector_generated.h"
 #include <nlohmann/json.hpp>
@@ -7,7 +7,7 @@
 
 using json = nlohmann::json;
 
-bool InitialStateGenerator::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
+bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
         std::cerr << "ERROR: No se pudo abrir el archivo de estado: " << filepath << std::endl;

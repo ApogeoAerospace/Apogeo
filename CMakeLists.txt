@@ -43,7 +43,7 @@ add_custom_target(
 # Se crea la librería estática del núcleo del simulador
 add_library(core STATIC
   src/core/PluginManager.cpp # Clase para manejar plugins
-  src/core/InitialStateGenerator.cpp # Clase para cargar el estado inicial del simulador
+  src/core/InitialStateLoader.cpp # Clase para cargar el estado inicial del simulador
   src/core/SimulationEngine.cpp # Clase para manejar la lógica del simulador
 )
 

@@ -3,7 +3,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-namespace InitialStateGenerator {
+namespace InitialStateLoader {
     /**
      * Rellena un FlatBufferBuilder con un estado de vehículo por defecto.
      * @param builder El constructor de FlatBuffers que se rellenará con los datos.

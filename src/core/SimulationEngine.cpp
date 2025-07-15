@@ -1,6 +1,6 @@
 #include "SimulationEngine.h"
 #include "PluginManager.h"
-#include "InitialStateGenerator.h"
+#include "InitialStateLoader.h"
 #include "flatbuffers/flatbuffers.h"
 
 SimulationEngine::SimulationEngine()
@@ -13,7 +13,7 @@ SimulationEngine::~SimulationEngine() {
 
 bool SimulationEngine::initialize(const std::string& state_filepath) {
     flatbuffers::FlatBufferBuilder builder;
-    if (!InitialStateGenerator::create_state_from_json(builder, state_filepath)) {
+    if (!InitialStateLoader::create_state_from_json(builder, state_filepath)) {
         return false;
     }
 
