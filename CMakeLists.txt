@@ -1,17 +1,22 @@
+# CMake versión 3.20 mínima
 cmake_minimum_required(VERSION 3.20)
 project(Molab VERSION 0.0.0 LANGUAGES CXX)
 
+# C++ 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Organización del output
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-find_package(flatbuffers CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
+# Dependencias
+find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers para serialización y deserialización de datos
+find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json para manejo de JSON
 
+# Directorios con los esquemas de FlatBuffers y archivos generados
 set(SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/schemas")
 set(GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 
@@ -20,6 +25,7 @@ set(GENERATED_HEADER "${GENERATED_DIR}/state_vector_generated.h")
 
 find_program(FLATC_EXECUTABLE flatc REQUIRED)
 
+# Comando para generar los archivos de FlatBuffers
 add_custom_command(
   OUTPUT ${GENERATED_HEADER}
   COMMAND ${FLATC_EXECUTABLE} -c --gen-mutable -o ${GENERATED_DIR} ${SCHEMA_FILE}
@@ -27,60 +33,73 @@ add_custom_command(
   COMMENT "Generating C++ sources from FlatBuffers schema..."
 )
 
+# Se asegura de que los encabezados generados estén disponibles para los targets que los requieren.
 add_custom_target(
   generate_flatbuffers ALL
   DEPENDS ${GENERATED_HEADER}
 )
 
-# --- Librería del Núcleo (Core) ---
+# --- Librería del Núcleo ---
+# Se crea la librería estática del núcleo del simulador
 add_library(core STATIC
-  src/core/PluginManager.cpp
-  src/core/InitialStateGenerator.cpp
-  src/core/SimulationEngine.cpp
+  src/core/PluginManager.cpp # Clase para manejar plugins
+  src/core/InitialStateGenerator.cpp # Clase para cargar el estado inicial del simulador
+  src/core/SimulationEngine.cpp # Clase para manejar la lógica del simulador
 )
 
+# Core requiere el schema de FlatBuffers generado
 add_dependencies(core generate_flatbuffers)
 
+# Se incluyen los directorios necesarios para el núcleo
 target_include_directories(core PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
   "${GENERATED_DIR}"
 )
 
+# Se incluyen las librerías necesarias para el núcleo
 target_link_libraries(core PUBLIC
   flatbuffers::flatbuffers
   nlohmann_json::nlohmann_json
 )
 
 # --- Ejecutable Principal ---
+
+# Se crea el ejecutable principal del simulador
 add_executable(simulator
   src/main.cpp
 )
 
+# Crea la carpeta 'data' junto al ejecutable y copia el archivo de estado inicial necesario para la simulación.
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
-
     COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/initial_state.json"
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMENT "Copiando archivo de estado inicial a la carpeta data..."
 )
 
+# Se incluyen los directorios necesarios para el ejecutable
 target_link_libraries(simulator PRIVATE core)
 
+# Este comando asegura que el programa principal necesite la copilación del plugin
 add_dependencies(simulator example_plugin)
 
 # --- Plugins ---
+# Se crea la librería compartida del plugin de ejemplo
 add_library(example_plugin SHARED
   plugins/example_plugin/plugin.cpp
 )
 
+# Se asegura de que el plugin tenga acceso a los archivos generados por FlatBuffers
 add_dependencies(example_plugin generate_flatbuffers)
 
+# Se incluyen los directorios necesarios para el plugin
 target_include_directories(example_plugin PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
   "${GENERATED_DIR}"
 )
 
+# Se incluyen las librerías necesarias para el plugin
 target_link_libraries(example_plugin PRIVATE flatbuffers::flatbuffers)
