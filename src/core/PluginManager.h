@@ -22,7 +22,6 @@ struct LoadedPlugin {
     // Handle de la instancia del plugin
     PluginHandle instance = nullptr;
 
-    // Funciones de la API del plugin
     // Función para crear una instancia del plugin
     PluginHandle(*create_func)() = nullptr;
     // Función que se ejecuta en cada tick del plugin
@@ -30,11 +29,15 @@ struct LoadedPlugin {
     // Función para destruir la instancia del plugin y liberar recursos
     void (*destroy_func)(PluginHandle) = nullptr;
 
-    #if defined(_WIN32)
-        HMODULE lib_handle = nullptr;
-    #else
-        void* lib_handle = nullptr;
-    #endif
+    #if defined(_WIN32) // WINDOWS
+
+    HMODULE lib_handle = nullptr;
+
+    #else // POSIX
+
+    void* lib_handle = nullptr;
+
+    #endif // FIN IF
 };
 
 /*

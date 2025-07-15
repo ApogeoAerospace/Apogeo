@@ -4,11 +4,15 @@
 #include <stdint.h>
 
 // Definición de la macro PLUGIN_EXPORT para exportar funciones del plugin
-#if defined(_WIN32)
+#if defined(_WIN32) // WINDOWS
+
 #define PLUGIN_EXPORT __declspec(dllexport)
-#else
+
+#else // POSIX
+
 #define PLUGIN_EXPORT __attribute__((visibility("default")))
-#endif
+
+#endif // FIN IF
 
 // Pointer opaco para manejar instancias del plugin
 typedef struct PluginInstance* PluginHandle;
