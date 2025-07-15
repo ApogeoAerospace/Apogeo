@@ -18,7 +18,13 @@ int main() {
     // Cargar el plugin de ejemplo
     engine.load_plugin("example_plugin.dll");
     // Correr un tick de simulación
-    engine.run_tick();
+
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "[Main] Ejecutando tick " << (i + 1) << " de la simulación." << std::endl;
+        engine.run_tick();
+    }
+
+    engine.shutdown();
 
     std::cout << "\n[Main] Simulador finalizado." << std::endl;
     return 0;
