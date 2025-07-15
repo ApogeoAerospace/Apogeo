@@ -16,40 +16,54 @@ PluginManager::~PluginManager() {
 bool PluginManager::load_plugin(const std::string& path) {
     LoadedPlugin plugin;
 
-#if defined(_WIN32)
+    #if defined(_WIN32) // WIDOWS
+
+    // En Windows se usa LoadLibrary para cargar la DLL
     plugin.lib_handle = LoadLibrary(path.c_str());
     if (!plugin.lib_handle) {
         std::cerr << "[Core] ERROR: No se pudo cargar el plugin " << path << std::endl;
         return false;
     }
 
+    // Se obtienen las direcciones de las funciones de la API
     plugin.create_func = (decltype(plugin.create_func))GetProcAddress(plugin.lib_handle, "plugin_create_instance");
     plugin.tick_func = (decltype(plugin.tick_func))GetProcAddress(plugin.lib_handle, "plugin_tick");
     plugin.destroy_func = (decltype(plugin.destroy_func))GetProcAddress(plugin.lib_handle, "plugin_destroy_instance");
-#else
 
+    #else // POSIX
+
+    // En sistemas POSIX se usa dlopen para cargar la librería compartida
     plugin.lib_handle = dlopen(path.c_str(), RTLD_LAZY);
     if (!plugin.lib_handle) {
         std::cerr << "[Core] ERROR: No se pudo cargar el plugin " << path << ": " << dlerror() << std::endl;
         return false;
     }
 
+    // Se obtienen las direcciones de las funciones de la API
     plugin.create_func = (decltype(plugin.create_func))dlsym(plugin.lib_handle, "plugin_create_instance");
     plugin.tick_func = (decltype(plugin.tick_func))dlsym(plugin.lib_handle, "plugin_tick");
     plugin.destroy_func = (decltype(plugin.destroy_func))dlsym(plugin.lib_handle, "plugin_destroy_instance");
 
-#endif
+    #endif // FIN IF
 
     if (!plugin.create_func || !plugin.tick_func || !plugin.destroy_func) {
         std::cerr << "[Core] ERROR: No se pudieron encontrar las funciones de la API en " << path << std::endl;
-#if defined(_WIN32)
+
+        // Si alguna función no se encuentra, se libera la librería cargada
+        #if defined(_WIN32) // WINDOWS
+
         FreeLibrary(plugin.lib_handle);
-#else
+
+        #else // POSIX
+
         dlclose(plugin.lib_handle);
-#endif
+
+        #endif // FIN IF
+
         return false;
     }
 
+    // Se crea una instancia del plugin usando la función de creación
     plugin.instance = plugin.create_func();
     plugins_.push_back(plugin);
     std::cout << "[Core] Plugin cargado e instanciado: " << path << std::endl;
@@ -64,6 +78,7 @@ void PluginManager::run_all_plugins(uint8_t* state_buffer, uint32_t buffer_size)
     for (const auto& plugin : plugins_) {
         auto start = std::chrono::high_resolution_clock::now();
 
+        // Ejecuta el tick del plugin pasando el buffer de estado
         plugin.tick_func(plugin.instance, state_buffer, buffer_size);
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -82,15 +97,19 @@ void PluginManager::shutdown() {
         if (plugin.instance) {
             plugin.destroy_func(plugin.instance);
         }
-#if defined(_WIN32)
+
+        #if defined(_WIN32) // WINDOWS
+
         if (plugin.lib_handle) {
             FreeLibrary(plugin.lib_handle);
         }
-#else
+
+        #else // POSIX
+
         if (plugin.lib_handle) {
             dlclose(plugin.lib_handle);
         }
-#endif
+        #endif // FIN IF
     }
     plugins_.clear();
     std::cout << "[Core] Todos los plugins han sido liberados." << std::endl;
