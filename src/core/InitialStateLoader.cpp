@@ -33,12 +33,14 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     auto orientation = state_vector::Quaternion(
         data["orientation"]["x"], data["orientation"]["y"], data["orientation"]["z"], data["orientation"]["w"]);
 
+    // Crea el estado del vehículo en el FlatBuffer
     auto vehicle_state = state_vector::CreateVehicleState(builder,
         &position,
         &velocity,
         &orientation,
         data["fuel_percentage"]);
 
+    // Finaliza el FlatBuffer
     builder.Finish(vehicle_state);
     return true;
 }
