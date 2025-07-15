@@ -19,6 +19,7 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
 
     const uint8_t* buf = builder.GetBufferPointer();
     const uint32_t size = builder.GetSize();
+    // Asignamos el buffer de estado actual con los datos generados
     current_state_buffer_.assign(buf, buf + size);
     return true;
 }
@@ -28,10 +29,12 @@ void SimulationEngine::load_plugin(const std::string& path) {
 }
 
 void SimulationEngine::run_tick() {
+    // Verifica si hay plugins cargados
     if (current_state_buffer_.empty()) {
         return;
     }
 
+    // Ejecuta todos los plugins con el estado actual
     plugin_manager_->run_all_plugins(
         current_state_buffer_.data(),
         current_state_buffer_.size()
