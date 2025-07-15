@@ -1,5 +1,8 @@
 namespace state_vector;
 
+// Ejemplo básico de un esquema FlatBuffers para un cohete
+// Se tiene en cuenta posición, velocidad, orientación y combustible
+
 struct Vec3 { x:float; y:float; z:float; }
 struct Quaternion { x:float; y:float; z:float; w:float; }
 
