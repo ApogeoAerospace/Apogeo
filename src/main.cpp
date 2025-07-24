@@ -2,6 +2,20 @@
 #include "SimulationEngine.h"
 
 int main() {
+
+    char* EXAMPLE_PLUGIN_PATH = "example_plugin.dll";
+    int EXAMPLE_PLUGIN_TYPE = 0;
+    char* ENVIRONMENT_PLUGIN_PATH = "environment.dll";
+    int ENVIRONMENT_PLUGIN_TYPE = 0;
+    char* PROGRAMMING_PLUGIN_PATH = "programming.dll";
+    int PROGRAMMING_PLUGIN_TYPE = 0;
+    char* PROPULSION_PLUGIN_PATH = "propulsion.dll";
+    int PROPULSION_PLUGIN_TYPE = 1;
+    char* AERODYNAMIC_PLUGIN_PATH = "aerodynamic.dll";
+    int AERODYNAMIC_PLUGIN_TYPE = 1;
+    char* STRUCTURES_PLUGIN_PATH = "structures.dll";
+    int STRUCTURES_PLUGIN_TYPE = 1;
+
     // Configuración de la consola para UTF-8
     system("chcp 65001 > nul");
 
@@ -15,7 +29,7 @@ int main() {
         return 1;
     }
 
-    // Cargar el plugin de ejemplo
+    // Cargar los plugins
     engine.load_plugin("example_plugin.dll", 0);
     // Correr un tick de simulación
 
