@@ -25,7 +25,7 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     return true;
 }
 
-void SimulationEngine::load_plugin(const std::string& path, int plugin_type) {
+void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
     // Traducimos el tipo de plugin a la enumeración adecuada
     PluginType type;
     switch (plugin_type) {
@@ -39,6 +39,11 @@ void SimulationEngine::load_plugin(const std::string& path, int plugin_type) {
             std::cerr << "[Core] ERROR: Tipo de plugin desconocido: " << plugin_type << std::endl;
             return;
     }
+#if defined(_WIN32)
+    std::string path = name + ".dll";
+#else
+    std::string path = "lib" + name + ".so";
+#endif
 
     plugin_manager_->load_plugin(path, type);
 }

@@ -3,17 +3,22 @@
 
 int main() {
 
-    char* EXAMPLE_PLUGIN_PATH = "example_plugin.dll";
+    std::string EXAMPLE_PLUGIN_NAME = "example_plugin";
     int EXAMPLE_PLUGIN_TYPE = 0;
-    char* ENVIRONMENT_PLUGIN_PATH = "environment.dll";
+
+    std::string ENVIRONMENT_PLUGIN_NAME = "environment";
     int ENVIRONMENT_PLUGIN_TYPE = 0;
-    char* PROGRAMMING_PLUGIN_PATH = "programming.dll";
+
+    std::string PROGRAMMING_PLUGIN_NAME = "programming";
     int PROGRAMMING_PLUGIN_TYPE = 0;
-    char* PROPULSION_PLUGIN_PATH = "propulsion.dll";
+
+    std::string PROPULSION_PLUGIN_NAME = "propulsion";
     int PROPULSION_PLUGIN_TYPE = 1;
-    char* AERODYNAMIC_PLUGIN_PATH = "aerodynamic.dll";
+
+    std::string AERODYNAMIC_PLUGIN_NAME = "aerodynamic";
     int AERODYNAMIC_PLUGIN_TYPE = 1;
-    char* STRUCTURES_PLUGIN_PATH = "structures.dll";
+
+    std::string STRUCTURES_PLUGIN_NAME = "structures";
     int STRUCTURES_PLUGIN_TYPE = 1;
 
     // Configuración de la consola para UTF-8
@@ -30,7 +35,8 @@ int main() {
     }
 
     // Cargar los plugins
-    engine.load_plugin("example_plugin.dll", 0);
+    engine.load_plugin(EXAMPLE_PLUGIN_NAME, EXAMPLE_PLUGIN_TYPE); //TODO: Soporte para MacOS
+
     // Correr un tick de simulación
 
     for (int i = 0; i < 10; ++i) {
