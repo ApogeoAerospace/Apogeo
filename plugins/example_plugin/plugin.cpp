@@ -23,22 +23,23 @@ PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
     delete state;
 }
 
-PLUGIN_EXPORT uint32_t plugin_tick(PluginHandle handle,
-    uint8_t* buffer, uint32_t size) {
-
+PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
+    // 1. Acceder al estado interno del plugin (sin cambios)
     PluginState* state = reinterpret_cast<PluginState*>(handle);
-    // Al avanzar el tick, se incrementa el contador del estado del plugin
     state->tick_count++;
     std::cout << "[Plugin] Tick #" << state->tick_count << " recibido." << std::endl;
 
-    // Consigue el estado del vehículo desde el buffer. Además, es modificable, lo que permite cambiar un item sin crear un nuevo buffer.
-    auto mutable_state = state_vector::GetMutableVehicleState(buffer);
+    // 2. Obtener el estado del vehículo desde el buffer a través de la estructura 'data'
+    // La única línea que cambia: 'buffer' ahora es 'data->state_buffer'
+    auto mutable_state = state_vector::GetMutableVehicleState(data->state_buffer);
 
+    // 3. El resto de la lógica de mutación permanece igual
     float current_x = mutable_state->position()->x();
     std::cout << "[Plugin] Datos recibidos -> Posición X: " << current_x << std::endl;
 
     mutable_state->mutable_position()->mutate_x(current_x + 1.0f);
     std::cout << "[Plugin] Posición X modificada a: " << mutable_state->position()->x() << std::endl;
 
+    // 4. Retornar el código de estado (0 para éxito)
     return 0;
 }
