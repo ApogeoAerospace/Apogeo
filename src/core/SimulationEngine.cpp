@@ -1,3 +1,4 @@
+#include <iostream>
 #include "SimulationEngine.h"
 #include "PluginManager.h"
 #include "InitialStateLoader.h"
@@ -24,21 +25,32 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     return true;
 }
 
-void SimulationEngine::load_plugin(const std::string& path) {
-    plugin_manager_->load_plugin(path);
+void SimulationEngine::load_plugin(const std::string& path, int plugin_type) {
+    // Traducimos el tipo de plugin a la enumeración adecuada
+    PluginType type;
+    switch (plugin_type) {
+        case 0:
+            type = PluginType::SEQUENTIAL_STATE_MODIFIER;
+            break;
+        case 1:
+            type = PluginType::PARALLEL_PHYSICS_CALCULATOR;
+            break;
+        default:
+            std::cerr << "[Core] ERROR: Tipo de plugin desconocido: " << plugin_type << std::endl;
+            return;
+    }
+
+    plugin_manager_->load_plugin(path, type);
 }
 
 void SimulationEngine::run_tick() {
     // Verifica si hay plugins cargados
-    if (current_state_buffer_.empty()) {
+    if (current_state_buffer_.empty() || !plugin_manager_) {
         return;
     }
 
-    // Ejecuta todos los plugins con el estado actual
-    plugin_manager_->run_all_plugins(
-        current_state_buffer_.data(),
-        current_state_buffer_.size()
-    );
+    // Le pasamos el buffer de estado para que pueda ser modificado.
+    plugin_manager_->run_simulation_cycle(current_state_buffer_);
 }
 
 void SimulationEngine::shutdown() {

@@ -27,7 +27,7 @@ public:
     /*
     * Carga una librería dinámica de plugin desde la ruta especificada.
     */
-    void load_plugin(const std::string& path);
+    void load_plugin(const std::string& path, int plugin_type);
 
     /*
     * Corre un tick de la simulación ejecutando todos los plugins cargados.

@@ -22,6 +22,33 @@ typedef struct PluginInstance* PluginHandle;
 extern "C" {
 #endif
 
+    // --- Estructuras de Datos ---
+
+    /**
+     * @brief Estructura para un vector de 3 componentes (fuerza, torque).
+     */
+    typedef struct {
+        float x;
+        float y;
+        float z;
+    } PluginVector3;
+
+    typedef struct {
+        // --- ENTRADA/SALIDA ---
+        // Puntero al buffer de estado central. Los plugins pueden modificarlo.
+        uint8_t* state_buffer;
+        uint32_t buffer_size;
+
+        // --- SALIDA ---
+        // El host provee punteros válidos si espera que el plugin calcule dinámicas.
+        // Si son NULL, el plugin los debe ignorar.
+        PluginVector3* force_out;
+        PluginVector3* torque_out;
+
+    } PluginTickData;
+
+    // --- Funciones de la API---
+
     /**
      * Crea una instancia del plugin y devuelve un handle a ella.
      */
@@ -30,9 +57,8 @@ extern "C" {
     /**
      * Ejecuta un tick de la simulación para una instancia del plugin.
      */
-    PLUGIN_EXPORT uint32_t plugin_tick(PluginHandle handle,
-        uint8_t* buffer,
-        uint32_t size
+    PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle,
+        PluginTickData* data
     );
 
     /**

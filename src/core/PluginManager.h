@@ -5,66 +5,68 @@
 #include <string>
 #include <vector>
 
-// Definición de un handle para manejar instancias de plugins
-// min y max de windows.h causa problemas con std::min y std::max
 #if defined(_WIN32)
-    #define NOMINMAX
-    #include <windows.h>
+#define NOMINMAX
+#include <windows.h>
 #else
-    #include <dlfcn.h>
+#include <dlfcn.h>
 #endif
 
-/*
-* Estructura que representa un plugin cargado
-*/
-struct LoadedPlugin {
-
-    // Handle de la instancia del plugin
-    PluginHandle instance = nullptr;
-
-    // Función para crear una instancia del plugin
-    PluginHandle(*create_func)() = nullptr;
-    // Función que se ejecuta en cada tick del plugin
-    uint32_t(*tick_func)(PluginHandle, uint8_t*, uint32_t) = nullptr;
-    // Función para destruir la instancia del plugin y liberar recursos
-    void (*destroy_func)(PluginHandle) = nullptr;
-
-    #if defined(_WIN32) // WINDOWS
-
-    HMODULE lib_handle = nullptr;
-
-    #else // POSIX
-
-    void* lib_handle = nullptr;
-
-    #endif // FIN IF
+// Define el rol de cada plugin para la orquestación.
+enum class PluginType {
+    SEQUENTIAL_STATE_MODIFIER,
+    PARALLEL_PHYSICS_CALCULATOR
 };
 
-/*
-* PluginManager es la clase encargada de gestionar los plugins.
-* Permite cargar plugins, ejecutar sus ticks y liberar recursos.
-*/
+/**
+ * @brief Estructura que representa un plugin cargado.
+ */
+struct LoadedPlugin {
+    PluginHandle instance = nullptr;
+    PluginType type;
+
+    // --- Punteros a funciones de la API actualizada ---
+    PluginHandle(*create_func)() = nullptr;
+    // La firma de tick_func ahora usa PluginTickData
+    int32_t(*tick_func)(PluginHandle, PluginTickData*) = nullptr;
+    void(*destroy_func)(PluginHandle) = nullptr;
+
+#if defined(_WIN32)
+    HMODULE lib_handle = nullptr;
+#else
+    void* lib_handle = nullptr;
+#endif
+};
+
+/**
+ * @brief PluginManager gestiona el ciclo de vida y la ejecución de los plugins.
+ */
 class PluginManager {
 public:
     ~PluginManager();
 
-    /*
-    * Carga la librería dinámica del plugin y obtiene las funciones de la API.
-    */
-    bool load_plugin(const std::string& path);
+    /**
+     * @brief Carga un plugin y lo clasifica según su tipo.
+     */
+    bool load_plugin(const std::string& path, PluginType type);
 
-    /*
-    * Corre todos los plugins cargados, pasando el buffer de estado.
-    */
-    void run_all_plugins(uint8_t* state_buffer, uint32_t buffer_size);
+    /**
+     * @brief Orquesta y ejecuta un ciclo completo de la simulación.
+     */
+    void run_simulation_cycle(std::vector<uint8_t>& state_buffer);
 
-    /*
-    * Libera todos los recursos de los plugins cargados.
-    */
+    /**
+     * @brief Libera todos los plugins y recursos.
+     */
     void shutdown();
 
 private:
-    std::vector<LoadedPlugin> plugins_;
+    std::vector<LoadedPlugin> sequential_plugins_;
+    std::vector<LoadedPlugin> parallel_plugins_;
+
+    void _apply_total_force_and_torque(const PluginVector3& total_force, const PluginVector3& total_torque, PluginTickData& tick_data) {
+        return;
+    }
 };
 
 #endif

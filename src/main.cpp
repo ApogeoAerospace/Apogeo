@@ -16,7 +16,7 @@ int main() {
     }
 
     // Cargar el plugin de ejemplo
-    engine.load_plugin("example_plugin.dll");
+    engine.load_plugin("example_plugin.dll", 0);
     // Correr un tick de simulación
 
     for (int i = 0; i < 10; ++i) {
