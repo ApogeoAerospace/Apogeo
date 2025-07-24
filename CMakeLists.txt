@@ -87,19 +87,34 @@ target_link_libraries(simulator PRIVATE core)
 add_dependencies(simulator example_plugin)
 
 # --- Plugins ---
-# Se crea la librería compartida del plugin de ejemplo
-add_library(example_plugin SHARED
-  plugins/example_plugin/plugin.cpp
+
+set(PLUGIN_NAMES
+    example_plugin
+    aerodynamics
+    propulsion
+    environment
+    structures
+    programming
 )
 
-# Se asegura de que el plugin tenga acceso a los archivos generados por FlatBuffers
-add_dependencies(example_plugin generate_flatbuffers)
+foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
-# Se incluyen los directorios necesarios para el plugin
-target_include_directories(example_plugin PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
-  "${GENERATED_DIR}"
-)
+    # Crea la librería compartida
+    add_library(${_plugin_name} SHARED
+        plugins/${_plugin_name}/${_plugin_name}.cpp
+    )
 
-# Se incluyen las librerías necesarias para el plugin
-target_link_libraries(example_plugin PRIVATE flatbuffers::flatbuffers)
+    # Establece las dependencias y directorios de inclusión
+    add_dependencies(${_plugin_name} generate_flatbuffers)
+
+    target_include_directories(${_plugin_name} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
+        "${GENERATED_DIR}"
+    )
+
+    # Enlaza las librerías necesarias
+    target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
+
+endforeach()
+
+message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
