@@ -30,7 +30,7 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     std::cout << "[Plugin] Tick #" << state->tick_count << " recibido." << std::endl;
 
     // 2. Obtener el estado del vehículo desde el buffer a través de la estructura 'data'
-    auto mutable_state = state_vector::GetMutableVehicleState(data->state_buffer);
+    auto mutable_state = state_vector::GetMutableGeneralState(data->state_buffer);
 
     float current_x = mutable_state->position()->x();
     std::cout << "[Plugin] Datos recibidos -> Posición X: " << current_x << std::endl;

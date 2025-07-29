@@ -6,11 +6,20 @@ namespace state_vector;
 struct Vec3 { x:float; y:float; z:float; }
 struct Quaternion { x:float; y:float; z:float; w:float; }
 
-table VehicleState {
-  position:Vec3;
+table GeneralState {
+  // Estado del cohete
+  position:Vec3; // Body-fixed coordinates, m
   velocity:Vec3;
   orientation:Quaternion;
-  fuel_percentage:float = 100.0;
+
+  // Estado del entorno
+  atm_density:float; // kg/m^3
+  atm_pressure:float; // Pa
+  atm_temperature:float; // K (En el centro de masa, usar una gradiente para conseguir la temperatura en otros puntos)
+  gravity:Vec3; // m/s^2
+  Time:float; // Tiempo en segundos desde el inicio de la simulación
+  UTC:float; // Tiempo en segundos desde el 1 de enero de 1970 (Epoch time)
+  wind_speed:Vec3; // m/s
 }
 
-root_type VehicleState;
+root_type GeneralState;

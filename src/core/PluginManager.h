@@ -23,11 +23,9 @@ enum class PluginType {
  */
 struct LoadedPlugin {
     PluginHandle instance = nullptr;
-    PluginType type;
+    PluginType type = PluginType::SEQUENTIAL_STATE_MODIFIER;
 
-    // --- Punteros a funciones de la API actualizada ---
     PluginHandle(*create_func)() = nullptr;
-    // La firma de tick_func ahora usa PluginTickData
     int32_t(*tick_func)(PluginHandle, PluginTickData*) = nullptr;
     void(*destroy_func)(PluginHandle) = nullptr;
 

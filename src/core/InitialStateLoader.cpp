@@ -33,14 +33,32 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     auto orientation = state_vector::Quaternion(
         data["orientation"]["x"], data["orientation"]["y"], data["orientation"]["z"], data["orientation"]["w"]);
 
-    // Crea el estado del vehículo en el FlatBuffer
-    auto vehicle_state = state_vector::CreateVehicleState(builder,
+    float atm_density = data["atm_density"];
+    float atm_pressure = data["atm_pressure"];
+    float atm_temperature = data["atm_temperature"];
+    auto gravity = state_vector::Vec3(
+        data["gravity"]["x"], data["gravity"]["y"], data["gravity"]["z"]);
+    float utc = data["UTC"];
+    float time = data["Time"];
+    auto wind_speed = state_vector::Vec3(
+        data["wind_speed"]["x"], data["wind_speed"]["y"], data["wind_speed"]["z"]);
+
+    // Crea el estado general usando todos los argumentos requeridos
+    auto general_state = state_vector::CreateGeneralState(
+        builder,
         &position,
         &velocity,
         &orientation,
-        data["fuel_percentage"]);
+        atm_density,
+        atm_pressure,
+        atm_temperature,
+        &gravity,
+        utc,
+        time,
+        &wind_speed
+    );
 
     // Finaliza el FlatBuffer
-    builder.Finish(vehicle_state);
+    builder.Finish(general_state);
     return true;
 }
