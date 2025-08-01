@@ -42,9 +42,9 @@ add_custom_target(
 # --- Librería del Núcleo ---
 # Se crea la librería estática del núcleo del simulador
 add_library(core STATIC
-  src/core/PluginManager.cpp # Clase para manejar plugins
-  src/core/InitialStateLoader.cpp # Clase para cargar el estado inicial del simulador
-  src/core/SimulationEngine.cpp # Clase para manejar la lógica del simulador
+  core/PluginManager.cpp # Clase para manejar plugins
+  core/InitialStateLoader.cpp # Clase para cargar el estado inicial del simulador
+  core/SimulationEngine.cpp # Clase para manejar la lógica del simulador
 )
 
 # Core requiere el schema de FlatBuffers generado
