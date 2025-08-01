@@ -41,11 +41,27 @@ void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
     }
 #if defined(_WIN32)
     std::string path = name + ".dll";
+#elif defined(__APPLE__)
+    std::string rel_path = "../lib/lib" + name + ".dylib";
+    char abs_path[PATH_MAX];
+    if (realpath(rel_path.c_str(), abs_path) != nullptr) {
+        std::string path = abs_path;
+        plugin_manager_->load_plugin(path, type);
+    } else {
+        std::cerr << "[Core] ERROR: No se encontró el plugin en: " << rel_path << std::endl;
+    }
+    return;
 #else
-    std::string path = "lib" + name + ".so";
+    std::string rel_path = "../lib/lib" + name + ".so";
+    char abs_path[PATH_MAX];
+    if (realpath(rel_path.c_str(), abs_path) != nullptr) {
+        std::string path = abs_path;
+        plugin_manager_->load_plugin(path, type);
+    } else {
+        std::cerr << "[Core] ERROR: No se encontró el plugin en: " << rel_path << std::endl;
+    }
+    return;
 #endif
-
-    plugin_manager_->load_plugin(path, type);
 }
 
 void SimulationEngine::run_tick() {
