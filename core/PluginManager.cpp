@@ -18,12 +18,14 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     LoadedPlugin plugin;
     plugin.type = type; // Asigna el tipo de plugin
 
+    // Carga de biblioteca compartida según el sistema operativo
 #if defined(_WIN32)
     plugin.lib_handle = LoadLibrary(path.c_str());
     if (!plugin.lib_handle) {
         std::cerr << "[Core] ERROR: No se pudo cargar el plugin " << path << std::endl;
         return false;
     }
+    // Obtiene las direcciones de las funciones de la API del plugin
     plugin.create_func = (decltype(plugin.create_func))GetProcAddress(plugin.lib_handle, "plugin_create_instance");
     plugin.tick_func = (decltype(plugin.tick_func))GetProcAddress(plugin.lib_handle, "plugin_tick");
     plugin.destroy_func = (decltype(plugin.destroy_func))GetProcAddress(plugin.lib_handle, "plugin_destroy_instance");
@@ -33,6 +35,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
         std::cerr << "[Core] ERROR: No se pudo cargar el plugin " << path << ": " << dlerror() << std::endl;
         return false;
     }
+    // Obtiene las direcciones de las funciones de la API del plugin
     plugin.create_func = (decltype(plugin.create_func))dlsym(plugin.lib_handle, "plugin_create_instance");
     plugin.tick_func = (decltype(plugin.tick_func))dlsym(plugin.lib_handle, "plugin_tick");
     plugin.destroy_func = (decltype(plugin.destroy_func))dlsym(plugin.lib_handle, "plugin_destroy_instance");
@@ -48,6 +51,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
         return false;
     }
 
+    // Crea una instancia del plugin. Asigna el handle de la instancia
     plugin.instance = plugin.create_func();
 
     // Clasifica el plugin en el vector correcto
@@ -65,6 +69,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 }
 
 void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer) {
+    // Crea el estado del tick que los plugins secuanciales modificarán
     PluginTickData tick_data = {};
     tick_data.state_buffer = state_buffer.data();
     tick_data.buffer_size = state_buffer.size();
@@ -83,6 +88,7 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer) {
     threads.reserve(parallel_plugins_.size());
 
     for (size_t i = 0; i < parallel_plugins_.size(); ++i) {
+        // Crea el estado que recibira cada uno de los plugins paralelos.
         PluginTickData parallel_tick_data = {};
         parallel_tick_data.state_buffer = tick_data.state_buffer;
         parallel_tick_data.buffer_size = tick_data.buffer_size;
@@ -95,7 +101,7 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer) {
     }
 
     // --- FASE 3: Integración ---
-
+    // Desde aquí PLACEHOLDER para aplicar las fuerzas y torques calculados por los plugins paralelos.
     PluginVector3 total_force = { 0.0f, 0.0f, 0.0f };
     for (const auto& f : forces) {
         total_force.x += f.x;
