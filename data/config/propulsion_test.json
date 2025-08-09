@@ -1,0 +1,39 @@
+{
+  "simulation": {
+    "time_step": 0.01,
+    "duration": 30.0,
+    "max_iterations": 3000,
+    "enable_logging": true,
+    "log_file": "logs/propulsion_test.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "enable_atmospheric_drag": false,
+    "enable_wind_effects": false,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "propulsion",
+      "type": 1,
+      "library_path": "build/plugins/libpropulsion.dylib",
+      "enabled": true,
+      "parameters": {
+        "engine_type": 0,
+        "sea_level_thrust": 50000.0,
+        "vacuum_thrust": 55000.0,
+        "specific_impulse_sl": 250.0,
+        "specific_impulse_vac": 280.0,
+        "initial_fuel_mass": 500.0,
+        "engine_on": true,
+        "throttle_setting": 1.0,
+        "enable_altitude_compensation": true,
+        "enable_fuel_consumption": true
+      }
+    }
+  ],
+  "initial_state_file": "data/initial_state.json",
+  "output_directory": "output/"
+}

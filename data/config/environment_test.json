@@ -1,0 +1,37 @@
+{
+  "simulation": {
+    "time_step": 0.01,
+    "duration": 60.0,
+    "max_iterations": 6000,
+    "enable_logging": true,
+    "log_file": "logs/environment_test.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": false,
+    "enable_atmospheric_drag": false,
+    "enable_wind_effects": false,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "environment",
+      "type": 1,
+      "library_path": "build/plugins/libenvironment.dylib",
+      "enabled": true,
+      "parameters": {
+        "enable_atmospheric_model": true,
+        "enable_wind_effects": true,
+        "enable_turbulence": true,
+        "enable_gravity_variation": true,
+        "wind_speed": 10.0,
+        "turbulence_intensity": 0.1,
+        "latitude": 0.0,
+        "longitude": 0.0
+      }
+    }
+  ],
+  "initial_state_file": "data/initial_state.json",
+  "output_directory": "output/"
+}

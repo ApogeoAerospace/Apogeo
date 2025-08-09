@@ -1,0 +1,43 @@
+{
+  "simulation": {
+    "time_step": 0.1,
+    "duration": 5.0,
+    "max_iterations": 50,
+    "enable_logging": true,
+    "log_file": "logs/basic_simulation.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "gravity_magnitude": 9.81,
+    "enable_atmospheric_drag": false,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "euler"
+  },
+  "plugins": [],
+  "output": {
+    "enable_csv": true,
+    "enable_json": false,
+    "enable_binary": false,
+    "output_interval": 1,
+    "output_directory": "output"
+  },
+  "logging": {
+    "console_level": "INFO",
+    "file_level": "INFO",
+    "enable_performance_logging": false,
+    "log_plugin_metrics": false
+  },
+  "performance": {
+    "enable_profiling": false,
+    "profile_plugins": false,
+    "max_threads": 1
+  },
+  "validation": {
+    "enable_state_validation": true,
+    "check_for_nans": true,
+    "position_bounds": [-100000, 100000],
+    "velocity_bounds": [-1000, 1000]
+  },
+  "initial_state_file": "/Users/johancastrillon/Documents/MoLab/data/initial_state/realistic_state.json"
+}

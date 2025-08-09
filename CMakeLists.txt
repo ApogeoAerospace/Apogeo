@@ -39,52 +39,56 @@ add_custom_target(
   DEPENDS ${GENERATED_HEADER}
 )
 
-# --- Librería del Núcleo ---
-# Se crea la librería estática del núcleo del simulador
-add_library(core STATIC
-  core/PluginManager.cpp # Clase para manejar plugins
-  core/InitialStateLoader.cpp # Clase para cargar el estado inicial del simulador
-  core/SimulationEngine.cpp # Clase para manejar la lógica del simulador
+# --- Configuración del núcleo ---
+set(CORE_SOURCES
+    core/SimulationEngine.cpp
+    core/PluginManager.cpp
+    core/InitialStateLoader.cpp
+    src/core/ConfigManager.cpp
+    src/core/PhysicsIntegrator.cpp
+    src/core/OutputManager.cpp
+    src/core/TimeManager.cpp
 )
 
-# Core requiere el schema de FlatBuffers generado
+# Crear la biblioteca del núcleo
+add_library(core STATIC ${CORE_SOURCES})
+
+# Configurar includes
+target_include_directories(core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+    ${GENERATED_DIR}
+)
+
+# Vincular dependencias
+target_link_libraries(core PUBLIC
+    flatbuffers::flatbuffers
+    nlohmann_json::nlohmann_json
+)
+
 add_dependencies(core generate_flatbuffers)
 
-# Se incluyen los directorios necesarios para el núcleo
-target_include_directories(core PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/core"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
-  "${GENERATED_DIR}"
-)
+# --- Configuración del ejecutable principal ---
+# Main executable
+add_executable(simulator src/main.cpp)
+target_link_libraries(simulator core ${CMAKE_DL_LIBS})
+target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Se incluyen las librerías necesarias para el núcleo
-target_link_libraries(core PUBLIC
-  flatbuffers::flatbuffers
-  nlohmann_json::nlohmann_json
-)
-
-# --- Ejecutable Principal ---
-
-# Se crea el ejecutable principal del simulador
-add_executable(simulator
-  src/main.cpp
-)
-
-# Crea la carpeta 'data' junto al ejecutable y copia el archivo de estado inicial necesario para la simulación.
+# Crear directorios necesarios y copiar archivos de datos
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/output"
     COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/initial_state.json"
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/initial_state.json
             "$<TARGET_FILE_DIR:simulator>/data"
-    COMMENT "Copiando archivo de estado inicial a la carpeta data..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/config/default_config.json
+            "$<TARGET_FILE_DIR:simulator>/data"
+    COMMENT "Copiando archivos de configuración y creando directorios..."
 )
-
-# Se incluyen los directorios necesarios para el ejecutable
-target_link_libraries(simulator PRIVATE core)
-
-# Este comando asegura que el programa principal necesite la copilación del plugin
-add_dependencies(simulator example_plugin)
 
 # --- Plugins ---
 

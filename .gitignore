@@ -1,2 +1,54 @@
+# IDE and Editor files
 .vs
 out
+workspace.xml
+vcs.xml
+editor.xml
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build directories
+build/
+cmake-build-*/
+
+# Output and logs
+output/
+logs/
+*.log
+
+# Temporary files
+*.tmp
+temp_config_*.json
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# GUI temporary files
+gui_temp_*.json
+molab_gui_*.json
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~

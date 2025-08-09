@@ -1,0 +1,83 @@
+{
+    "simulation": {
+        "time_step": 0.01,
+        "duration": 100.0,
+        "max_iterations": 10000,
+        "enable_logging": true,
+        "log_file": "logs/molab.log",
+        "log_level": "INFO"
+    },
+    "physics": {
+        "enable_gravity": true,
+        "enable_atmospheric_drag": true,
+        "enable_wind_effects": false,
+        "integration_tolerance": 1e-6,
+        "integrator_type": "runge_kutta_4"
+    },
+    "plugins": [
+        {
+            "name": "example_plugin",
+            "type": 0,
+            "library_path": "libexample_plugin",
+            "enabled": true,
+            "parameters": {
+                "step_size": 1.0,
+                "debug_output": false
+            }
+        },
+        {
+            "name": "aerodynamics",
+            "type": 1,
+            "library_path": "libaerodynamics",
+            "enabled": true,
+            "parameters": {
+                "drag_coefficient": 0.47,
+                "reference_area": 1.0,
+                "enable_lift": true
+            }
+        },
+        {
+            "name": "propulsion",
+            "type": 1,
+            "library_path": "libpropulsion",
+            "enabled": true,
+            "parameters": {
+                "max_thrust": 10000.0,
+                "specific_impulse": 300.0,
+                "fuel_flow_rate": 1.0
+            }
+        },
+        {
+            "name": "environment",
+            "type": 0,
+            "library_path": "libenvironment",
+            "enabled": true,
+            "parameters": {
+                "atmospheric_model": "standard",
+                "wind_model": "constant",
+                "temperature_model": "isa"
+            }
+        }
+    ],
+    "initial_state_file": "data/initial_state.json",
+    "output_directory": "output/",
+    "logging": {
+        "console_output": true,
+        "file_output": true,
+        "log_rotation": true,
+        "max_file_size_mb": 100,
+        "max_files": 5
+    },
+    "performance": {
+        "enable_metrics": true,
+        "metrics_output_interval": 1000,
+        "enable_profiling": false,
+        "thread_pool_size": 4
+    },
+    "validation": {
+        "validate_state_bounds": true,
+        "max_position_magnitude": 1000000.0,
+        "max_velocity_magnitude": 10000.0,
+        "enable_nan_checks": true
+    }
+}
