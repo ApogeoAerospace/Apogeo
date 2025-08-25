@@ -87,7 +87,7 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
     } else if (sim_config.log_level == "WARNING") {
         logger.setLogLevel(LogLevel::WARNING);
     } else if (sim_config.log_level == "ERROR") {
-        logger.setLogLevel(LogLevel::ERROR);
+        logger.setLogLevel(LogLevel::ERR);
     }
     
     if (!sim_config.log_file.empty()) {

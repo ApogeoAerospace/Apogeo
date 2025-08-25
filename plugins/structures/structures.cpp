@@ -15,6 +15,10 @@
 #include <algorithm>
 #include <vector>
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 // Constantes estructurales
 const double ALUMINUM_DENSITY = 2700.0;      // kg/m³
 const double STEEL_DENSITY = 7850.0;         // kg/m³

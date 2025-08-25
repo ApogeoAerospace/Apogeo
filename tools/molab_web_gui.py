@@ -16,6 +16,7 @@ from pathlib import Path
 import datetime
 import urllib.parse
 import time
+import platform
 
 class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -24,7 +25,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         self.config_dir = self.project_root / "data" / "config"
         self.output_dir = self.build_dir / "output"
         super().__init__(*args, **kwargs)
-    
+
     def do_GET(self):
         """Handle GET requests"""
         # Parse path without query parameters
@@ -2518,12 +2519,23 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         plugins.append(plugin_def)
         
         self.send_json_response(plugins)
-    
+
+    def get_simulator_path(self):
+        """Return the correct simulator binary path for the current platform."""
+        bin_dir = self.build_dir / "bin"
+        if platform.system() == "Windows":
+            sim_path = bin_dir / "simulator.exe"
+        else:
+            sim_path = bin_dir / "simulator"
+        return sim_path
+
     def serve_status(self):
         """Serve system status"""
-        simulator_exists = (self.build_dir / "bin" / "simulator").exists()
+        simulator_path = self.get_simulator_path()
+        simulator_exists = simulator_path.exists()
         status = {
             "simulator_built": simulator_exists,
+            "simulator_path": str(simulator_path),
             "project_root": str(self.project_root),
             "timestamp": datetime.datetime.now().isoformat()
         }
@@ -2662,7 +2674,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 json.dump(config, f, indent=2)
             
             # Run simulation in background
-            simulator_path = self.build_dir / "bin" / "simulator"
+            simulator_path = self.get_simulator_path()
             if not simulator_path.exists():
                 self.send_json_response({"success": False, "error": "Simulator not built"})
                 return
@@ -2689,6 +2701,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
+
     
     def handle_save_config(self):
         """Handle save configuration request"""

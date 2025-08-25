@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     } else if (log_level == "WARNING") {
         logger.setLogLevel(MoLab::LogLevel::WARNING);
     } else if (log_level == "ERROR") {
-        logger.setLogLevel(MoLab::LogLevel::ERROR);
+        logger.setLogLevel(MoLab::LogLevel::ERR);
     } else if (log_level == "CRITICAL") {
         logger.setLogLevel(MoLab::LogLevel::CRITICAL);
     }

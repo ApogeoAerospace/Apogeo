@@ -14,7 +14,7 @@ enum class LogLevel {
     DEBUG = 0,
     INFO = 1,
     WARNING = 2,
-    ERROR = 3,
+    ERR = 3,
     CRITICAL = 4
 };
 
@@ -85,7 +85,7 @@ public:
     }
 
     void error(const std::string& message, const std::string& component = "") {
-        log(LogLevel::ERROR, message, component);
+        log(LogLevel::ERR, message, component);
     }
 
     void critical(const std::string& message, const std::string& component = "") {
@@ -108,7 +108,7 @@ private:
             case LogLevel::DEBUG: return "DEBUG";
             case LogLevel::INFO: return "INFO";
             case LogLevel::WARNING: return "WARN";
-            case LogLevel::ERROR: return "ERROR";
+            case LogLevel::ERR: return "ERROR";
             case LogLevel::CRITICAL: return "CRIT";
             default: return "UNKNOWN";
         }

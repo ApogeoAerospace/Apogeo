@@ -16,6 +16,10 @@
 #include <random>
 #include <chrono>
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 // Constantes físicas y terrestres
 const double EARTH_RADIUS = 6371000.0;           // m
 const double EARTH_MASS = 5.972e24;              // kg

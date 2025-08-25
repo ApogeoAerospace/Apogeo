@@ -14,6 +14,10 @@
 #include <cmath>
 #include <algorithm>
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 // Constantes físicas
 const double AIR_DENSITY_SEA_LEVEL = 1.225;  // kg/m³
 const double SCALE_HEIGHT = 8400.0;          // m (altura de escala atmosférica)
