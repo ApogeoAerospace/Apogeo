@@ -39,9 +39,17 @@ extern "C" {
         uint8_t* state_buffer;
         uint32_t buffer_size;
 
+        // --- ENTRADA ---
+        // Tiempo delta para este tick de simulación
+        double delta_time;
+
         // --- SALIDA ---
         // El host provee punteros válidos si espera que el plugin calcule dinámicas.
         // Si son NULL, el plugin los debe ignorar.
+        PluginVector3* output_force;
+        PluginVector3* output_torque;
+
+        // Campos de compatibilidad (deprecated, usar output_force/output_torque)
         PluginVector3* force_out;
         PluginVector3* torque_out;
 
@@ -53,6 +61,14 @@ extern "C" {
      * Crea una instancia del plugin y devuelve un handle a ella.
      */
     PLUGIN_EXPORT PluginHandle plugin_create_instance();
+
+    /**
+     * Configura una instancia del plugin con parámetros JSON.
+     * @param handle Handle del plugin a configurar
+     * @param json_params Cadena JSON con los parámetros de configuración
+     * @return 0 si la configuración fue exitosa, código de error negativo en caso contrario
+     */
+    PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params);
 
     /**
      * Ejecuta un tick de la simulación para una instancia del plugin.

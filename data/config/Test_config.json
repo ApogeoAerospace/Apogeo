@@ -1,0 +1,76 @@
+{
+  "simulation": {
+    "time_step": 0.1,
+    "duration": 10,
+    "max_iterations": 1000,
+    "enable_logging": true,
+    "log_level": "INFO",
+    "log_file": "logs/molab_web.log"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "gravity_magnitude": 9.81,
+    "enable_atmospheric_drag": false,
+    "integration_tolerance": 1e-06,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "Structures",
+      "type": 0,
+      "description": "Mass tracking, center of gravity, and structural analysis",
+      "enabled": true,
+      "parameters": {
+        "enable_mass_tracking": true,
+        "enable_inertia_calculation": true,
+        "enable_structural_analysis": true
+      },
+      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libstructures.dylib"
+    },
+    {
+      "name": "Environment",
+      "type": 1,
+      "description": "Atmospheric model, wind effects, and gravity variation",
+      "enabled": true,
+      "parameters": {
+        "enable_atmospheric_model": true,
+        "enable_wind_effects": true,
+        "enable_gravity_variation": true
+      },
+      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libenvironment.dylib"
+    },
+    {
+      "name": "Propulsion",
+      "type": 1,
+      "description": "Rocket/jet propulsion with fuel consumption and altitude compensation",
+      "enabled": true,
+      "parameters": {
+        "sea_level_thrust": 50000,
+        "specific_impulse_sl": 250,
+        "engine_on": true,
+        "enable_fuel_consumption": true
+      },
+      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libpropulsion.dylib"
+    },
+    {
+      "name": "Aerodynamics",
+      "type": 1,
+      "description": "Real aerodynamic forces: drag, lift, compressibility effects",
+      "enabled": true,
+      "parameters": {
+        "reference_area": 0.785,
+        "drag_coefficient": 0.3,
+        "enable_drag": true,
+        "enable_altitude_effects": true
+      },
+      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libaerodynamics.dylib"
+    }
+  ],
+  "output": {
+    "enable_csv": true,
+    "enable_json": false,
+    "enable_binary": false,
+    "output_interval": 1,
+    "output_directory": "output"
+  }
+}

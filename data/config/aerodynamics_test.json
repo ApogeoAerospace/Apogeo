@@ -1,0 +1,36 @@
+{
+  "simulation": {
+    "time_step": 0.01,
+    "duration": 60.0,
+    "max_iterations": 6000,
+    "enable_logging": true,
+    "log_file": "logs/aerodynamics_test.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "enable_atmospheric_drag": false,
+    "enable_wind_effects": false,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "aerodynamics",
+      "type": 1,
+      "library_path": "build/plugins/libaerodynamics.dylib",
+      "enabled": true,
+      "parameters": {
+        "reference_area": 0.785,
+        "drag_coefficient": 0.3,
+        "lift_coefficient": 0.0,
+        "enable_drag": true,
+        "enable_lift": false,
+        "enable_altitude_effects": true,
+        "enable_compressibility": true
+      }
+    }
+  ],
+  "initial_state_file": "data/initial_state.json",
+  "output_directory": "output/"
+}

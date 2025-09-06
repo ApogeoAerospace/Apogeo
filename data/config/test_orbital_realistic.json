@@ -1,0 +1,104 @@
+{
+    "simulation": {
+        "time_step": 1.0,
+        "duration": 6000.0,
+        "max_iterations": 6000,
+        "logging_enabled": true,
+        "log_level": "INFO"
+    },
+    "physics": {
+        "gravity": 9.81,
+        "drag_coefficient": 0.0,
+        "integrator_type": "runge_kutta_4",
+        "tolerance": 1e-8
+    },
+    "initial_state": {
+        "position": [0.0, 0.0, 0.0],
+        "velocity": [0.0, 0.0, 0.0],
+        "orientation": [0.0, 0.0, 0.0, 1.0],
+        "angular_velocity": [0.0, 0.0, 0.0],
+        "mass": 550000.0,
+        "atmospheric_conditions": {
+            "temperature": 288.15,
+            "pressure": 101325.0,
+            "density": 1.225,
+            "wind_velocity": [8.0, 2.0, 0.0]
+        }
+    },
+    "plugins": [
+        {
+            "name": "aerodynamics",
+            "type": "PARALLEL_PHYSICS_CALCULATOR",
+            "enabled": true,
+            "parameters": {
+                "reference_area": 200.0,
+                "drag_coefficient": 0.25,
+                "lift_coefficient": 0.05,
+                "enable_drag": true,
+                "enable_lift": false,
+                "enable_compressibility": true,
+                "mach_transition": 0.8,
+                "supersonic_drag_multiplier": 3.0
+            }
+        },
+        {
+            "name": "propulsion",
+            "type": "PARALLEL_PHYSICS_CALCULATOR",
+            "enabled": true,
+            "parameters": {
+                "sea_level_thrust": 7600000.0,
+                "specific_impulse_sl": 263.0,
+                "specific_impulse_vac": 421.0,
+                "engine_on": true,
+                "throttle_setting": 1.0,
+                "burn_time": 480.0,
+                "fuel_mass_initial": 450000.0,
+                "enable_altitude_compensation": true,
+                "enable_thrust_vectoring": true,
+                "stage_separation_time": 150.0,
+                "second_stage_thrust": 934000.0,
+                "second_stage_isp": 348.0
+            }
+        },
+        {
+            "name": "structures",
+            "type": "SEQUENTIAL_STATE_MODIFIER",
+            "enabled": true,
+            "parameters": {
+                "dry_mass": 100000.0,
+                "enable_mass_tracking": true,
+                "enable_inertia_calculation": true,
+                "enable_structural_loads": true,
+                "max_g_force": 4.0,
+                "structural_integrity_factor": 1.2,
+                "center_of_gravity_offset": [0.0, 0.0, -15.0],
+                "stage_separation_mass": 350000.0
+            }
+        },
+        {
+            "name": "environment",
+            "type": "SEQUENTIAL_STATE_MODIFIER",
+            "enabled": true,
+            "parameters": {
+                "enable_atmospheric_model": true,
+                "enable_wind_effects": true,
+                "enable_gravity_variation": true,
+                "enable_coriolis_effect": true,
+                "earth_radius": 6371000.0,
+                "launch_latitude": 28.5,
+                "launch_longitude": -80.6,
+                "target_orbit_altitude": 400000.0,
+                "wind_speed_surface": 15.0,
+                "wind_direction": 120.0,
+                "turbulence_intensity": 0.15
+            }
+        }
+    ],
+    "output": {
+        "format": "csv",
+        "interval": 5,
+        "directory": "results",
+        "include_debug_info": true,
+        "extended_telemetry": true
+    }
+}

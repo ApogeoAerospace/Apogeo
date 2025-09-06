@@ -1,0 +1,35 @@
+{
+  "simulation": {
+    "time_step": 0.01,
+    "duration": 60.0,
+    "max_iterations": 6000,
+    "enable_logging": true,
+    "log_file": "logs/structures_test.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "enable_atmospheric_drag": false,
+    "enable_wind_effects": false,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "structures",
+      "type": 0,
+      "library_path": "build/plugins/libstructures.dylib",
+      "enabled": true,
+      "parameters": {
+        "total_mass": 1000.0,
+        "fuel_mass": 500.0,
+        "enable_mass_tracking": true,
+        "enable_inertia_calculation": true,
+        "enable_structural_analysis": true,
+        "enable_vibration_analysis": false
+      }
+    }
+  ],
+  "initial_state_file": "data/initial_state.json",
+  "output_directory": "output/"
+}

@@ -1,0 +1,51 @@
+{
+  "simulation": {
+    "time_step": 0.1,
+    "duration": 10.0,
+    "max_iterations": 100,
+    "enable_logging": true,
+    "log_file": "logs/molab_simulation.log",
+    "log_level": "INFO"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "gravity_magnitude": 9.81,
+    "enable_atmospheric_drag": true,
+    "integration_tolerance": 1e-6,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "test_force",
+      "type": 1,
+      "library_path": "/Users/johancastrillon/Documents/MoLab/build/plugins/libtest_force.dylib",
+      "enabled": true,
+      "description": "Force generation plugin for physics testing"
+    }
+  ],
+  "output": {
+    "enable_csv": true,
+    "enable_json": true,
+    "enable_binary": false,
+    "output_interval": 1,
+    "output_directory": "output"
+  },
+  "logging": {
+    "console_level": "INFO",
+    "file_level": "DEBUG",
+    "enable_performance_logging": true,
+    "log_plugin_metrics": true
+  },
+  "performance": {
+    "enable_profiling": false,
+    "profile_plugins": false,
+    "max_threads": 4
+  },
+  "validation": {
+    "enable_state_validation": true,
+    "check_for_nans": true,
+    "position_bounds": [-100000, 100000],
+    "velocity_bounds": [-1000, 1000]
+  },
+  "initial_state_file": "/Users/johancastrillon/Documents/MoLab/data/initial_state/realistic_state.json"
+}
