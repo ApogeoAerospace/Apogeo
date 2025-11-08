@@ -78,7 +78,7 @@ jobs:
 
       - name: Validar sintaxis de scripts Python
         run: |
-          echo "🐍 Validando scripts Python..."
+          echo "Validando scripts Python"
           python3 -m py_compile tools/*.py || true
 
       - name: Subir artefactos de build
@@ -101,7 +101,7 @@ jobs:
 
       - name: Verificar formato de archivos
         run: |
-          echo "📋 Verificando formato de archivos..."
+          echo "Verificando formato de archivos"
           # Verificar que no haya archivos con espacios en blanco al final
           ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
             echo "❌ Se encontraron espacios en blanco al final de líneas"
@@ -110,7 +110,7 @@ jobs:
 
       - name: Validar archivos JSON
         run: |
-          echo "🔍 Validando archivos JSON..."
+          echo "Validando archivos JSON"
           find data -name '*.json' -type f -exec sh -c '
             echo "Validando: {}" && \
             python3 -m json.tool {} > /dev/null
@@ -118,7 +118,7 @@ jobs:
 
       - name: Validar esquemas FlatBuffers
         run: |
-          echo "📦 Verificando esquemas FlatBuffers..."
+          echo "Verificando esquemas FlatBuffers"
           if [ -d "src/schemas" ]; then
             find src/schemas -name '*.fbs' -type f
           fi
@@ -150,10 +150,10 @@ jobs:
 
       - name: Ejecutar simulación básica
         run: |
-          echo "🚀 Ejecutando simulación de prueba..."
+          echo "Ejecutando simulación de prueba"
           cd build/bin
           ./simulator --config ../../data/config/basic_config.json --ticks 10 || (
-            echo "⚠️ Simulación falló o configuración no encontrada"
+            echo "Simulación falló o configuración no encontrada"
             echo "Contenido de data/config:"
             ls -la ../../data/config/ || echo "Directorio no existe"
             exit 0
@@ -161,6 +161,6 @@ jobs:
 
       - name: Verificar archivos de salida
         run: |
-          echo "📊 Verificando archivos de salida generados..."
+          echo "Verificando archivos de salida generados"
           ls -lh build/bin/output/ || echo "No se generaron archivos de salida"
           ls -lh build/bin/logs/ || echo "No se generaron logs"
