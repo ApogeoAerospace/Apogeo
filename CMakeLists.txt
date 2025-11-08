@@ -122,3 +122,52 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 endforeach()
 
 message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
+
+# --- Opciones de compilación para cobertura y análisis ---
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
+option(ENABLE_TESTING "Enable unit tests" ON)
+
+# Configuración de cobertura de código
+if(ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(STATUS "Code coverage enabled")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    else()
+        message(WARNING "Code coverage only supported with GCC or Clang")
+    endif()
+endif()
+
+# --- Tests Unitarios ---
+if(ENABLE_TESTING)
+    enable_testing()
+    
+    # Buscar Google Test
+    find_package(GTest CONFIG REQUIRED)
+    
+    # Tests del núcleo
+    add_executable(core_tests
+        tests/test_config_manager.cpp
+        tests/test_physics_integrator.cpp
+        tests/test_time_manager.cpp
+    )
+    
+    target_link_libraries(core_tests PRIVATE
+        core
+        GTest::gtest
+        GTest::gtest_main
+    )
+    
+    target_include_directories(core_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${GENERATED_DIR}
+    )
+    
+    # Registrar tests con CTest
+    include(GoogleTest)
+    gtest_discover_tests(core_tests)
+    
+    message(STATUS "Unit tests enabled")
+endif()

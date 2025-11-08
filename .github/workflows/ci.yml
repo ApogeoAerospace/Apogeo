@@ -164,3 +164,173 @@ jobs:
           echo "Verificando archivos de salida generados"
           ls -lh build/bin/output/ || echo "No se generaron archivos de salida"
           ls -lh build/bin/logs/ || echo "No se generaron logs"
+
+  unit-tests:
+    name: Tests Unitarios
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            lcov
+
+      - name: Configurar vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+
+      - name: Configurar CMake con tests
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DENABLE_TESTING=ON \
+            -G Ninja
+
+      - name: Compilar proyecto y tests
+        run: cmake --build build --config Debug --parallel
+
+      - name: Ejecutar tests unitarios
+        run: |
+          cd build
+          ctest --output-on-failure --verbose
+
+      - name: Subir resultados de tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/Testing/
+          retention-days: 7
+
+  code-coverage:
+    name: Cobertura de Código
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            lcov \
+            gcovr
+
+      - name: Configurar vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+
+      - name: Configurar CMake con cobertura
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DENABLE_TESTING=ON \
+            -DENABLE_COVERAGE=ON \
+            -G Ninja
+
+      - name: Compilar con cobertura
+        run: cmake --build build --config Debug --parallel
+
+      - name: Ejecutar tests para cobertura
+        run: |
+          cd build
+          ctest --output-on-failure
+
+      - name: Generar reporte de cobertura
+        run: |
+          cd build
+          lcov --capture --directory . --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' --output-file coverage_filtered.info
+          lcov --list coverage_filtered.info
+
+      - name: Generar reporte HTML
+        run: |
+          cd build
+          genhtml coverage_filtered.info --output-directory coverage_html
+
+      - name: Subir reporte de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage_html/
+          retention-days: 30
+
+      - name: Mostrar resumen de cobertura
+        run: |
+          cd build
+          lcov --summary coverage_filtered.info
+
+  static-analysis:
+    name: Análisis Estático
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-tidy \
+            clang-tools \
+            build-essential \
+            cmake \
+            ninja-build
+
+      - name: Configurar vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+
+      - name: Configurar CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -G Ninja
+
+      - name: Ejecutar clang-tidy
+        run: |
+          echo "Ejecutando análisis estático con clang-tidy"
+          find core src -name '*.cpp' -not -path '*/vcpkg_installed/*' | \
+            xargs clang-tidy -p build --config-file=.clang-tidy 2>&1 | \
+            tee clang-tidy-report.txt || true
+
+      - name: Verificar advertencias críticas
+        run: |
+          if grep -i "error:" clang-tidy-report.txt; then
+            echo "Se encontraron errores críticos en el análisis estático"
+            exit 1
+          fi
+          echo "Análisis estático completado sin errores críticos"
+
+      - name: Subir reporte de análisis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-report
+          path: clang-tidy-report.txt
+          retention-days: 30
