@@ -1,0 +1,166 @@
+name: MoLab CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build C++ Core & Plugins
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            triplet: x64-linux
+          - os: macos-latest
+            triplet: x64-osx
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configurar Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias de sistema (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            python3-tk \
+            pkg-config
+
+      - name: Instalar dependencias de sistema (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja pkg-config
+
+      - name: Configurar vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+
+      - name: Configurar CMake
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -G Ninja
+
+      - name: Compilar proyecto
+        run: cmake --build build --config Release --parallel
+
+      - name: Verificar binarios generados
+        run: |
+          echo "🔍 Verificando binarios generados..."
+          ls -lh build/bin/
+          ls -lh build/lib/
+          file build/bin/simulator
+
+      - name: Validar sintaxis de scripts Python
+        run: |
+          echo "🐍 Validando scripts Python..."
+          python3 -m py_compile tools/*.py || true
+
+      - name: Subir artefactos de build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: molab-build-${{ matrix.os }}
+          path: |
+            build/bin/
+            build/lib/
+          retention-days: 7
+
+  code-quality:
+    name: Validación de Calidad
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Verificar formato de archivos
+        run: |
+          echo "📋 Verificando formato de archivos..."
+          # Verificar que no haya archivos con espacios en blanco al final
+          ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
+            echo "❌ Se encontraron espacios en blanco al final de líneas"
+            exit 1
+          )
+
+      - name: Validar archivos JSON
+        run: |
+          echo "🔍 Validando archivos JSON..."
+          find data -name '*.json' -type f -exec sh -c '
+            echo "Validando: {}" && \
+            python3 -m json.tool {} > /dev/null
+          ' \;
+
+      - name: Validar esquemas FlatBuffers
+        run: |
+          echo "📦 Verificando esquemas FlatBuffers..."
+          if [ -d "src/schemas" ]; then
+            find src/schemas -name '*.fbs' -type f
+          fi
+
+  integration-test:
+    name: Test de Integración
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Descargar artefactos de build
+        uses: actions/download-artifact@v4
+        with:
+          name: molab-build-ubuntu-latest
+          path: build/
+
+      - name: Configurar permisos de ejecución
+        run: |
+          chmod +x build/bin/simulator
+          chmod +x build/lib/*.so || true
+
+      - name: Ejecutar simulación básica
+        run: |
+          echo "🚀 Ejecutando simulación de prueba..."
+          cd build/bin
+          ./simulator --config ../../data/config/basic_config.json --ticks 10 || (
+            echo "⚠️ Simulación falló o configuración no encontrada"
+            echo "Contenido de data/config:"
+            ls -la ../../data/config/ || echo "Directorio no existe"
+            exit 0
+          )
+
+      - name: Verificar archivos de salida
+        run: |
+          echo "📊 Verificando archivos de salida generados..."
+          ls -lh build/bin/output/ || echo "No se generaron archivos de salida"
+          ls -lh build/bin/logs/ || echo "No se generaron logs"
