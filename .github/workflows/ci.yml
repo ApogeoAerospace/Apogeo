@@ -30,8 +30,6 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Configurar Python 3.x
         uses: actions/setup-python@v5
@@ -57,6 +55,7 @@ jobs:
       - name: Configurar vcpkg
         uses: lukka/run-vcpkg@v11
         with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
 
       - name: Configurar CMake
@@ -186,8 +185,6 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Instalar dependencias
         run: |
@@ -201,6 +198,7 @@ jobs:
       - name: Configurar vcpkg
         uses: lukka/run-vcpkg@v11
         with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
 
       - name: Configurar CMake con tests
@@ -233,8 +231,6 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Instalar dependencias
         run: |
@@ -249,6 +245,7 @@ jobs:
       - name: Configurar vcpkg
         uses: lukka/run-vcpkg@v11
         with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
 
       - name: Configurar CMake con cobertura
@@ -299,8 +296,6 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Instalar clang-tidy
         run: |
@@ -315,6 +310,7 @@ jobs:
       - name: Configurar vcpkg
         uses: lukka/run-vcpkg@v11
         with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
 
       - name: Configurar CMake

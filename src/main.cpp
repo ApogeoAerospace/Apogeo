@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
     std::string state_file = "";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
-    
+
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
-        
+
         if (arg == "-h" || arg == "--help") {
             print_usage(argv[0]);
             return 0;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
     LOG_INFO("Configuration file: " + config_file, "Main");
-    
+
     // Check if config file exists
     if (!std::filesystem::exists(config_file)) {
         LOG_WARNING("Configuration file not found: " + config_file, "Main");
@@ -131,14 +131,14 @@ int main(int argc, char* argv[]) {
         // Run simulation
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
-            
+
             for (int i = 0; i < tick_count; ++i) {
                 if (i % 100 == 0) {
                     LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }
                 engine.run_tick();
             }
-            
+
             LOG_INFO("Completed " + std::to_string(tick_count) + " simulation ticks", "Main");
         } else {
             LOG_INFO("Running full simulation", "Main");
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         // Shutdown
         engine.shutdown();
         LOG_INFO("MoLab Aerospace Simulator finished successfully", "Main");
-        
+
         return 0;
 
     } catch (const std::exception& e) {

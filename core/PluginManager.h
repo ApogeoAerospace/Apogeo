@@ -36,7 +36,7 @@ struct LoadedPlugin {
     std::string path;
     std::string name;
     bool enabled = true;
-    
+
     // Métricas de rendimiento
     std::atomic<uint64_t> execution_count{0};
     std::atomic<double> total_execution_time{0.0};
@@ -56,13 +56,13 @@ struct LoadedPlugin {
 
     // Constructor por defecto
     LoadedPlugin() = default;
-    
+
     // Eliminar constructor de copia y operador de asignación
     LoadedPlugin(const LoadedPlugin&) = delete;
     LoadedPlugin& operator=(const LoadedPlugin&) = delete;
-    
+
     // Permitir constructor de movimiento y operador de asignación de movimiento
-    LoadedPlugin(LoadedPlugin&& other) noexcept 
+    LoadedPlugin(LoadedPlugin&& other) noexcept
         : handle(other.handle),
           type(other.type),
           path(std::move(other.path)),
@@ -76,7 +76,7 @@ struct LoadedPlugin {
           tick_func(other.tick_func),
           destroy_func(other.destroy_func),
           lib_handle(other.lib_handle) {
-        
+
         // Reset other object
         other.handle = nullptr;
         other.create_func = nullptr;
@@ -85,7 +85,7 @@ struct LoadedPlugin {
         other.destroy_func = nullptr;
         other.lib_handle = nullptr;
     }
-    
+
     LoadedPlugin& operator=(LoadedPlugin&& other) noexcept {
         if (this != &other) {
             handle = other.handle;
@@ -101,7 +101,7 @@ struct LoadedPlugin {
             tick_func = other.tick_func;
             destroy_func = other.destroy_func;
             lib_handle = other.lib_handle;
-            
+
             // Reset other object
             other.handle = nullptr;
             other.create_func = nullptr;
@@ -165,7 +165,7 @@ public:
     size_t get_plugin_count() const;
     std::vector<std::string> get_loaded_plugin_names() const;
     bool is_plugin_loaded(const std::string& path) const;
-    
+
     // Métricas de rendimiento
     struct PluginMetrics {
         std::string name;
@@ -174,7 +174,7 @@ public:
         double average_execution_time;
         double last_execution_time;
     };
-    
+
     std::vector<PluginMetrics> get_plugin_metrics() const;
     void reset_plugin_metrics();
 
@@ -182,24 +182,24 @@ private:
     // Contenedores de plugins thread-safe
     std::vector<LoadedPlugin> loaded_plugins_;
     mutable std::mutex plugins_mutex_;
-    
+
     // Métricas globales
     std::atomic<uint64_t> total_cycles_{0};
     std::atomic<double> total_cycle_time_{0.0};
-    
+
     // Métodos privados
     void execute_sequential_plugins(std::vector<uint8_t>& state_buffer);
     void execute_parallel_plugins(std::vector<uint8_t>& state_buffer);
     void apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time);
-    
+
     // Utilidades
     std::vector<LoadedPlugin*> get_plugins_by_type(PluginType type);
     bool validate_plugin_api(const LoadedPlugin& plugin) const;
     void cleanup_plugin(LoadedPlugin& plugin);
-    
+
     // Integrador físico
     std::unique_ptr<MoLab::PhysicsIntegrator> physics_integrator_;
-    
+
     // Almacenamiento de fuerzas para integración física
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};

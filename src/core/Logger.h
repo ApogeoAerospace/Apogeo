@@ -42,7 +42,7 @@ public:
         if (level < current_level_) return;
 
         std::lock_guard<std::mutex> lock(mutex_);
-        
+
         auto now = std::chrono::system_clock::now();
         auto time_t = std::chrono::system_clock::to_time_t(now);
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -52,18 +52,18 @@ public:
         ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
         ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
         ss << " [" << levelToString(level) << "]";
-        
+
         if (!component.empty()) {
             ss << " [" << component << "]";
         }
-        
+
         ss << " " << message;
 
         std::string log_line = ss.str();
-        
+
         // Output to console
         std::cout << log_line << std::endl;
-        
+
         // Output to file if available
         if (log_file_.is_open()) {
             log_file_ << log_line << std::endl;
