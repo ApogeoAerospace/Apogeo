@@ -81,7 +81,8 @@ PhysicsState PhysicsIntegrator::integrateEuler(const PhysicsState& state,
 
     // Integración de Euler para posición y velocidad
     new_state.velocity = state.velocity + acceleration * dt;
-    new_state.position = state.position + state.velocity * dt;
+    // Usar velocidad promedio para mejor precisión: (v_inicial + v_final) / 2
+    new_state.position = state.position + (state.velocity + new_state.velocity) * (0.5 * dt);
 
     // Integración angular (simplificada)
     Vector3 angular_acceleration = torque * (1.0 / state.mass); // Simplificado
