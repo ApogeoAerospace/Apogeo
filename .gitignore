@@ -52,3 +52,11 @@ Thumbs.db
 *.bak
 *.backup
 *~
+
+# vcpkg (package manager - machine specific)
+vcpkg/
+vcpkg_installed/
+
+# FlatBuffers generated files (auto-generated)
+*_generated.h
+!src/schemas/*.fbs

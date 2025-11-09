@@ -71,7 +71,7 @@ jobs:
 
       - name: Verificar binarios generados
         run: |
-          echo "🔍 Verificando binarios generados..."
+          echo " Verificando binarios generados..."
           ls -lh build/bin/
           ls -lh build/lib/
           file build/bin/simulator
@@ -90,7 +90,6 @@ jobs:
             build/bin/
             build/lib/
           retention-days: 7
-
   code-quality:
     name: Validación de Calidad
     runs-on: ubuntu-latest
@@ -104,7 +103,7 @@ jobs:
           echo "Verificando formato de archivos"
           # Verificar que no haya archivos con espacios en blanco al final
           ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
-            echo "❌ Se encontraron espacios en blanco al final de líneas"
+            echo " Se encontraron espacios en blanco al final de líneas"
             exit 1
           )
 
@@ -137,6 +136,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Instalar dependencias de sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
       - name: Descargar artefactos de build
         uses: actions/download-artifact@v4
         with:
@@ -146,17 +150,27 @@ jobs:
       - name: Configurar permisos de ejecución
         run: |
           chmod +x build/bin/simulator
-          chmod +x build/lib/*.so || true
+          find build/lib -type f \( -name "*.so" -o -name "*.dylib" \) -exec chmod +x {} \;
+
+      - name: Copiar archivos de configuración
+        run: |
+          mkdir -p build/bin/data/config
+          mkdir -p build/bin/data/initial_state
+          cp -r data/config/* build/bin/data/config/
+          cp -r data/initial_state/* build/bin/data/initial_state/
 
       - name: Ejecutar simulación básica
         run: |
           echo "Ejecutando simulación de prueba"
           cd build/bin
-          ./simulator --config ../../data/config/basic_config.json --ticks 10 || (
-            echo "Simulación falló o configuración no encontrada"
+          ./simulator --config data/config/basic_config.json --ticks 10 || (
+            echo " Simulación falló"
             echo "Contenido de data/config:"
-            ls -la ../../data/config/ || echo "Directorio no existe"
-            exit 0
+            ls -la data/config/ || echo "Directorio no existe"
+            echo "Verificando binario:"
+            file simulator
+            ldd simulator || true
+            exit 1
           )
 
       - name: Verificar archivos de salida
@@ -212,7 +226,6 @@ jobs:
           name: test-results
           path: build/Testing/
           retention-days: 7
-
   code-coverage:
     name: Cobertura de Código
     runs-on: ubuntu-latest
