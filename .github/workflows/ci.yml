@@ -53,10 +53,11 @@ jobs:
           brew install cmake ninja pkg-config
 
       - name: Configurar vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
 
       - name: Configurar CMake
         run: |
@@ -196,10 +197,11 @@ jobs:
             lcov
 
       - name: Configurar vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
 
       - name: Configurar CMake con tests
         run: |
@@ -243,10 +245,11 @@ jobs:
             gcovr
 
       - name: Configurar vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
 
       - name: Configurar CMake con cobertura
         run: |
@@ -308,10 +311,11 @@ jobs:
             ninja-build
 
       - name: Configurar vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: 'c8696863d371ab7f46e213d8f5ca923c4ff5e63c'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
 
       - name: Configurar CMake
         run: |
