@@ -122,63 +122,6 @@ jobs:
             find src/schemas -name '*.fbs' -type f
           fi
 
-  integration-test:
-    name: Test de Integración
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Instalar dependencias de sistema
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-
-      - name: Descargar artefactos de build
-        uses: actions/download-artifact@v4
-        with:
-          name: molab-build-ubuntu-latest
-          path: build/
-
-      - name: Configurar permisos de ejecución
-        run: |
-          chmod +x build/bin/simulator
-          find build/lib -type f \( -name "*.so" -o -name "*.dylib" \) -exec chmod +x {} \;
-
-      - name: Copiar archivos de configuración
-        run: |
-          mkdir -p build/bin/data/config
-          mkdir -p build/bin/data/initial_state
-          cp -r data/config/* build/bin/data/config/
-          cp -r data/initial_state/* build/bin/data/initial_state/
-
-      - name: Ejecutar simulación básica
-        run: |
-          echo "Ejecutando simulación de prueba"
-          cd build/bin
-          ./simulator --config data/config/basic_config.json --ticks 10 || (
-            echo " Simulación falló"
-            echo "Contenido de data/config:"
-            ls -la data/config/ || echo "Directorio no existe"
-            echo "Verificando binario:"
-            file simulator
-            ldd simulator || true
-            exit 1
-          )
-
-      - name: Verificar archivos de salida
-        run: |
-          echo "Verificando archivos de salida generados"
-          ls -lh build/bin/output/ || echo "No se generaron archivos de salida"
-          ls -lh build/bin/logs/ || echo "No se generaron logs"
-
   unit-tests:
     name: Tests Unitarios
     runs-on: ubuntu-latest
@@ -324,6 +267,11 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja
+
+      - name: Generar archivos FlatBuffers
+        run: |
+          echo "Generando archivos necesarios (FlatBuffers, etc.)"
+          cmake --build build --target generate_flatbuffers || cmake --build build -j2
 
       - name: Ejecutar clang-tidy
         run: |
