@@ -349,16 +349,30 @@ jobs:
         run: |
           WARNING_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: warning:" clang-tidy-report.txt || echo "0")
           ERROR_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt || echo "0")
-          echo "Advertencias encontradas: $WARNING_COUNT"
-          echo "Errores encontrados: $ERROR_COUNT"
-          if [ "$WARNING_COUNT" -gt 50 ]; then
-            echo "WARNING: Demasiadas advertencias de clang-tidy ($WARNING_COUNT > 50)"
-            echo "Se recomienda corregir las advertencias para mejorar la calidad del código"
-          fi
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "ERROR: Se encontraron $ERROR_COUNT errores de clang-tidy"
+          echo "📊 Advertencias encontradas: $WARNING_COUNT"
+          echo "📊 Errores encontrados: $ERROR_COUNT"
+          
+          # VALIDACIÓN ESTRICTA: Máximo 444 advertencias permitidas
+          if [ "$WARNING_COUNT" -ge 445 ]; then
+            echo "❌ ERROR: Demasiadas advertencias de clang-tidy"
+            echo "   Actual: $WARNING_COUNT advertencias"
+            echo "   Máximo permitido: 444 advertencias"
+            echo "   Exceso: $((WARNING_COUNT - 444)) advertencias"
+            echo ""
+            echo "🔧 Acción requerida: Corregir advertencias antes de continuar"
+            echo "   Por favor revisa el reporte de clang-tidy y soluciona las advertencias"
+            exit 1
+          elif [ "$WARNING_COUNT" -gt 50 ]; then
+            echo "⚠️  WARNING: Muchas advertencias de clang-tidy ($WARNING_COUNT)"
+            echo "   Se recomienda corregir las advertencias para mejorar la calidad del código"
           else
-            echo "Sin errores de clang-tidy"
+            echo "✅ Advertencias dentro del límite aceptable: $WARNING_COUNT <= 444"
+          fi
+          
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "❌ ERROR: Se encontraron $ERROR_COUNT errores de clang-tidy"
+          else
+            echo "✅ Sin errores de clang-tidy"
           fi
 
       - name: Verificar advertencias críticas
