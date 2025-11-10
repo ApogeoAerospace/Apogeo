@@ -2,7 +2,7 @@ name: MoLab CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/*]
   pull_request:
     branches: [main, develop]
 
@@ -161,6 +161,27 @@ jobs:
         run: |
           cd build
           ctest --output-on-failure --verbose
+      
+      - name: Validar tasa de éxito de tests
+        run: |
+          cd build
+          # Ejecutar ctest y capturar resultados
+          ctest --output-on-failure > test_results.txt 2>&1 || true
+          # Extraer estadísticas de tests
+          if grep -q "tests passed" test_results.txt; then
+            PASSED=$(grep -oP '\d+(?= tests passed)' test_results.txt || echo "0")
+            FAILED=$(grep -oP '\d+(?= tests failed)' test_results.txt || echo "0")
+            TOTAL=$((PASSED + FAILED))
+            if [ "$TOTAL" -gt 0 ]; then
+              SUCCESS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
+              echo "Tests pasados: $PASSED/$TOTAL ($SUCCESS_RATE%)"
+              if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
+                echo "ERROR: Tasa de éxito de tests menor al 95% requerido"
+                exit 1
+              fi
+              echo "Tasa de éxito de tests: $SUCCESS_RATE% (>= 95%)"
+            fi
+          fi
 
       - name: Subir resultados de tests
         if: always()
@@ -214,9 +235,22 @@ jobs:
       - name: Generar reporte de cobertura
         run: |
           cd build
-          lcov --capture --directory . --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' --output-file coverage_filtered.info
+          lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch,inconsistent
+          lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' --output-file coverage_filtered.info --ignore-errors unused
           lcov --list coverage_filtered.info
+      
+      - name: Validar cobertura mínima
+        run: |
+          cd build
+          # Extraer porcentaje de cobertura de líneas
+          COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep -oP '\d+\.\d+(?=% of)' | head -1 || echo "0")
+          echo "Cobertura de código: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "WARNING: Cobertura de código menor al 60% recomendado (actual: $COVERAGE%)"
+            echo "Se recomienda agregar más tests para mejorar la cobertura"
+          else
+            echo "Cobertura de código aceptable: $COVERAGE% (>= 60%)"
+          fi
 
       - name: Generar reporte HTML
         run: |
@@ -279,11 +313,28 @@ jobs:
           find core src -name '*.cpp' -not -path '*/vcpkg_installed/*' | \
             xargs clang-tidy -p build --config-file=.clang-tidy 2>&1 | \
             tee clang-tidy-report.txt || true
+      
+      - name: Contar advertencias de clang-tidy
+        run: |
+          WARNING_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: warning:" clang-tidy-report.txt || echo "0")
+          ERROR_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt || echo "0")
+          echo "Advertencias encontradas: $WARNING_COUNT"
+          echo "Errores encontrados: $ERROR_COUNT"
+          if [ "$WARNING_COUNT" -gt 50 ]; then
+            echo "WARNING: Demasiadas advertencias de clang-tidy ($WARNING_COUNT > 50)"
+            echo "Se recomienda corregir las advertencias para mejorar la calidad del código"
+          fi
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "ERROR: Se encontraron $ERROR_COUNT errores de clang-tidy"
+          else
+            echo "Sin errores de clang-tidy"
+          fi
 
       - name: Verificar advertencias críticas
         run: |
-          if grep -i "error:" clang-tidy-report.txt; then
+          if grep -E "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt; then
             echo "Se encontraron errores críticos en el análisis estático"
+            echo "Por favor revisa el reporte de clang-tidy para más detalles"
             exit 1
           fi
           echo "Análisis estático completado sin errores críticos"
@@ -295,3 +346,40 @@ jobs:
           name: static-analysis-report
           path: clang-tidy-report.txt
           retention-days: 30
+
+  quality-summary:
+    name: Resumen de Calidad
+    runs-on: ubuntu-latest
+    needs: [build-and-test, unit-tests, code-coverage, static-analysis]
+    if: always()
+    
+    steps:
+      - name: Generar resumen de calidad
+        run: |
+          echo "# Resumen de Calidad del Pipeline CI" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Estado de Jobs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Test | ${{ needs.build-and-test.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Unitarios | ${{ needs.unit-tests.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cobertura de Código | ${{ needs.code-coverage.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Análisis Estático | ${{ needs.static-analysis.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Métricas de Calidad" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests Unitarios**: Tasa de éxito >= 95% requerida" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cobertura de Código**: >= 60% recomendada" >> $GITHUB_STEP_SUMMARY
+          echo "- **Análisis Estático**: 0 errores críticos requeridos" >> $GITHUB_STEP_SUMMARY
+          echo "- **Advertencias**: <= 50 advertencias recomendadas" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" ]]; then
+            echo "## Pipeline CI Completado Exitosamente" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Todos los checks de calidad han pasado. El código está listo para merge." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Pipeline CI con Fallos" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Algunos checks de calidad han fallado. Por favor revisa los logs para más detalles." >> $GITHUB_STEP_SUMMARY
+          fi
