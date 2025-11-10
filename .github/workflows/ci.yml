@@ -241,7 +241,11 @@ jobs:
         run: |
           cd build
           # Extraer porcentaje de cobertura de líneas
-          COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep -oP '\d+\.\d+(?=% of)' | head -1 || echo "0")
+          COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep -oP '\\d+\\.\\d+(?=% of)' | head -1)
+          if [[ -z "$COVERAGE" ]]; then
+            echo "ERROR: No se pudo determinar la cobertura de código."
+            exit 1
+          fi
           echo "Cobertura de código: $COVERAGE%"
           if (( $(echo "$COVERAGE < 60" | bc -l) )); then
             echo "WARNING: Cobertura de código menor al 60% recomendado (actual: $COVERAGE%)"
