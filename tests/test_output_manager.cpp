@@ -36,7 +36,7 @@ TEST_F(OutputManagerTest, RecordStateCSV) {
     auto& out = OutputManager::getInstance();
     out.setOutputFormats(true, false, false);
     out.initializeOutput("csvtest");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::CreateVector3(builder, 1,2,3);
     auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
@@ -50,7 +50,7 @@ TEST_F(OutputManagerTest, RecordStateCSV) {
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
     out.recordState(buf, 0.0, 0.0, 0);
     out.finalizeOutput();
-    
+
     bool found = false;
     for (const auto& entry : fs::directory_iterator(test_dir)) {
         if (entry.path().extension() == ".csv") found = true;
@@ -62,7 +62,7 @@ TEST_F(OutputManagerTest, RecordStateJSON) {
     auto& out = OutputManager::getInstance();
     out.setOutputFormats(false, true, false);
     out.initializeOutput("jsontest");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::CreateVector3(builder, 1,2,3);
     auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
@@ -76,7 +76,7 @@ TEST_F(OutputManagerTest, RecordStateJSON) {
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
     out.recordState(buf, 0.0, 0.0, 0);
     out.finalizeOutput();
-    
+
     bool found = false;
     for (const auto& entry : fs::directory_iterator(test_dir)) {
         if (entry.path().extension() == ".json") found = true;
