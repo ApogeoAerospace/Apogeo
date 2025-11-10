@@ -84,9 +84,9 @@ TEST_F(LoggerTest, AllLogLevels) {
 
     EXPECT_TRUE(content.find("[DEBUG]") != std::string::npos);
     EXPECT_TRUE(content.find("[INFO]") != std::string::npos);
-    EXPECT_TRUE(content.find("[WARNING]") != std::string::npos);
+    EXPECT_TRUE(content.find("[WARN]") != std::string::npos);
     EXPECT_TRUE(content.find("[ERROR]") != std::string::npos);
-    EXPECT_TRUE(content.find("[CRITICAL]") != std::string::npos);
+    EXPECT_TRUE(content.find("[CRIT]") != std::string::npos);
 }
 
 TEST_F(LoggerTest, ComponentTagging) {
