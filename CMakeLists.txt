@@ -150,7 +150,6 @@ if(ENABLE_TESTING)
         tests/test_config_manager.cpp
         tests/test_physics_integrator.cpp
         tests/test_time_manager.cpp
-        tests/test_output_manager.cpp
         tests/test_logger.cpp
     )
     

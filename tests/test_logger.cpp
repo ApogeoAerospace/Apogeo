@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <sstream>
+#include <thread>
 
 using namespace MoLab;
 namespace fs = std::filesystem;
@@ -31,9 +32,10 @@ TEST_F(LoggerTest, SingletonInstance) {
     EXPECT_EQ(&logger1, &logger2);
 }
 
-TEST_F(LoggerTest, InitializeWithFile) {
+TEST_F(LoggerTest, SetLogFile) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::INFO);
+    logger.setLogFile(test_log_file);
+    logger.log(LogLevel::INFO, "Test message", "Test");
 
     // Log file should be created
     EXPECT_TRUE(fs::exists(test_log_file));
@@ -41,18 +43,17 @@ TEST_F(LoggerTest, InitializeWithFile) {
 
 TEST_F(LoggerTest, LogLevelFiltering) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::WARNING);
+    logger.setLogLevel(LogLevel::WARNING);
+    logger.setLogFile(test_log_file);
 
     // These should not be logged (below WARNING level)
-    logger.log(LogLevel::DEBUG, "Core", "Debug message");
-    logger.log(LogLevel::INFO, "Core", "Info message");
+    logger.log(LogLevel::DEBUG, "Debug message", "Core");
+    logger.log(LogLevel::INFO, "Info message", "Core");
 
     // These should be logged
-    logger.log(LogLevel::WARNING, "Core", "Warning message");
-    logger.log(LogLevel::ERROR, "Core", "Error message");
-    logger.log(LogLevel::CRITICAL, "Core", "Critical message");
-
-    logger.shutdown();
+    logger.log(LogLevel::WARNING, "Warning message", "Core");
+    logger.log(LogLevel::ERR, "Error message", "Core");
+    logger.log(LogLevel::CRITICAL, "Critical message", "Core");
 
     // Read log file and verify only WARNING and above
     std::ifstream log_file(test_log_file);
@@ -68,15 +69,14 @@ TEST_F(LoggerTest, LogLevelFiltering) {
 
 TEST_F(LoggerTest, AllLogLevels) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::DEBUG);
+    logger.setLogLevel(LogLevel::DEBUG);
+    logger.setLogFile(test_log_file);
 
-    logger.log(LogLevel::DEBUG, "Test", "Debug level");
-    logger.log(LogLevel::INFO, "Test", "Info level");
-    logger.log(LogLevel::WARNING, "Test", "Warning level");
-    logger.log(LogLevel::ERROR, "Test", "Error level");
-    logger.log(LogLevel::CRITICAL, "Test", "Critical level");
-
-    logger.shutdown();
+    logger.log(LogLevel::DEBUG, "Debug level", "Test");
+    logger.log(LogLevel::INFO, "Info level", "Test");
+    logger.log(LogLevel::WARNING, "Warning level", "Test");
+    logger.log(LogLevel::ERR, "Error level", "Test");
+    logger.log(LogLevel::CRITICAL, "Critical level", "Test");
 
     std::ifstream log_file(test_log_file);
     std::string content((std::istreambuf_iterator<char>(log_file)),
@@ -91,13 +91,12 @@ TEST_F(LoggerTest, AllLogLevels) {
 
 TEST_F(LoggerTest, ComponentTagging) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::INFO);
+    logger.setLogLevel(LogLevel::INFO);
+    logger.setLogFile(test_log_file);
 
-    logger.log(LogLevel::INFO, "Core", "Core message");
-    logger.log(LogLevel::INFO, "Physics", "Physics message");
-    logger.log(LogLevel::INFO, "Plugin", "Plugin message");
-
-    logger.shutdown();
+    logger.log(LogLevel::INFO, "Core message", "Core");
+    logger.log(LogLevel::INFO, "Physics message", "Physics");
+    logger.log(LogLevel::INFO, "Plugin message", "Plugin");
 
     std::ifstream log_file(test_log_file);
     std::string content((std::istreambuf_iterator<char>(log_file)),
@@ -110,15 +109,16 @@ TEST_F(LoggerTest, ComponentTagging) {
 
 TEST_F(LoggerTest, ThreadSafety) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::DEBUG);
+    logger.setLogLevel(LogLevel::DEBUG);
+    logger.setLogFile(test_log_file);
 
     // Log from multiple threads
     std::vector<std::thread> threads;
     for (int i = 0; i < 10; ++i) {
         threads.emplace_back([&logger, i]() {
             for (int j = 0; j < 10; ++j) {
-                logger.log(LogLevel::INFO, "Thread" + std::to_string(i),
-                          "Message " + std::to_string(j));
+                logger.log(LogLevel::INFO, "Message " + std::to_string(j),
+                          "Thread" + std::to_string(i));
             }
         });
     }
@@ -126,8 +126,6 @@ TEST_F(LoggerTest, ThreadSafety) {
     for (auto& t : threads) {
         t.join();
     }
-
-    logger.shutdown();
 
     // Verify all messages were logged
     std::ifstream log_file(test_log_file);
@@ -144,18 +142,17 @@ TEST_F(LoggerTest, ThreadSafety) {
 
 TEST_F(LoggerTest, SetLogLevel) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::ERROR);
+    logger.setLogLevel(LogLevel::ERR);
+    logger.setLogFile(test_log_file);
 
-    // Initially only ERROR and above
-    logger.log(LogLevel::INFO, "Test", "Info 1");
-    logger.log(LogLevel::ERROR, "Test", "Error 1");
+    // Initially only ERR and above
+    logger.log(LogLevel::INFO, "Info 1", "Test");
+    logger.log(LogLevel::ERR, "Error 1", "Test");
 
     // Change to DEBUG
     logger.setLogLevel(LogLevel::DEBUG);
-    logger.log(LogLevel::DEBUG, "Test", "Debug 1");
-    logger.log(LogLevel::INFO, "Test", "Info 2");
-
-    logger.shutdown();
+    logger.log(LogLevel::DEBUG, "Debug 1", "Test");
+    logger.log(LogLevel::INFO, "Info 2", "Test");
 
     std::ifstream log_file(test_log_file);
     std::string content((std::istreambuf_iterator<char>(log_file)),
@@ -170,18 +167,16 @@ TEST_F(LoggerTest, SetLogLevel) {
     EXPECT_TRUE(content.find("Info 2") != std::string::npos);
 }
 
-TEST_F(LoggerTest, ShutdownAndRestart) {
+TEST_F(LoggerTest, MultipleWrites) {
     auto& logger = Logger::getInstance();
+    logger.setLogLevel(LogLevel::INFO);
 
-    // First session
-    logger.initialize(test_log_file, LogLevel::INFO);
-    logger.log(LogLevel::INFO, "Test", "Session 1");
-    logger.shutdown();
+    // First write
+    logger.setLogFile(test_log_file);
+    logger.log(LogLevel::INFO, "Session 1", "Test");
 
-    // Second session (should append)
-    logger.initialize(test_log_file, LogLevel::INFO);
-    logger.log(LogLevel::INFO, "Test", "Session 2");
-    logger.shutdown();
+    // Second write (should append)
+    logger.log(LogLevel::INFO, "Session 2", "Test");
 
     std::ifstream log_file(test_log_file);
     std::string content((std::istreambuf_iterator<char>(log_file)),
@@ -193,23 +188,21 @@ TEST_F(LoggerTest, ShutdownAndRestart) {
 
 TEST_F(LoggerTest, EmptyMessages) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::INFO);
+    logger.setLogLevel(LogLevel::INFO);
+    logger.setLogFile(test_log_file);
 
-    EXPECT_NO_THROW(logger.log(LogLevel::INFO, "Test", ""));
-    EXPECT_NO_THROW(logger.log(LogLevel::INFO, "", "Message"));
+    EXPECT_NO_THROW(logger.log(LogLevel::INFO, "", "Test"));
+    EXPECT_NO_THROW(logger.log(LogLevel::INFO, "Message", ""));
     EXPECT_NO_THROW(logger.log(LogLevel::INFO, "", ""));
-
-    logger.shutdown();
 }
 
 TEST_F(LoggerTest, LongMessages) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::INFO);
+    logger.setLogLevel(LogLevel::INFO);
+    logger.setLogFile(test_log_file);
 
     std::string long_msg(10000, 'A');
-    EXPECT_NO_THROW(logger.log(LogLevel::INFO, "Test", long_msg));
-
-    logger.shutdown();
+    EXPECT_NO_THROW(logger.log(LogLevel::INFO, long_msg, "Test"));
 
     std::ifstream log_file(test_log_file);
     std::string content((std::istreambuf_iterator<char>(log_file)),
@@ -220,12 +213,11 @@ TEST_F(LoggerTest, LongMessages) {
 
 TEST_F(LoggerTest, SpecialCharacters) {
     auto& logger = Logger::getInstance();
-    logger.initialize(test_log_file, LogLevel::INFO);
+    logger.setLogLevel(LogLevel::INFO);
+    logger.setLogFile(test_log_file);
 
-    logger.log(LogLevel::INFO, "Test", "Special: \n\t\r");
-    logger.log(LogLevel::INFO, "Test", "Unicode: 你好 мир");
-
-    logger.shutdown();
+    logger.log(LogLevel::INFO, "Special: \n\t\r", "Test");
+    logger.log(LogLevel::INFO, "Unicode: 你好 мир", "Test");
 
     EXPECT_TRUE(fs::exists(test_log_file));
 }
