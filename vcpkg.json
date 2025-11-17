@@ -2,6 +2,10 @@
   "name": "molab",
   "version-string": "0.1.0",
   "dependencies": [
+    {
+      "name": "flatbuffers",
+      "host": true
+    },
     "flatbuffers",
     "nlohmann-json",
     "gtest"
