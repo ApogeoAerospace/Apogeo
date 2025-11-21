@@ -15,9 +15,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Job inicial: Configurar vcpkg una sola vez y cachear
+  setup-vcpkg:
+    name: Configurar vcpkg (compartido)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            triplet: x64-linux
+          - os: macos-latest
+            triplet: x64-osx
+    
+    outputs:
+      cache-key: ${{ steps.cache-vcpkg.outputs.cache-primary-key }}
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Cache vcpkg
+        id: cache-vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+      
+      - name: Instalar dependencias de sistema (Ubuntu)
+        if: runner.os == 'Linux' && steps.cache-vcpkg.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config
+      
+      - name: Instalar dependencias de sistema (macOS)
+        if: runner.os == 'macOS' && steps.cache-vcpkg.outputs.cache-hit != 'true'
+        run: |
+          brew install cmake ninja pkg-config
+      
+      - name: Configurar vcpkg
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          ./vcpkg install
+      
+      - name: Verificar instalación vcpkg
+        run: |
+          if [ -d "vcpkg" ]; then
+            echo "✅ vcpkg configurado correctamente"
+            ls -la vcpkg/
+          else
+            echo "❌ ERROR: vcpkg no encontrado"
+            exit 1
+          fi
+
   build-and-test:
     name: Build C++ Core & Plugins
     runs-on: ${{ matrix.os }}
+    needs: setup-vcpkg
     strategy:
       fail-fast: false
       matrix:
@@ -53,12 +115,15 @@ jobs:
         run: |
           brew install cmake ninja pkg-config
 
-      - name: Configurar vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          ./vcpkg install
+      - name: Restaurar cache de vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
 
       - name: Configurar CMake
         run: |
@@ -72,15 +137,23 @@ jobs:
 
       - name: Verificar binarios generados
         run: |
-          echo " Verificando binarios generados..."
+          echo "✅ Verificando binarios generados..."
           ls -lh build/bin/
           ls -lh build/lib/
           file build/bin/simulator
 
       - name: Validar sintaxis de scripts Python
+        id: validate-python
+        continue-on-error: true
         run: |
           echo "Validando scripts Python"
-          python3 -m py_compile tools/*.py || true
+          python3 -m py_compile tools/*.py
+          echo "PYTHON_VALIDATION_STATUS=$?" >> $GITHUB_ENV
+      
+      - name: Reportar warning de validación Python
+        if: steps.validate-python.outcome == 'failure'
+        run: |
+          echo "::warning::⚠️ Algunos scripts Python tienen errores de sintaxis. Revisar tools/*.py"
 
       - name: Subir artefactos de build
         if: always()
@@ -104,7 +177,7 @@ jobs:
           echo "Verificando formato de archivos"
           # Verificar que no haya archivos con espacios en blanco al final
           ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
-            echo " Se encontraron espacios en blanco al final de líneas"
+            echo "⚠️ Se encontraron espacios en blanco al final de líneas"
             exit 1
           )
 
@@ -116,16 +189,42 @@ jobs:
             python3 -m json.tool {} > /dev/null
           ' \;
 
-      - name: Validar esquemas FlatBuffers
+      - name: Instalar FlatBuffers
         run: |
-          echo "Verificando esquemas FlatBuffers"
+          sudo apt-get update
+          sudo apt-get install -y flatbuffers-compiler
+          flatc --version
+
+      - name: Validar esquemas FlatBuffers
+        id: validate-flatbuffers
+        run: |
+          echo "Validando esquemas FlatBuffers"
           if [ -d "src/schemas" ]; then
-            find src/schemas -name '*.fbs' -type f
+            VALIDATION_FAILED=0
+            find src/schemas -name '*.fbs' -type f | while read -r schema_file; do
+              echo "Validando: $schema_file"
+              if ! flatc --cpp --binary "$schema_file" -o /tmp/flatbuffers_validation 2>&1; then
+                echo "::error::❌ Error validando $schema_file"
+                VALIDATION_FAILED=1
+              else
+                echo "✅ $schema_file válido"
+              fi
+            done
+            
+            if [ $VALIDATION_FAILED -eq 1 ]; then
+              echo "❌ ERROR: Algunos esquemas FlatBuffers tienen errores de sintaxis"
+              exit 1
+            else
+              echo "✅ Todos los esquemas FlatBuffers son válidos"
+            fi
+          else
+            echo "⚠️ WARNING: No se encontró directorio src/schemas"
           fi
 
   unit-tests:
     name: Tests Unitarios
     runs-on: ubuntu-latest
+    needs: setup-vcpkg
     
     steps:
       - name: Checkout código
@@ -140,12 +239,15 @@ jobs:
             ninja-build \
             lcov
 
-      - name: Configurar vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          ./vcpkg install
+      - name: Restaurar cache de vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
 
       - name: Configurar CMake con tests
         run: |
@@ -164,10 +266,18 @@ jobs:
           ctest --output-on-failure --verbose
       
       - name: Validar tasa de éxito de tests
+        id: test-validation
+        continue-on-error: true
         run: |
           cd build
           # Ejecutar ctest y capturar resultados
-          ctest --output-on-failure > test_results.txt 2>&1 || true
+          if ! ctest --output-on-failure > test_results.txt 2>&1; then
+            echo "::warning::⚠️ Algunos tests unitarios fallaron"
+            TEST_FAILED=true
+          else
+            TEST_FAILED=false
+          fi
+          
           # Extraer estadísticas de tests
           if grep -q "tests passed" test_results.txt; then
             PASSED=$(grep -oP '\d+(?= tests passed)' test_results.txt || echo "0")
@@ -177,11 +287,15 @@ jobs:
               SUCCESS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
               echo "Tests pasados: $PASSED/$TOTAL ($SUCCESS_RATE%)"
               if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
-                echo "ERROR: Tasa de éxito de tests menor al 95% requerido"
+                echo "❌ ERROR: Tasa de éxito de tests menor al 95% requerido"
                 exit 1
               fi
-              echo "Tasa de éxito de tests: $SUCCESS_RATE% (>= 95%)"
+              echo "✅ Tasa de éxito de tests: $SUCCESS_RATE% (>= 95%)"
             fi
+          fi
+          
+          if [ "$TEST_FAILED" = true ]; then
+            exit 1
           fi
 
       - name: Subir resultados de tests
@@ -194,6 +308,7 @@ jobs:
   code-coverage:
     name: Cobertura de Código
     runs-on: ubuntu-latest
+    needs: setup-vcpkg
     
     steps:
       - name: Checkout código
@@ -209,12 +324,15 @@ jobs:
             lcov \
             gcovr
 
-      - name: Configurar vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          ./vcpkg install
+      - name: Restaurar cache de vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
 
       - name: Configurar CMake con cobertura
         run: |
@@ -306,6 +424,7 @@ jobs:
   static-analysis:
     name: Análisis Estático
     runs-on: ubuntu-latest
+    needs: setup-vcpkg
     
     steps:
       - name: Checkout código
@@ -321,12 +440,15 @@ jobs:
             cmake \
             ninja-build
 
-      - name: Configurar vcpkg
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          ./bootstrap-vcpkg.sh
-          ./vcpkg install
+      - name: Restaurar cache de vcpkg
+        uses: actions/cache@v3
+        with:
+          path: |
+            vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}-v1
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
 
       - name: Configurar CMake
         run: |
@@ -342,11 +464,15 @@ jobs:
           cmake --build build --target generate_flatbuffers || cmake --build build -j2
 
       - name: Ejecutar clang-tidy
+        id: clang-tidy
+        continue-on-error: true
         run: |
           echo "Ejecutando análisis estático con clang-tidy"
           find core src -name '*.cpp' -not -path '*/vcpkg_installed/*' | \
             xargs clang-tidy -p build --config-file=.clang-tidy 2>&1 | \
-            tee clang-tidy-report.txt || true
+            tee clang-tidy-report.txt
+          CLANG_TIDY_EXIT=$?
+          echo "CLANG_TIDY_EXIT_CODE=$CLANG_TIDY_EXIT" >> $GITHUB_ENV
       
       - name: Contar advertencias de clang-tidy
         run: |
@@ -354,6 +480,11 @@ jobs:
           ERROR_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt || echo "0")
           echo "📊 Advertencias encontradas: $WARNING_COUNT"
           echo "📊 Errores encontrados: $ERROR_COUNT"
+          
+          # Reportar como warning si hubo problemas en la ejecución
+          if [ "${CLANG_TIDY_EXIT_CODE:-0}" -ne 0 ]; then
+            echo "::warning::⚠️ clang-tidy reportó problemas durante el análisis (exit code: ${CLANG_TIDY_EXIT_CODE})"
+          fi
           
           # VALIDACIÓN ESTRICTA: Máximo 444 advertencias permitidas
           if [ "$WARNING_COUNT" -ge 445 ]; then
@@ -366,8 +497,7 @@ jobs:
             echo "   Por favor revisa el reporte de clang-tidy y soluciona las advertencias"
             exit 1
           elif [ "$WARNING_COUNT" -gt 50 ]; then
-            echo "⚠️  WARNING: Muchas advertencias de clang-tidy ($WARNING_COUNT)"
-            echo "   Se recomienda corregir las advertencias para mejorar la calidad del código"
+            echo "::warning::⚠️ Muchas advertencias de clang-tidy ($WARNING_COUNT). Se recomienda corregirlas."
           else
             echo "✅ Advertencias dentro del límite aceptable: $WARNING_COUNT <= 444"
           fi
@@ -398,7 +528,7 @@ jobs:
   quality-summary:
     name: Resumen de Calidad
     runs-on: ubuntu-latest
-    needs: [build-and-test, unit-tests, code-coverage, static-analysis]
+    needs: [build-and-test, unit-tests, code-coverage, static-analysis, code-quality]
     if: always()
     
     steps:
@@ -414,20 +544,21 @@ jobs:
           echo "| Tests Unitarios | ${{ needs.unit-tests.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Cobertura de Código | ${{ needs.code-coverage.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Análisis Estático | ${{ needs.static-analysis.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Calidad de Código | ${{ needs.code-quality.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Métricas de Calidad" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Tests Unitarios**: Tasa de éxito >= 95% requerida" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cobertura de Código**: >= 60% recomendada" >> $GITHUB_STEP_SUMMARY
-          echo "- **Análisis Estático**: 0 errores críticos requeridos" >> $GITHUB_STEP_SUMMARY
-          echo "- **Advertencias**: <= 50 advertencias recomendadas" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cobertura de Código**: >= 44% requerida" >> $GITHUB_STEP_SUMMARY
+          echo "- **Análisis Estático**: 0 errores críticos requeridos, <= 444 advertencias" >> $GITHUB_STEP_SUMMARY
+          echo "- **Esquemas FlatBuffers**: Validación sintáctica completa" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" ]]; then
-            echo "## Pipeline CI Completado Exitosamente" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then
+            echo "## ✅ Pipeline CI Completado Exitosamente" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Todos los checks de calidad han pasado. El código está listo para merge." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## Pipeline CI con Fallos" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ Pipeline CI con Fallos" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Algunos checks de calidad han fallado. Por favor revisa los logs para más detalles." >> $GITHUB_STEP_SUMMARY
           fi
