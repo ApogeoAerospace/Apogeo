@@ -52,3 +52,14 @@ Thumbs.db
 *.bak
 *.backup
 *~
+
+# vcpkg (package manager - machine specific)
+vcpkg/
+vcpkg_installed/
+
+# FlatBuffers generated files (auto-generated)
+*_generated.h
+!src/schemas/*.fbs
+/vcpkg_installed/vcpkg/compiler-file-hash-cache.json
+/vcpkg_installed/vcpkg/manifest-info.json
+/vcpkg_installed/vcpkg/status
