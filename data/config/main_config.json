@@ -47,5 +47,5 @@
     "position_bounds": [-100000, 100000],
     "velocity_bounds": [-1000, 1000]
   },
-  "initial_state_file": "/Users/johancastrillon/Documents/MoLab/data/initial_state/realistic_state.json"
+  "initial_state_file": "data/initial_state/initial_state.json"
 }

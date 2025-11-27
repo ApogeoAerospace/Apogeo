@@ -269,8 +269,16 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
 }
 
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
-    if (!handle || !data || !data->state_buffer || !data->output_force) {
+    if (!handle || !data || !data->state_buffer) {
         return -1; // Error: parámetros inválidos
+    }
+    
+    // Compatibilidad con ambas versiones de la API
+    PluginVector3* force_output = data->output_force ? data->output_force : data->force_out;
+    PluginVector3* torque_output = data->output_torque ? data->output_torque : data->torque_out;
+    
+    if (!force_output) {
+        return -1; // Error: sin puntero de salida para fuerzas
     }
     
     PropulsionPluginInstance* instance = reinterpret_cast<PropulsionPluginInstance*>(handle);
@@ -385,19 +393,19 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     }
     
     // Asignar fuerzas de salida
-    data->output_force->x = static_cast<float>(force_x);
-    data->output_force->y = static_cast<float>(force_y);
-    data->output_force->z = static_cast<float>(force_z);
+    force_output->x = static_cast<float>(force_x);
+    force_output->y = static_cast<float>(force_y);
+    force_output->z = static_cast<float>(force_z);
     
     // Torque (para thrust vectoring)
-    if (data->output_torque) {
-        data->output_torque->x = 0.0;
-        data->output_torque->y = 0.0;
-        data->output_torque->z = 0.0;
+    if (torque_output) {
+        torque_output->x = 0.0;
+        torque_output->y = 0.0;
+        torque_output->z = 0.0;
         
         if (instance->enable_thrust_vectoring && instance->thrust_vector_angle != 0.0) {
             // Torque proporcional al ángulo de vectorización
-            data->output_torque->y = static_cast<float>(instance->current_thrust * 
+            torque_output->y = static_cast<float>(instance->current_thrust * 
                                                    sin(instance->thrust_vector_angle) * 2.0);
         }
     }

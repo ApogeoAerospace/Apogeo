@@ -132,8 +132,22 @@ int main(int argc, char* argv[]) {
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
             
+            // Determinar frecuencia de progreso basada en total de ticks
+            // Más frecuente para simulaciones largas, menos para cortas
+            int progress_interval;
+            if (tick_count <= 100) {
+                progress_interval = 10;      // Cada 10 ticks para sims cortas
+            } else if (tick_count <= 1000) {
+                progress_interval = 50;      // Cada 50 ticks para sims medianas
+            } else if (tick_count <= 5000) {
+                progress_interval = 100;     // Cada 100 ticks para sims largas
+            } else {
+                progress_interval = 250;     // Cada 250 ticks para sims muy largas
+            }
+            
             for (int i = 0; i < tick_count; ++i) {
-                if (i % 100 == 0) {
+                // LOGGING DE PROGRESO: Frecuente y simple para interfaz web
+                if (i % progress_interval == 0 || i == tick_count - 1) {
                     LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }
                 engine.run_tick();

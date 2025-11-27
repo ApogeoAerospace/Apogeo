@@ -248,11 +248,56 @@ Vector3 calculateWind(const Vector3& wind_velocity, const Vector3& object_veloci
 }
 
 double calculateAirDensity(double altitude, double temperature) {
-    // Simplified atmospheric model
-    const double sea_level_density = 1.225; // kg/m³
-    const double scale_height = 8400.0; // meters
+    // CORREGIDO: Modelo atmosférico ISA (International Standard Atmosphere)
+    // Basado en US Standard Atmosphere 1976
     
-    return sea_level_density * exp(-altitude / scale_height);
+    if (altitude < 0) altitude = 0;  // No hay altitudes negativas
+    
+    const double R = 287.05;  // J/(kg·K) - Constante del gas para aire
+    
+    // TROPOSFERA (0 - 11 km)
+    if (altitude <= 11000.0) {
+        const double T0 = 288.15;           // K - Temperatura a nivel del mar
+        const double P0 = 101325.0;         // Pa - Presión a nivel del mar
+        const double L = 0.0065;            // K/m - Gradiente térmico (lapse rate)
+        const double g = 9.80665;           // m/s² - Gravedad estándar
+        
+        double T = T0 - L * altitude;
+        double P = P0 * pow(T / T0, g / (R * L));
+        return P / (R * T);  // Ecuación de estado: ρ = P/(RT)
+    }
+    
+    // ESTRATOSFERA BAJA (11 km - 25 km) - Isotérmica
+    else if (altitude <= 25000.0) {
+        const double T11 = 216.65;          // K - Temperatura a 11 km
+        const double P11 = 22632.1;         // Pa - Presión a 11 km
+        const double g = 9.80665;
+        
+        double h = altitude - 11000.0;
+        double P = P11 * exp(-g * h / (R * T11));
+        return P / (R * T11);
+    }
+    
+    // ESTRATOSFERA MEDIA (25 km - 47 km)
+    else if (altitude <= 47000.0) {
+        const double T25 = 216.65;
+        const double P25 = 2488.66;
+        const double L = -0.003;            // Inversión térmica
+        const double g = 9.80665;
+        
+        double h = altitude - 25000.0;
+        double T = T25 + L * h;
+        double P = P25 * pow(T / T25, g / (R * L));
+        return P / (R * T);
+    }
+    
+    // ALTITUDES ALTAS (>47 km) - Modelo exponencial simplificado
+    else {
+        const double rho_47 = 0.00142;      // kg/m³ a 47 km
+        const double H = 6400.0;            // m - Scale height para altitudes altas
+        double h = altitude - 47000.0;
+        return rho_47 * exp(-h / H);
+    }
 }
 
 } // namespace AtmosphericEffects
@@ -261,9 +306,50 @@ double calculateAirDensity(double altitude, double temperature) {
 namespace GravitationalEffects {
 
 Vector3 calculateEarthGravity(const Vector3& position, double mass) {
-    // Simplified Earth gravity (assuming flat Earth for small altitudes)
-    const double g = 9.80665; // m/s²
-    return Vector3(0, 0, -g * mass);
+    // CORREGIDO: Gravedad realista con ley del cuadrado inverso
+    // Constantes físicas (CODATA 2018 / WGS84)
+    const double G = 6.67430e-11;        // m³/(kg·s²) - Constante gravitacional
+    const double M_EARTH = 5.9722e24;    // kg - Masa de la Tierra
+    const double R_EARTH = 6378137.0;    // m - Radio ecuatorial (WGS84)
+    const double J2 = 1.08262668e-3;     // Coeficiente J2 (achatamiento terrestre)
+    
+    // Distancia al centro de la Tierra
+    double r = position.magnitude();
+    
+    // Protección contra división por cero o posiciones dentro de la Tierra
+    if (r < R_EARTH * 0.1) {
+        // Muy cerca del centro, usar gravedad estándar hacia abajo
+        return Vector3(0, 0, -9.80665 * mass);
+    }
+    
+    // GRAVEDAD NEWTONIANA: F = -GMm/r² * r̂
+    // La dirección apunta HACIA EL CENTRO (no siempre hacia abajo)
+    double g_magnitude = G * M_EARTH / (r * r);
+    Vector3 direction = position.normalized() * -1.0;  // Hacia el centro
+    Vector3 gravity = direction * (g_magnitude * mass);
+    
+    // PERTURBACIÓN J2 (achatamiento terrestre)
+    // Importante para órbitas LEO, añade ~0.1-1% de corrección
+    if (r > R_EARTH) {
+        double z = position.z;
+        double r2 = r * r;
+        double r_ratio = R_EARTH / r;
+        double r_ratio_sq = r_ratio * r_ratio;
+        double z_over_r = z / r;
+        double z_over_r_sq = z_over_r * z_over_r;
+        
+        // Componente radial J2
+        double j2_radial = 1.5 * J2 * r_ratio_sq * (1.0 - 5.0 * z_over_r_sq);
+        
+        // Componente axial J2 (afecta principalmente componente Z)
+        double j2_axial = 1.5 * J2 * r_ratio_sq * (3.0 - 5.0 * z_over_r_sq);
+        
+        // Aplicar corrección J2
+        gravity = gravity * (1.0 + j2_radial);
+        gravity.z += g_magnitude * mass * j2_axial * z_over_r;
+    }
+    
+    return gravity;
 }
 
 Vector3 calculateCentralGravity(const Vector3& position, double central_mass, 
