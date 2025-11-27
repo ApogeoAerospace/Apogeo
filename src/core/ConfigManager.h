@@ -46,7 +46,7 @@ public:
     const SimulationConfig& getSimulationConfig() const { return simulation_config_; }
     const PhysicsConfig& getPhysicsConfig() const { return physics_config_; }
     const std::vector<PluginConfig>& getPluginConfigs() const { return plugin_configs_; }
-    
+
     std::string getInitialStateFile() const { return initial_state_file_; }
     std::string getOutputDirectory() const { return output_directory_; }
 

@@ -72,7 +72,7 @@ public:
 private:
     // Gestor de plugins que maneja la carga y ejecución de plugins.
     std::unique_ptr<PluginManager> plugin_manager_;
-    
+
     // Buffer que contiene el estado actual de la simulación (thread-safe).
     std::vector<uint8_t> current_state_buffer_;
     mutable std::mutex state_mutex_;

@@ -133,7 +133,7 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
     try {
         if (json.contains("simulation")) {
             const auto& sim = json["simulation"];
-            
+
             simulation_config_.time_step = sim.value("time_step", 0.01);
             simulation_config_.simulation_duration = sim.value("duration", 100.0);
             simulation_config_.max_iterations = sim.value("max_iterations", 10000);
@@ -160,7 +160,7 @@ bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
     try {
         if (json.contains("physics")) {
             const auto& physics = json["physics"];
-            
+
             physics_config_.enable_gravity = physics.value("enable_gravity", true);
             physics_config_.enable_atmospheric_drag = physics.value("enable_atmospheric_drag", true);
             physics_config_.enable_wind_effects = physics.value("enable_wind_effects", false);
@@ -184,7 +184,7 @@ bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
 bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
     try {
         plugin_configs_.clear();
-        
+
         if (json.contains("plugins") && json["plugins"].is_array()) {
             for (const auto& plugin_json : json["plugins"]) {
                 PluginConfig plugin;
@@ -192,17 +192,17 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                 plugin.type = plugin_json.value("type", 0);
                 plugin.library_path = plugin_json.value("library_path", "");
                 plugin.enabled = plugin_json.value("enabled", true);
-                
+
                 if (plugin_json.contains("parameters")) {
                     plugin.parameters = plugin_json["parameters"];
                 }
-                
+
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
                 }
             }
         }
-                
+
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Error parsing plugin configs: " + std::string(e.what()), "ConfigManager");
@@ -216,12 +216,12 @@ bool ConfigManager::validateConfig() const {
         LOG_ERROR("Invalid time step: must be positive", "ConfigManager");
         return false;
     }
-    
+
     if (simulation_config_.simulation_duration <= 0) {
         LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
         return false;
     }
-    
+
     if (simulation_config_.max_iterations <= 0) {
         LOG_ERROR("Invalid max iterations: must be positive", "ConfigManager");
         return false;
@@ -237,7 +237,7 @@ bool ConfigManager::validateConfig() const {
     const std::vector<std::string> valid_integrators = {
         "euler", "runge_kutta_4", "verlet"
     };
-    
+
     bool valid_integrator = false;
     for (const auto& integrator : valid_integrators) {
         if (physics_config_.integrator_type == integrator) {
@@ -245,7 +245,7 @@ bool ConfigManager::validateConfig() const {
             break;
         }
     }
-    
+
     if (!valid_integrator) {
         LOG_ERROR("Invalid integrator type: " + physics_config_.integrator_type, "ConfigManager");
         return false;
@@ -257,12 +257,12 @@ bool ConfigManager::validateConfig() const {
             LOG_ERROR("Plugin name cannot be empty", "ConfigManager");
             return false;
         }
-        
+
         if (plugin.library_path.empty()) {
             LOG_ERROR("Plugin library path cannot be empty for: " + plugin.name, "ConfigManager");
             return false;
         }
-        
+
         if (plugin.type < 0 || plugin.type > 1) {
             LOG_ERROR("Invalid plugin type for " + plugin.name + ": must be 0 or 1", "ConfigManager");
             return false;
