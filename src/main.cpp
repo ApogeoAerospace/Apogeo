@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
     std::string state_file = "";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
-    
+
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
-        
+
         if (arg == "-h" || arg == "--help") {
             print_usage(argv[0]);
             return 0;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
     LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
     LOG_INFO("Configuration file: " + config_file, "Main");
-    
+
     // Check if config file exists
     if (!std::filesystem::exists(config_file)) {
         LOG_WARNING("Configuration file not found: " + config_file, "Main");
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
         // Run simulation
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
-            
+
             // Determinar frecuencia de progreso basada en total de ticks
             // Más frecuente para simulaciones largas, menos para cortas
             int progress_interval;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
             } else {
                 progress_interval = 250;     // Cada 250 ticks para sims muy largas
             }
-            
+
             for (int i = 0; i < tick_count; ++i) {
                 // LOGGING DE PROGRESO: Frecuente y simple para interfaz web
                 if (i % progress_interval == 0 || i == tick_count - 1) {
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
                 }
                 engine.run_tick();
             }
-            
+
             LOG_INFO("Completed " + std::to_string(tick_count) + " simulation ticks", "Main");
         } else {
             LOG_INFO("Running full simulation", "Main");
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
         // Shutdown
         engine.shutdown();
         LOG_INFO("MoLab Aerospace Simulator finished successfully", "Main");
-        
+
         return 0;
 
     } catch (const std::exception& e) {

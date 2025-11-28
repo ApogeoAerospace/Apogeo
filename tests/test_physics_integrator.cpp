@@ -66,8 +66,8 @@ TEST_F(PhysicsIntegratorTest, EulerIntegrationWithConstantForce) {
 
     // Con F=ma, a=10 m/s², después de 0.01s: v = 0.1 m/s
     EXPECT_NEAR(new_state.velocity.y, 0.1, 0.001);
-    // Posición: p = 0.5*a*t² = 0.5*10*0.01² = 0.0005
-    EXPECT_NEAR(new_state.position.y, 0.0005, 0.0001);
+    // Posición con Euler semi-implícito: p = p0 + v_new*dt = 0 + 0.1*0.01 = 0.001
+    EXPECT_NEAR(new_state.position.y, 0.001, 0.0001);
 }
 
 TEST_F(PhysicsIntegratorTest, IntegrationWithZeroForce) {
