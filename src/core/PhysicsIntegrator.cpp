@@ -81,7 +81,7 @@ PhysicsState PhysicsIntegrator::integrateEuler(const PhysicsState& state,
     Vector3 acceleration = (state.mass > 1e-10)
         ? force * (1.0 / state.mass)
         : Vector3(0, 0, 0);
-    
+
     // Integración de Euler para posición y velocidad
     new_state.velocity = state.velocity + acceleration * dt;
     // Usar la nueva velocidad para actualizar posición
@@ -140,12 +140,11 @@ PhysicsState PhysicsIntegrator::integrateVerlet(const PhysicsState& state,
                                                const Vector3& torque,
                                                double dt) {
     PhysicsState new_state = state;
-    
     // Protección contra división por cero
     Vector3 acceleration = (state.mass > 1e-10)
         ? force * (1.0 / state.mass)
         : Vector3(0, 0, 0);
-    
+
     if (!has_previous_state_) {
         // First step, use Euler
         new_state.position = state.position + state.velocity * dt + acceleration * (0.5 * dt * dt);
@@ -183,7 +182,7 @@ StateDerivative PhysicsIntegrator::calculateDerivative(const PhysicsState& state
     derivative.angular_acceleration = (state.mass > 1e-10)
         ? torque * (1.0 / state.mass)
         : Vector3(0, 0, 0);
-    
+
     return derivative;
 }
 

@@ -65,7 +65,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
         ss << "unknown_time";
     }
 #endif
-    
+
     ss << std::put_time(std::localtime(&time_t_val), "%Y%m%d_%H%M%S");
 
     run_name_ = run_name.empty() ? "simulation_" + ss.str() : run_name + "_" + ss.str();

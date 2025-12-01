@@ -2,6 +2,7 @@
 #include "../src/core/OutputManager.h"
 #include "../src/core/TimeManager.h"
 #include <flatbuffers/flatbuffers.h>
+#include "state_vector_generated.h"
 #include <filesystem>
 #include <fstream>
 
@@ -38,13 +39,13 @@ TEST_F(OutputManagerTest, RecordStateCSV) {
     out.initializeOutput("csvtest");
 
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -64,13 +65,13 @@ TEST_F(OutputManagerTest, RecordStateJSON) {
     out.initializeOutput("jsontest");
 
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -112,13 +113,13 @@ TEST_F(OutputManagerTest, RecordMultipleStates) {
     out.initializeOutput("multitest");
 
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -144,13 +145,13 @@ TEST_F(OutputManagerTest, RecordStateBinary) {
     out.initializeOutput("binarytest");
 
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -170,13 +171,13 @@ TEST_F(OutputManagerTest, AllFormatsEnabled) {
     out.initializeOutput("allformats");
 
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -219,13 +220,13 @@ TEST_F(OutputManagerTest, FlushOutput) {
     out.initializeOutput("flushtest");
     
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -242,13 +243,13 @@ TEST_F(OutputManagerTest, GetDataPoints) {
     out.initializeOutput("datapointstest");
     
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -272,13 +273,13 @@ TEST_F(OutputManagerTest, OutputIntervalRespected) {
     out.initializeOutput("intervaltest");
     
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -312,13 +313,13 @@ TEST_F(OutputManagerTest, NoFormatsEnabled) {
     out.initializeOutput("noformats");
     
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
@@ -331,13 +332,13 @@ TEST_F(OutputManagerTest, RecordStateWithoutInitialize) {
     auto& out = OutputManager::getInstance();
     
     flatbuffers::FlatBufferBuilder builder;
-    auto pos = state_vector::CreateVector3(builder, 1,2,3);
-    auto vel = state_vector::CreateVector3(builder, 0.1,0.2,0.3);
-    auto ori = state_vector::CreateQuaternion(builder, 0,0,0,1);
-    auto ang = state_vector::CreateVector3(builder, 0,0,0);
-    auto grav = state_vector::CreateVector3(builder, 0,0,-9.81);
+    auto pos = state_vector::Vec3(1, 2, 3);
+    auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, 0, -9.81);
+    auto wind = state_vector::Vec3(0, 0, 0);
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
