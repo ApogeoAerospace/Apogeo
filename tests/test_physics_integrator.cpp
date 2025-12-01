@@ -341,14 +341,14 @@ TEST_F(PhysicsIntegratorTest, WindEffectCalculation) {
 TEST_F(PhysicsIntegratorTest, FlatBufferConversion) {
     flatbuffers::FlatBufferBuilder builder;
     
-    auto pos = state_vector::CreateVector3(builder, 1.0, 2.0, 3.0);
-    auto vel = state_vector::CreateVector3(builder, 4.0, 5.0, 6.0);
-    auto ori = state_vector::CreateQuaternion(builder, 0, 0, 0, 1);
-    auto ang = state_vector::CreateVector3(builder, 0, 0, 0);
-    auto grav = state_vector::CreateVector3(builder, 0, -9.81, 0);
+    auto pos = state_vector::Vec3(1.0, 2.0, 3.0);
+    auto vel = state_vector::Vec3(4.0, 5.0, 6.0);
+    auto ori = state_vector::Quaternion(0, 0, 0, 1);
+    auto grav = state_vector::Vec3(0, -9.81, 0);
+    auto wind = state_vector::Vec3(0, 0, 0);
     
     auto state = state_vector::CreateGeneralState(
-        builder, pos, vel, ori, ang, 1000.0, 1.225, 101325, 288.15, grav, 0.0
+        builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
     
