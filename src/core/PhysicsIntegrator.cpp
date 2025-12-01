@@ -226,8 +226,11 @@ void PhysicsIntegrator::toFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
 
     // Create gravity vector (default Earth gravity)
     auto gravity = state_vector::Vec3(0.0f, 0.0f, -9.81f);
+    
+    // Create wind speed vector (no wind by default)
+    auto wind_speed = state_vector::Vec3(0.0f, 0.0f, 0.0f);
 
-    // Create the GeneralState
+    // Create the GeneralState (parameters order: time, utc, wind_speed)
     auto general_state = state_vector::CreateGeneralState(builder,
         &position,
         &velocity,
@@ -236,8 +239,9 @@ void PhysicsIntegrator::toFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
         101325.0f, // atm_pressure (sea level)
         288.15f,   // atm_temperature (sea level)
         &gravity,
-        static_cast<float>(state.time),
-        static_cast<float>(state.time)
+        static_cast<float>(state.time),  // Time (simulation time)
+        0.0f,  // UTC (epoch time, not used in this context)
+        &wind_speed
     );
 
     builder.Finish(general_state);

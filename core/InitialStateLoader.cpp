@@ -49,8 +49,8 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
         data["gravity"]["y"].get<float>(),
         data["gravity"]["z"].get<float>());
 
-    float utc = data["UTC"].get<float>();
     float time = data["Time"].get<float>();
+    float utc = data["UTC"].get<float>();
 
     auto wind_speed = state_vector::Vec3(
         data["wind_speed"]["x"].get<float>(),
@@ -67,8 +67,8 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
         atm_pressure,
         atm_temperature,
         &gravity,
-        utc,
         time,
+        utc,
         &wind_speed
     );
 
