@@ -23,11 +23,16 @@ SimulationEngine::SimulationEngine()
     LOG_INFO("SimulationEngine initialized", "SimulationEngine");
 }
 
-SimulationEngine::~SimulationEngine() {
-    if (is_running_) {
-        shutdown();
+SimulationEngine::~SimulationEngine() noexcept {
+    try {
+        if (is_running_) {
+            shutdown();
+        }
+        LOG_INFO("SimulationEngine destroyed", "SimulationEngine");
+    } catch (const std::exception& e) {
+        // Cannot throw from destructor
+        // shutdown() should be noexcept-safe
     }
-    LOG_INFO("SimulationEngine destroyed", "SimulationEngine");
 }
 
 bool SimulationEngine::initialize(const std::string& state_filepath) {

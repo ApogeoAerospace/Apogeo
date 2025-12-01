@@ -45,7 +45,7 @@ public:
 
 private:
     OutputManager() = default;
-    ~OutputManager();
+    ~OutputManager() noexcept;
 
     OutputManager(const OutputManager&) = delete;
     OutputManager& operator=(const OutputManager&) = delete;

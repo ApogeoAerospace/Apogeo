@@ -18,7 +18,7 @@ public:
     * ejecutar ticks de simulación y limpiar recursos con thread safety.
     */
     SimulationEngine();
-    ~SimulationEngine();
+    ~SimulationEngine() noexcept;
 
     // Prevenir copia y asignación
     SimulationEngine(const SimulationEngine&) = delete;

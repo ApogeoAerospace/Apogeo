@@ -16,9 +16,14 @@ OutputManager& OutputManager::getInstance() {
     return instance;
 }
 
-OutputManager::~OutputManager() {
-    if (initialized_) {
-        finalizeOutput();
+OutputManager::~OutputManager() noexcept {
+    try {
+        if (initialized_) {
+            finalizeOutput();
+        }
+    } catch (const std::exception& e) {
+        // Cannot throw from destructor, just log if possible
+        // In practice, finalizeOutput should be noexcept-safe
     }
 }
 
@@ -44,6 +49,23 @@ void OutputManager::initializeOutput(const std::string& run_name) {
     double current_utc = time_manager.getCurrentRealTimeUTC();
     std::time_t time_t_val = static_cast<std::time_t>(current_utc);
     std::stringstream ss;
+
+    // Thread-safe time conversion
+    struct tm time_info{};
+#ifdef _WIN32
+    if (localtime_s(&time_info, &time_t_val) == 0) {
+        ss << std::put_time(&time_info, "%Y%m%d_%H%M%S");
+    } else {
+        ss << "unknown_time";
+    }
+#else
+    if (localtime_r(&time_t_val, &time_info) != nullptr) {
+        ss << std::put_time(&time_info, "%Y%m%d_%H%M%S");
+    } else {
+        ss << "unknown_time";
+    }
+#endif
+    
     ss << std::put_time(std::localtime(&time_t_val), "%Y%m%d_%H%M%S");
 
     run_name_ = run_name.empty() ? "simulation_" + ss.str() : run_name + "_" + ss.str();

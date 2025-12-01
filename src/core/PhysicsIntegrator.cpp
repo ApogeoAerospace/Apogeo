@@ -77,16 +77,20 @@ PhysicsState PhysicsIntegrator::integrateEuler(const PhysicsState& state,
     PhysicsState new_state = state;
 
     // Calcular aceleración: F = ma, por lo tanto a = F/m
-    Vector3 acceleration = force * (1.0 / state.mass);
-
-    // Integración de Euler semi-implícito (más estable y preciso)
-    // Actualizar velocidad primero
+    // Protección contra división por cero
+    Vector3 acceleration = (state.mass > 1e-10)
+        ? force * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
+    
+    // Integración de Euler para posición y velocidad
     new_state.velocity = state.velocity + acceleration * dt;
     // Usar la nueva velocidad para actualizar posición
     new_state.position = state.position + new_state.velocity * dt;
 
     // Integración angular (simplificada)
-    Vector3 angular_acceleration = torque * (1.0 / state.mass); // Simplificado
+    Vector3 angular_acceleration = (state.mass > 1e-10)
+        ? torque * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
     new_state.angular_velocity = state.angular_velocity + angular_acceleration * dt;
     new_state.orientation = state.orientation + state.angular_velocity * dt;
 
@@ -136,9 +140,12 @@ PhysicsState PhysicsIntegrator::integrateVerlet(const PhysicsState& state,
                                                const Vector3& torque,
                                                double dt) {
     PhysicsState new_state = state;
-
-    Vector3 acceleration = force * (1.0 / state.mass);
-
+    
+    // Protección contra división por cero
+    Vector3 acceleration = (state.mass > 1e-10)
+        ? force * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
+    
     if (!has_previous_state_) {
         // First step, use Euler
         new_state.position = state.position + state.velocity * dt + acceleration * (0.5 * dt * dt);
@@ -146,11 +153,16 @@ PhysicsState PhysicsIntegrator::integrateVerlet(const PhysicsState& state,
     } else {
         // Verlet integration
         new_state.position = state.position * 2.0 - previous_state_.position + acceleration * (dt * dt);
-        new_state.velocity = (new_state.position - previous_state_.position) * (1.0 / (2.0 * dt));
+        // Protección contra división por cero en dt
+        new_state.velocity = (dt > 1e-10)
+            ? (new_state.position - previous_state_.position) * (1.0 / (2.0 * dt))
+            : state.velocity;
     }
 
     // Simple angular integration for Verlet
-    Vector3 angular_acceleration = torque * (1.0 / state.mass);
+    Vector3 angular_acceleration = (state.mass > 1e-10)
+        ? torque * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
     new_state.orientation = state.orientation + state.angular_velocity * dt + angular_acceleration * (0.5 * dt * dt);
     new_state.angular_velocity = state.angular_velocity + angular_acceleration * dt;
 
@@ -163,10 +175,15 @@ StateDerivative PhysicsIntegrator::calculateDerivative(const PhysicsState& state
     StateDerivative derivative;
 
     derivative.velocity = state.velocity;
-    derivative.acceleration = force * (1.0 / state.mass);
+    // Protección contra división por cero
+    derivative.acceleration = (state.mass > 1e-10)
+        ? force * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
     derivative.angular_velocity = state.angular_velocity;
-    derivative.angular_acceleration = torque * (1.0 / state.mass); // Simplified
-
+    derivative.angular_acceleration = (state.mass > 1e-10)
+        ? torque * (1.0 / state.mass)
+        : Vector3(0, 0, 0);
+    
     return derivative;
 }
 

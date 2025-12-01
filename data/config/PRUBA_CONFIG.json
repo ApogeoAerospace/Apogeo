@@ -26,7 +26,7 @@
         "engine_on": true,
         "throttle_setting": 0.8
       },
-      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libpropulsion.dylib"
+      "library_path": "/Documents/MoLab/build/lib/libpropulsion.dylib"
     }
   ],
   "output": {
