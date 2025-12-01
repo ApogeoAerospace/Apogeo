@@ -170,17 +170,17 @@ TEST_F(ConfigManagerTest, LogLevelConfig) {
 
 TEST_F(ConfigManagerTest, ReloadConfig) {
     auto& config_manager = ConfigManager::getInstance();
-    
+
     // Load once
     EXPECT_TRUE(config_manager.loadConfig(test_config_file));
     const auto& sim_config1 = config_manager.getSimulationConfig();
     double time_step1 = sim_config1.time_step;
-    
+
     // Reload
     EXPECT_TRUE(config_manager.loadConfig(test_config_file));
     const auto& sim_config2 = config_manager.getSimulationConfig();
     double time_step2 = sim_config2.time_step;
-    
+
     EXPECT_DOUBLE_EQ(time_step1, time_step2);
 }
 

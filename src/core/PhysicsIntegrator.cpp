@@ -78,7 +78,7 @@ PhysicsState PhysicsIntegrator::integrateEuler(const PhysicsState& state,
 
     // Calcular aceleración: F = ma, por lo tanto a = F/m
     // Protección contra división por cero
-    Vector3 acceleration = (state.mass > 1e-10)
+    const Vector3 acceleration = (state.mass > 1e-10)
         ? force * (1.0 / state.mass)
         : Vector3(0, 0, 0);
 
@@ -88,7 +88,7 @@ PhysicsState PhysicsIntegrator::integrateEuler(const PhysicsState& state,
     new_state.position = state.position + new_state.velocity * dt;
 
     // Integración angular (simplificada)
-    Vector3 angular_acceleration = (state.mass > 1e-10)
+    const Vector3 angular_acceleration = (state.mass > 1e-10)
         ? torque * (1.0 / state.mass)
         : Vector3(0, 0, 0);
     new_state.angular_velocity = state.angular_velocity + angular_acceleration * dt;
@@ -105,26 +105,26 @@ PhysicsState PhysicsIntegrator::integrateRungeKutta4(const PhysicsState& state,
                                                     const Vector3& torque,
                                                     double dt) {
     // RK4 integration
-    StateDerivative k1 = calculateDerivative(state, force, torque);
+    const StateDerivative k1 = calculateDerivative(state, force, torque);
 
     PhysicsState temp_state = state;
     temp_state.position = state.position + k1.velocity * (dt * 0.5);
     temp_state.velocity = state.velocity + k1.acceleration * (dt * 0.5);
     temp_state.orientation = state.orientation + k1.angular_velocity * (dt * 0.5);
     temp_state.angular_velocity = state.angular_velocity + k1.angular_acceleration * (dt * 0.5);
-    StateDerivative k2 = calculateDerivative(temp_state, force, torque);
+    const StateDerivative k2 = calculateDerivative(temp_state, force, torque);
 
     temp_state.position = state.position + k2.velocity * (dt * 0.5);
     temp_state.velocity = state.velocity + k2.acceleration * (dt * 0.5);
     temp_state.orientation = state.orientation + k2.angular_velocity * (dt * 0.5);
     temp_state.angular_velocity = state.angular_velocity + k2.angular_acceleration * (dt * 0.5);
-    StateDerivative k3 = calculateDerivative(temp_state, force, torque);
+    const StateDerivative k3 = calculateDerivative(temp_state, force, torque);
 
     temp_state.position = state.position + k3.velocity * dt;
     temp_state.velocity = state.velocity + k3.acceleration * dt;
     temp_state.orientation = state.orientation + k3.angular_velocity * dt;
     temp_state.angular_velocity = state.angular_velocity + k3.angular_acceleration * dt;
-    StateDerivative k4 = calculateDerivative(temp_state, force, torque);
+    const StateDerivative k4 = calculateDerivative(temp_state, force, torque);
 
     PhysicsState new_state = state;
     new_state.position = state.position + (k1.velocity + k2.velocity * 2.0 + k3.velocity * 2.0 + k4.velocity) * (dt / 6.0);
@@ -141,7 +141,7 @@ PhysicsState PhysicsIntegrator::integrateVerlet(const PhysicsState& state,
                                                double dt) {
     PhysicsState new_state = state;
     // Protección contra división por cero
-    Vector3 acceleration = (state.mass > 1e-10)
+    const Vector3 acceleration = (state.mass > 1e-10)
         ? force * (1.0 / state.mass)
         : Vector3(0, 0, 0);
 
@@ -159,7 +159,7 @@ PhysicsState PhysicsIntegrator::integrateVerlet(const PhysicsState& state,
     }
 
     // Simple angular integration for Verlet
-    Vector3 angular_acceleration = (state.mass > 1e-10)
+    const Vector3 angular_acceleration = (state.mass > 1e-10)
         ? torque * (1.0 / state.mass)
         : Vector3(0, 0, 0);
     new_state.orientation = state.orientation + state.angular_velocity * dt + angular_acceleration * (0.5 * dt * dt);
@@ -248,19 +248,21 @@ namespace AtmosphericEffects {
 
 Vector3 calculateDrag(const Vector3& velocity, double air_density,
                      double drag_coefficient, double reference_area) {
-    double speed = velocity.magnitude();
-    if (speed < 1e-6) return Vector3(); // No drag if not moving
+    const double speed = velocity.magnitude();
+    if (speed < 1e-6) {
+        return Vector3(); // No drag if not moving
+    }
 
-    Vector3 drag_direction = velocity.normalized() * -1.0; // Opposite to velocity
-    double drag_magnitude = 0.5 * air_density * speed * speed * drag_coefficient * reference_area;
+    const Vector3 drag_direction = velocity.normalized() * -1.0; // Opposite to velocity
+    const double drag_magnitude = 0.5 * air_density * speed * speed * drag_coefficient * reference_area;
 
     return drag_direction * drag_magnitude;
 }
 
 Vector3 calculateWind(const Vector3& wind_velocity, const Vector3& object_velocity,
                      double air_density, double reference_area) {
-    Vector3 relative_velocity = wind_velocity - object_velocity;
-    double drag_coefficient = 0.47; // Sphere approximation
+    const Vector3 relative_velocity = wind_velocity - object_velocity;
+    const double drag_coefficient = 0.47; // Sphere approximation
 
     return calculateDrag(relative_velocity * -1.0, air_density, drag_coefficient, reference_area);
 }
@@ -372,11 +374,13 @@ Vector3 calculateEarthGravity(const Vector3& position, double mass) {
 
 Vector3 calculateCentralGravity(const Vector3& position, double central_mass,
                                double gravitational_constant) {
-    double distance = position.magnitude();
-    if (distance < 1e-6) return Vector3(); // Avoid division by zero
+    const double distance = position.magnitude();
+    if (distance < 1e-6) {
+        return Vector3(); // Avoid division by zero
+    }
 
-    double force_magnitude = gravitational_constant * central_mass / (distance * distance);
-    Vector3 direction = position.normalized() * -1.0; // Toward center
+    const double force_magnitude = gravitational_constant * central_mass / (distance * distance);
+    const Vector3 direction = position.normalized() * -1.0; // Toward center
 
     return direction * force_magnitude;
 }

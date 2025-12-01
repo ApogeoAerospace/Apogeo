@@ -15,7 +15,7 @@ protected:
         fs::create_directories("test_data");
         fs::create_directories("test_output");
         fs::create_directories("test_logs");
-        
+
         // Create test state file
         test_state_file = "test_data/test_state.json";
         json test_state = {
@@ -34,7 +34,7 @@ protected:
         std::ofstream state_file(test_state_file);
         state_file << test_state.dump(4);
         state_file.close();
-        
+
         // Create test config file
         test_config_file = "test_data/test_config.json";
         json test_config = {
@@ -59,7 +59,7 @@ protected:
             {"initial_state_file", test_state_file},
             {"output_directory", "test_output/"}
         };
-        
+
         std::ofstream config_file(test_config_file);
         config_file << test_config.dump(4);
         config_file.close();
@@ -80,7 +80,7 @@ protected:
             fs::remove_all("output");
         }
     }
-    
+
     std::string test_state_file;
     std::string test_config_file;
 };
@@ -132,7 +132,7 @@ TEST_F(SimulationEngineTest, RunSingleTick) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     EXPECT_NO_THROW(engine.run_tick());
     EXPECT_TRUE(engine.is_running());
     EXPECT_EQ(engine.get_iteration_count(), 1);
@@ -144,11 +144,11 @@ TEST_F(SimulationEngineTest, RunMultipleTicks) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     for (int i = 0; i < 5; i++) {
         engine.run_tick();
     }
-    
+
     EXPECT_TRUE(engine.is_running());
     EXPECT_EQ(engine.get_iteration_count(), 5);
 }
@@ -163,7 +163,7 @@ TEST_F(SimulationEngineTest, ShutdownEngine) {
 TEST_F(SimulationEngineTest, LoadPluginWithInvalidType) {
     SimulationEngine engine;
     engine.initialize(test_state_file);
-    
+
     // Test with invalid plugin type
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 999));
 }
@@ -171,7 +171,7 @@ TEST_F(SimulationEngineTest, LoadPluginWithInvalidType) {
 TEST_F(SimulationEngineTest, LoadPluginWithValidTypes) {
     SimulationEngine engine;
     engine.initialize(test_state_file);
-    
+
     // Test with valid plugin types (won't actually load, but should handle gracefully)
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 0));
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 1));
@@ -182,7 +182,7 @@ TEST_F(SimulationEngineTest, GetLastTickDuration) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     engine.run_tick();
     EXPECT_GE(engine.get_last_tick_duration(), 0.0);
 }
@@ -192,7 +192,7 @@ TEST_F(SimulationEngineTest, PrintPerformanceMetrics) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     engine.run_tick();
     EXPECT_NO_THROW(engine.print_performance_metrics());
 }
@@ -202,7 +202,7 @@ TEST_F(SimulationEngineTest, RunFullSimulation) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     EXPECT_TRUE(engine.run_simulation());
     EXPECT_GT(engine.get_iteration_count(), 0);
 }
@@ -212,7 +212,7 @@ TEST_F(SimulationEngineTest, ValidateStateAfterTick) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     engine.run_tick();
     EXPECT_TRUE(engine.validate_simulation_state());
 }
@@ -232,23 +232,23 @@ TEST_F(SimulationEngineTest, GroundCollisionDetection) {
         {"Time", 0.0},
         {"wind_speed", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
     };
-    
+
     std::ofstream state_file(collision_state_file);
     state_file << collision_state.dump(4);
     state_file.close();
-    
+
     SimulationEngine engine;
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(collision_state_file);
-    
+
     // State validation should detect ground collision
     EXPECT_FALSE(engine.validate_simulation_state());
 }
 
 TEST_F(SimulationEngineTest, MultipleInitializations) {
     SimulationEngine engine;
-    
+
     EXPECT_TRUE(engine.initialize(test_state_file));
     EXPECT_TRUE(engine.initialize(test_state_file));
     EXPECT_TRUE(engine.validate_simulation_state());
@@ -263,7 +263,7 @@ TEST_F(SimulationEngineTest, TickWithoutInitialization) {
     SimulationEngine engine;
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
-    
+
     // Should handle gracefully even without initialization
     EXPECT_NO_THROW(engine.run_tick());
 }
@@ -279,11 +279,11 @@ TEST_F(SimulationEngineTest, SimulationTimeProgression) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     double initial_time = engine.get_simulation_time();
     engine.run_tick();
     double after_tick_time = engine.get_simulation_time();
-    
+
     EXPECT_GT(after_tick_time, initial_time);
 }
 
@@ -292,12 +292,12 @@ TEST_F(SimulationEngineTest, IterationCountIncrement) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     uint64_t initial_count = engine.get_iteration_count();
     engine.run_tick();
     engine.run_tick();
     uint64_t after_ticks_count = engine.get_iteration_count();
-    
+
     EXPECT_EQ(after_ticks_count, initial_count + 2);
 }
 
@@ -306,7 +306,7 @@ TEST_F(SimulationEngineTest, IsRunningAfterTick) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     EXPECT_FALSE(engine.is_running());
     engine.run_tick();
     EXPECT_TRUE(engine.is_running());
@@ -317,7 +317,7 @@ TEST_F(SimulationEngineTest, IsRunningAfterShutdown) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
-    
+
     engine.run_tick();
     EXPECT_TRUE(engine.is_running());
     engine.shutdown();

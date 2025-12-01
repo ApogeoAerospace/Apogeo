@@ -263,7 +263,7 @@ TEST_F(PhysicsIntegratorTest, Vector3AddAssign) {
     Vector3 v1(1.0, 2.0, 3.0);
     Vector3 v2(4.0, 5.0, 6.0);
     v1 += v2;
-    
+
     EXPECT_DOUBLE_EQ(v1.x, 5.0);
     EXPECT_DOUBLE_EQ(v1.y, 7.0);
     EXPECT_DOUBLE_EQ(v1.z, 9.0);
@@ -272,7 +272,7 @@ TEST_F(PhysicsIntegratorTest, Vector3AddAssign) {
 TEST_F(PhysicsIntegratorTest, Vector3NormalizeZeroVector) {
     Vector3 v(0.0, 0.0, 0.0);
     Vector3 normalized = v.normalized();
-    
+
     EXPECT_DOUBLE_EQ(normalized.x, 0.0);
     EXPECT_DOUBLE_EQ(normalized.y, 0.0);
     EXPECT_DOUBLE_EQ(normalized.z, 0.0);
@@ -283,11 +283,11 @@ TEST_F(PhysicsIntegratorTest, AtmosphericDragCalculation) {
     double air_density = 1.225;
     double drag_coefficient = 0.5;
     double reference_area = 1.0;
-    
+
     Vector3 drag = AtmosphericEffects::calculateDrag(
         velocity, air_density, drag_coefficient, reference_area
     );
-    
+
     // Drag should oppose velocity
     EXPECT_LT(drag.x, 0.0);
 }
@@ -301,7 +301,7 @@ TEST_F(PhysicsIntegratorTest, AirDensityAtSeaLevel) {
 TEST_F(PhysicsIntegratorTest, AirDensityAtAltitude) {
     double density_low = AtmosphericEffects::calculateAirDensity(0.0);
     double density_high = AtmosphericEffects::calculateAirDensity(10000.0);
-    
+
     // Density decreases with altitude
     EXPECT_LT(density_high, density_low);
 }
@@ -309,7 +309,7 @@ TEST_F(PhysicsIntegratorTest, AirDensityAtAltitude) {
 TEST_F(PhysicsIntegratorTest, EarthGravityCalculation) {
     Vector3 position(0.0, 0.0, 1000.0);
     Vector3 gravity = GravitationalEffects::calculateEarthGravity(position);
-    
+
     // Gravity should point downward (negative z or magnitude check)
     EXPECT_GT(gravity.magnitude(), 0.0);
 }
@@ -317,11 +317,11 @@ TEST_F(PhysicsIntegratorTest, EarthGravityCalculation) {
 TEST_F(PhysicsIntegratorTest, CentralGravityCalculation) {
     Vector3 position(1000.0, 0.0, 0.0);
     double central_mass = 1e24;
-    
+
     Vector3 gravity = GravitationalEffects::calculateCentralGravity(
         position, central_mass
     );
-    
+
     EXPECT_GT(gravity.magnitude(), 0.0);
 }
 
@@ -330,31 +330,31 @@ TEST_F(PhysicsIntegratorTest, WindEffectCalculation) {
     Vector3 object_velocity(5.0, 0.0, 0.0);
     double air_density = 1.225;
     double reference_area = 1.0;
-    
+
     Vector3 wind_force = AtmosphericEffects::calculateWind(
         wind_velocity, object_velocity, air_density, reference_area
     );
-    
+
     EXPECT_NO_THROW(wind_force.magnitude());
 }
 
 TEST_F(PhysicsIntegratorTest, FlatBufferConversion) {
     flatbuffers::FlatBufferBuilder builder;
-    
+
     auto pos = state_vector::Vec3(1.0, 2.0, 3.0);
     auto vel = state_vector::Vec3(4.0, 5.0, 6.0);
     auto ori = state_vector::Quaternion(0, 0, 0, 1);
     auto grav = state_vector::Vec3(0, -9.81, 0);
     auto wind = state_vector::Vec3(0, 0, 0);
-    
+
     auto state = state_vector::CreateGeneralState(
         builder, &pos, &vel, &ori, 1.225, 101325, 288.15, &grav, 0.0, 0.0, &wind
     );
     builder.Finish(state);
-    
+
     auto fb_state = state_vector::GetGeneralState(builder.GetBufferPointer());
     PhysicsState physics_state = PhysicsIntegrator::fromFlatBuffer(fb_state);
-    
+
     EXPECT_DOUBLE_EQ(physics_state.position.x, 1.0);
     EXPECT_DOUBLE_EQ(physics_state.position.y, 2.0);
     EXPECT_DOUBLE_EQ(physics_state.position.z, 3.0);
@@ -368,10 +368,10 @@ TEST_F(PhysicsIntegratorTest, ToFlatBufferConversion) {
     physics_state.position = Vector3(10.0, 20.0, 30.0);
     physics_state.velocity = Vector3(1.0, 2.0, 3.0);
     physics_state.mass = 1500.0;
-    
+
     flatbuffers::FlatBufferBuilder builder;
     PhysicsIntegrator::toFlatBuffer(builder, physics_state);
-    
+
     EXPECT_GT(builder.GetSize(), 0u);
 }
 
@@ -386,14 +386,14 @@ TEST_F(PhysicsIntegratorTest, IntegrationPreservesType) {
     state.position = Vector3(0, 0, 0);
     state.velocity = Vector3(0, 0, 0);
     state.mass = 1.0;
-    
+
     Vector3 force(10, 0, 0);
     Vector3 torque(0, 0, 0);
-    
+
     integrator->setIntegratorType(PhysicsIntegrator::IntegratorType::RUNGE_KUTTA_4);
     EXPECT_EQ(integrator->getIntegratorType(), PhysicsIntegrator::IntegratorType::RUNGE_KUTTA_4);
-    
+
     integrator->integrate(state, force, torque, 0.01);
-    
+
     EXPECT_EQ(integrator->getIntegratorType(), PhysicsIntegrator::IntegratorType::RUNGE_KUTTA_4);
 }

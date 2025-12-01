@@ -66,8 +66,6 @@ void OutputManager::initializeOutput(const std::string& run_name) {
     }
 #endif
 
-    ss << std::put_time(std::localtime(&time_t_val), "%Y%m%d_%H%M%S");
-
     run_name_ = run_name.empty() ? "simulation_" + ss.str() : run_name + "_" + ss.str();
 
     // Create output directory
@@ -107,6 +105,17 @@ void OutputManager::initializeOutput(const std::string& run_name) {
             LOG_INFO("JSON output initialized: " + json_path, "OutputManager");
         } else {
             LOG_ERROR("Failed to create JSON file: " + json_path, "OutputManager");
+        }
+    }
+
+    // Initialize Binary output
+    if (output_binary_) {
+        std::string binary_path = output_dir_ + "/" + run_name_ + ".bin";
+        binary_file_ = std::make_unique<std::ofstream>(binary_path, std::ios::binary);
+        if (binary_file_->is_open()) {
+            LOG_INFO("Binary output initialized: " + binary_path, "OutputManager");
+        } else {
+            LOG_ERROR("Failed to create binary file: " + binary_path, "OutputManager");
         }
     }
 
@@ -172,6 +181,11 @@ void OutputManager::recordState(const std::vector<uint8_t>& state_buffer, double
         writeDataPointJSON(point, tick);
     }
 
+    if (output_binary_ && binary_file_ && binary_file_->is_open()) {
+        // Write raw binary data (SimulationDataPoint struct)
+        binary_file_->write(reinterpret_cast<const char*>(&point), sizeof(SimulationDataPoint));
+    }
+
     last_recorded_tick_ = tick;
 }
 
@@ -202,6 +216,12 @@ void OutputManager::finalizeOutput() {
         LOG_INFO("JSON output finalized", "OutputManager");
     }
 
+    // Close Binary file
+    if (binary_file_ && binary_file_->is_open()) {
+        binary_file_->close();
+        LOG_INFO("Binary output finalized", "OutputManager");
+    }
+
     initialized_ = false;
     LOG_INFO("OutputManager finalized. Recorded " + std::to_string(data_points_.size()) + " data points", "OutputManager");
 }
@@ -215,6 +235,10 @@ void OutputManager::flush() {
 
     if (json_file_ && json_file_->is_open()) {
         json_file_->flush();
+    }
+
+    if (binary_file_ && binary_file_->is_open()) {
+        binary_file_->flush();
     }
 }
 
@@ -434,7 +458,9 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
 }
 
 void OutputManager::writeCSVHeader() {
-    if (!csv_file_ || !csv_file_->is_open()) return;
+    if (!csv_file_ || !csv_file_->is_open()) {
+        return;
+    }
 
     *csv_file_ << "tick,simulation_time,utc_time,position_x,position_y,position_z,"
               << "velocity_x,velocity_y,velocity_z,"
@@ -445,7 +471,9 @@ void OutputManager::writeCSVHeader() {
 }
 
 void OutputManager::writeDataPointCSV(const SimulationDataPoint& point, int tick) {
-    if (!csv_file_ || !csv_file_->is_open()) return;
+    if (!csv_file_ || !csv_file_->is_open()) {
+        return;
+    }
 
     *csv_file_ << tick << "," << std::fixed << std::setprecision(6)
                << point.time << "," << std::fixed << std::setprecision(6) << point.utc_time << ","
@@ -458,7 +486,9 @@ void OutputManager::writeDataPointCSV(const SimulationDataPoint& point, int tick
 }
 
 void OutputManager::writeDataPointJSON(const SimulationDataPoint& point, int tick) {
-    if (!json_file_ || !json_file_->is_open()) return;
+    if (!json_file_ || !json_file_->is_open()) {
+        return;
+    }
 
     if (last_recorded_tick_ >= 0) {
         *json_file_ << ",\n";
@@ -478,7 +508,9 @@ void OutputManager::writeDataPointJSON(const SimulationDataPoint& point, int tic
 }
 
 void OutputManager::writeMetricsJSON() {
-    if (!json_file_ || !json_file_->is_open()) return;
+    if (!json_file_ || !json_file_->is_open()) {
+        return;
+    }
 
     *json_file_ << "  \"metrics\": {\n";
 

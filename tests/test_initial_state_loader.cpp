@@ -11,7 +11,7 @@ class InitialStateLoaderTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_state_file = "test_initial_state.json";
-        
+
         // Create a valid test state file
         json test_state = {
             {"position", {{"x", 0.0}, {"y", 0.0}, {"z", 1000.0}}},
@@ -25,16 +25,16 @@ protected:
             {"Time", 0.0},
             {"wind_speed", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
         };
-        
+
         std::ofstream file(test_state_file);
         file << test_state.dump(4);
         file.close();
     }
-    
+
     void TearDown() override {
         std::remove(test_state_file.c_str());
     }
-    
+
     std::string test_state_file;
 };
 
@@ -54,21 +54,21 @@ TEST_F(InitialStateLoaderTest, LoadInvalidJSON) {
     std::ofstream file(invalid_file);
     file << "{ invalid json content }";
     file.close();
-    
+
     flatbuffers::FlatBufferBuilder builder;
     EXPECT_FALSE(InitialStateLoader::create_state_from_json(builder, invalid_file));
-    
+
     std::remove(invalid_file.c_str());
 }
 
 TEST_F(InitialStateLoaderTest, ValidateLoadedPosition) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->position(), nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->position()->x(), 0.0);
     EXPECT_DOUBLE_EQ(state->position()->y(), 0.0);
     EXPECT_DOUBLE_EQ(state->position()->z(), 1000.0);
@@ -77,11 +77,11 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedPosition) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedVelocity) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->velocity(), nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->velocity()->x(), 10.0);
     EXPECT_DOUBLE_EQ(state->velocity()->y(), 0.0);
     EXPECT_DOUBLE_EQ(state->velocity()->z(), 0.0);
@@ -90,11 +90,11 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedVelocity) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedOrientation) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->orientation(), nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->orientation()->x(), 0.0);
     EXPECT_DOUBLE_EQ(state->orientation()->y(), 0.0);
     EXPECT_DOUBLE_EQ(state->orientation()->z(), 0.0);
@@ -104,10 +104,10 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedOrientation) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedAtmosphere) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->atm_density(), 1.225);
     EXPECT_DOUBLE_EQ(state->atm_pressure(), 101325.0);
     EXPECT_DOUBLE_EQ(state->atm_temperature(), 288.15);
@@ -116,11 +116,11 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedAtmosphere) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedGravity) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->gravity(), nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->gravity()->x(), 0.0);
     EXPECT_DOUBLE_EQ(state->gravity()->y(), -9.81);
     EXPECT_DOUBLE_EQ(state->gravity()->z(), 0.0);
@@ -129,11 +129,11 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedGravity) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedWindSpeed) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->wind_speed(), nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->wind_speed()->x(), 0.0);
     EXPECT_DOUBLE_EQ(state->wind_speed()->y(), 0.0);
     EXPECT_DOUBLE_EQ(state->wind_speed()->z(), 0.0);
@@ -142,10 +142,10 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedWindSpeed) {
 TEST_F(InitialStateLoaderTest, ValidateLoadedTimeData) {
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, test_state_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->UTC(), 1000000000);
     EXPECT_DOUBLE_EQ(state->Time(), 0.0);
 }
@@ -168,17 +168,17 @@ TEST_F(InitialStateLoaderTest, LoadWithDifferentValues) {
     std::ofstream file(custom_file);
     file << custom_state.dump(4);
     file.close();
-    
+
     flatbuffers::FlatBufferBuilder builder;
     ASSERT_TRUE(InitialStateLoader::create_state_from_json(builder, custom_file));
-    
+
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
-    
+
     EXPECT_DOUBLE_EQ(state->position()->x(), 100.0);
     EXPECT_DOUBLE_EQ(state->velocity()->y(), -10.0);
     EXPECT_DOUBLE_EQ(state->atm_density(), 0.5);
     EXPECT_DOUBLE_EQ(state->UTC(), 2000000000);
-    
+
     std::remove(custom_file.c_str());
 }

@@ -15,7 +15,7 @@
 using namespace MoLab;
 
 SimulationEngine::SimulationEngine()
-    : plugin_manager_(std::make_unique<PluginManager>()),
+    : plugin_manager_(std::make_unique<MoLab::PluginManager>()),
       simulation_time_(0.0),
       iteration_count_(0),
       is_running_(false)
@@ -136,9 +136,9 @@ void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
             return;
     }
 
-#if defined(_WIN32)
+#ifdef _WIN32
     std::string path = name + ".dll";
-#elif defined(__APPLE__)
+#elif __APPLE__
     std::string path = "lib" + name + ".dylib";
 #else
     std::string path = "lib" + name + ".so";
@@ -267,7 +267,9 @@ void SimulationEngine::shutdown() {
     // Finalize output and print summary
     auto& output_manager = OutputManager::getInstance();
     output_manager.finalizeOutput();
-    output_manager.printSummary();    LOG_INFO("Simulation shutdown complete", "SimulationEngine");
+    output_manager.printSummary();
+    
+    LOG_INFO("Simulation shutdown complete", "SimulationEngine");
 }
 
 bool SimulationEngine::validate_simulation_state() const {
@@ -359,7 +361,9 @@ bool SimulationEngine::validate_simulation_state() const {
 }
 
 void SimulationEngine::print_performance_metrics() const {
-    if (!plugin_manager_) return;
+    if (!plugin_manager_) {
+        return;
+    }
 
     LOG_INFO("=== SIMULATION PERFORMANCE METRICS ===", "SimulationEngine");
     LOG_INFO("Total iterations: " + std::to_string(iteration_count_.load()), "SimulationEngine");

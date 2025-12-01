@@ -8,7 +8,9 @@
 #include <mutex>
 #include <atomic>
 
-class PluginManager;
+namespace MoLab {
+    class PluginManager;
+}
 
 class SimulationEngine {
 public:
@@ -71,7 +73,7 @@ public:
 
 private:
     // Gestor de plugins que maneja la carga y ejecución de plugins.
-    std::unique_ptr<PluginManager> plugin_manager_;
+    std::unique_ptr<MoLab::PluginManager> plugin_manager_;
 
     // Buffer que contiene el estado actual de la simulación (thread-safe).
     std::vector<uint8_t> current_state_buffer_;

@@ -123,7 +123,7 @@ TEST_F(OutputManagerTest, RecordMultipleStates) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     for (int i = 0; i < 10; i++) {
         out.recordState(buf, i * 0.1, i * 0.1, i);
     }
@@ -206,7 +206,7 @@ TEST_F(OutputManagerTest, SingletonInstance) {
 TEST_F(OutputManagerTest, RecordMetrics) {
     auto& out = OutputManager::getInstance();
     out.initializeOutput("metricstest");
-    
+
     EXPECT_NO_THROW(out.recordMetrics("Physics", "force_x", 10.5));
     EXPECT_NO_THROW(out.recordMetrics("Physics", "force_y", 20.5));
     EXPECT_NO_THROW(out.recordMetrics("Aerodynamics", "drag", 5.5));
@@ -218,7 +218,7 @@ TEST_F(OutputManagerTest, FlushOutput) {
     auto& out = OutputManager::getInstance();
     out.setOutputFormats(true, false, false);
     out.initializeOutput("flushtest");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::Vec3(1, 2, 3);
     auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
@@ -230,10 +230,10 @@ TEST_F(OutputManagerTest, FlushOutput) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     out.recordState(buf, 0.0, 0.0, 0);
     EXPECT_NO_THROW(out.flush());
-    
+
     out.finalizeOutput();
 }
 
@@ -241,7 +241,7 @@ TEST_F(OutputManagerTest, GetDataPoints) {
     auto& out = OutputManager::getInstance();
     out.setOutputFormats(true, false, false);
     out.initializeOutput("datapointstest");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::Vec3(1, 2, 3);
     auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
@@ -253,16 +253,16 @@ TEST_F(OutputManagerTest, GetDataPoints) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     size_t initial_count = out.getDataPoints().size();
-    
+
     out.recordState(buf, 0.0, 0.0, 0);
     out.recordState(buf, 0.1, 0.1, 1);
     out.recordState(buf, 0.2, 0.2, 2);
-    
+
     const auto& data_points = out.getDataPoints();
     EXPECT_GT(data_points.size(), initial_count);
-    
+
     out.finalizeOutput();
 }
 
@@ -271,7 +271,7 @@ TEST_F(OutputManagerTest, OutputIntervalRespected) {
     out.setOutputFormats(true, false, false);
     out.setOutputInterval(5); // Only save every 5 ticks
     out.initializeOutput("intervaltest");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::Vec3(1, 2, 3);
     auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
@@ -283,27 +283,27 @@ TEST_F(OutputManagerTest, OutputIntervalRespected) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     // Record 10 ticks, but only every 5th should be saved
     for (int i = 0; i < 10; i++) {
         out.recordState(buf, i * 0.1, i * 0.1, i);
     }
-    
+
     out.finalizeOutput();
     EXPECT_TRUE(fs::exists(test_dir));
 }
 
 TEST_F(OutputManagerTest, MultipleInitializeFinalize) {
     auto& out = OutputManager::getInstance();
-    
+
     // First session
     out.initializeOutput("session1");
     out.finalizeOutput();
-    
+
     // Second session
     out.initializeOutput("session2");
     out.finalizeOutput();
-    
+
     EXPECT_TRUE(fs::exists(test_dir));
 }
 
@@ -311,7 +311,7 @@ TEST_F(OutputManagerTest, NoFormatsEnabled) {
     auto& out = OutputManager::getInstance();
     out.setOutputFormats(false, false, false);
     out.initializeOutput("noformats");
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::Vec3(1, 2, 3);
     auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
@@ -323,14 +323,14 @@ TEST_F(OutputManagerTest, NoFormatsEnabled) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     EXPECT_NO_THROW(out.recordState(buf, 0.0, 0.0, 0));
     out.finalizeOutput();
 }
 
 TEST_F(OutputManagerTest, RecordStateWithoutInitialize) {
     auto& out = OutputManager::getInstance();
-    
+
     flatbuffers::FlatBufferBuilder builder;
     auto pos = state_vector::Vec3(1, 2, 3);
     auto vel = state_vector::Vec3(0.1, 0.2, 0.3);
@@ -342,7 +342,7 @@ TEST_F(OutputManagerTest, RecordStateWithoutInitialize) {
     );
     builder.Finish(state);
     std::vector<uint8_t> buf(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-    
+
     // Should handle gracefully even without initialize
     EXPECT_NO_THROW(out.recordState(buf, 0.0, 0.0, 0));
 }

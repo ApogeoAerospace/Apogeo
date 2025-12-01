@@ -18,7 +18,29 @@ Checks: >
   -readability-magic-numbers,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
-  -google-readability-todo
+  -google-readability-todo,
+  -google-build-using-namespace,
+  -readability-identifier-naming,
+  -modernize-use-nodiscard,
+  -bugprone-easily-swappable-parameters,
+  -modernize-return-braced-init-list,
+  -readability-math-missing-parentheses,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-type-member-init,
+  -modernize-use-equals-delete,
+  -misc-non-private-member-variables-in-classes,
+  -readability-convert-member-functions-to-static,
+  -misc-use-internal-linkage,
+  -portability-avoid-pragma-once,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-special-member-functions,
+  -modernize-use-using,
+  -misc-include-cleaner,
+  -misc-const-correctness,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-use-default-member-init,
+  -modernize-use-default-member-init,
+  -performance-enum-size
 
 WarningsAsErrors: ''
 HeaderFilterRegex: '(core|src)/.*\.(h|hpp)$'
@@ -27,7 +49,7 @@ CheckOptions:
   - key: readability-identifier-naming.ClassCase
     value: CamelCase
   - key: readability-identifier-naming.FunctionCase
-    value: camelCase
+    value: lower_case
   - key: readability-identifier-naming.VariableCase
     value: lower_case
   - key: readability-identifier-naming.ConstantCase

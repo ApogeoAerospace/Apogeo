@@ -13,13 +13,13 @@
 #include <future>
 #include <algorithm>
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
-using namespace MoLab;
+namespace MoLab {
 
-PluginManager::PluginManager() : physics_integrator_(std::make_unique<MoLab::PhysicsIntegrator>()) {
+PluginManager::PluginManager() : physics_integrator_(std::make_unique<PhysicsIntegrator>()) {
     LOG_INFO("PluginManager initialized", "PluginManager");
 }
 
@@ -38,17 +38,17 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     LOG_INFO("Loading plugin: " + path, "PluginManager");
 
     // Carga de biblioteca compartida según el sistema operativo
-#if defined(_WIN32)
+#ifdef _WIN32
     plugin.lib_handle = LoadLibrary(path.c_str());
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + path, "PluginManager");
         return false;
     }
     // Obtiene las direcciones de las funciones de la API del plugin
-    plugin.create_func = (decltype(plugin.create_func))GetProcAddress(plugin.lib_handle, "plugin_create_instance");
-    plugin.configure_func = (decltype(plugin.configure_func))GetProcAddress(plugin.lib_handle, "plugin_configure");
-    plugin.tick_func = (decltype(plugin.tick_func))GetProcAddress(plugin.lib_handle, "plugin_tick");
-    plugin.destroy_func = (decltype(plugin.destroy_func))GetProcAddress(plugin.lib_handle, "plugin_destroy_instance");
+    plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(GetProcAddress(plugin.lib_handle, "plugin_create_instance"));
+    plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(GetProcAddress(plugin.lib_handle, "plugin_configure"));
+    plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
+    plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
 #else // POSIX
     plugin.lib_handle = dlopen(path.c_str(), RTLD_LAZY);
     if (!plugin.lib_handle) {
@@ -56,16 +56,16 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
         return false;
     }
     // Obtiene las direcciones de las funciones de la API del plugin
-    plugin.create_func = (decltype(plugin.create_func))dlsym(plugin.lib_handle, "plugin_create_instance");
-    plugin.configure_func = (decltype(plugin.configure_func))dlsym(plugin.lib_handle, "plugin_configure");
-    plugin.tick_func = (decltype(plugin.tick_func))dlsym(plugin.lib_handle, "plugin_tick");
-    plugin.destroy_func = (decltype(plugin.destroy_func))dlsym(plugin.lib_handle, "plugin_destroy_instance");
+    plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(dlsym(plugin.lib_handle, "plugin_create_instance"));
+    plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(dlsym(plugin.lib_handle, "plugin_configure"));
+    plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(dlsym(plugin.lib_handle, "plugin_tick"));
+    plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(dlsym(plugin.lib_handle, "plugin_destroy_instance"));
 #endif
 
-    if (!plugin.create_func || !plugin.tick_func || !plugin.destroy_func) {
+    if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
         LOG_ERROR("Failed to find required plugin API functions in: " + path, "PluginManager");
         // Note: configure_func is optional for backward compatibility
-#if defined(_WIN32)
+#ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
         dlclose(plugin.lib_handle);
@@ -75,9 +75,9 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 
     // Crear instancia del plugin
     plugin.handle = plugin.create_func();
-    if (!plugin.handle) {
+    if (plugin.handle == nullptr) {
         LOG_ERROR("Failed to create plugin instance: " + path, "PluginManager");
-#if defined(_WIN32)
+#ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
         dlclose(plugin.lib_handle);
@@ -421,13 +421,13 @@ void PluginManager::shutdown() {
 }
 
 void PluginManager::cleanup_plugin(LoadedPlugin& plugin) {
-    if (plugin.handle && plugin.destroy_func) {
+    if (plugin.handle != nullptr && plugin.destroy_func != nullptr) {
         plugin.destroy_func(plugin.handle);
         plugin.handle = nullptr;
     }
 
     if (plugin.lib_handle) {
-#if defined(_WIN32)
+#ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
         dlclose(plugin.lib_handle);
@@ -435,3 +435,5 @@ void PluginManager::cleanup_plugin(LoadedPlugin& plugin) {
         plugin.lib_handle = nullptr;
     }
 }
+
+} // namespace MoLab
