@@ -210,7 +210,7 @@ TEST_F(OutputManagerTest, RecordMetrics) {
     EXPECT_NO_THROW(out.recordMetrics("Physics", "force_x", 10.5));
     EXPECT_NO_THROW(out.recordMetrics("Physics", "force_y", 20.5));
     EXPECT_NO_THROW(out.recordMetrics("Aerodynamics", "drag", 5.5));
-    
+
     out.finalizeOutput();
 }
 

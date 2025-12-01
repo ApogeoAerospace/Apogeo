@@ -164,7 +164,7 @@ TEST_F(InitialStateLoaderTest, LoadWithDifferentValues) {
         {"Time", 100.0},
         {"wind_speed", {{"x", 10.0}, {"y", 5.0}, {"z", 2.0}}}
     };
-    
+
     std::ofstream file(custom_file);
     file << custom_state.dump(4);
     file.close();

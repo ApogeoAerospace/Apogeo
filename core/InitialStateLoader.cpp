@@ -25,36 +25,36 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
 
     // Extrae los datos del JSON y construye el FlatBuffer
     auto position = state_vector::Vec3(
-        data["position"]["x"].get<float>(), 
-        data["position"]["y"].get<float>(), 
+        data["position"]["x"].get<float>(),
+        data["position"]["y"].get<float>(),
         data["position"]["z"].get<float>());
 
     auto velocity = state_vector::Vec3(
-        data["velocity"]["x"].get<float>(), 
-        data["velocity"]["y"].get<float>(), 
+        data["velocity"]["x"].get<float>(),
+        data["velocity"]["y"].get<float>(),
         data["velocity"]["z"].get<float>());
 
     auto orientation = state_vector::Quaternion(
-        data["orientation"]["x"].get<float>(), 
-        data["orientation"]["y"].get<float>(), 
-        data["orientation"]["z"].get<float>(), 
+        data["orientation"]["x"].get<float>(),
+        data["orientation"]["y"].get<float>(),
+        data["orientation"]["z"].get<float>(),
         data["orientation"]["w"].get<float>());
 
     float atm_density = data["atm_density"].get<float>();
     float atm_pressure = data["atm_pressure"].get<float>();
     float atm_temperature = data["atm_temperature"].get<float>();
-    
+
     auto gravity = state_vector::Vec3(
-        data["gravity"]["x"].get<float>(), 
-        data["gravity"]["y"].get<float>(), 
+        data["gravity"]["x"].get<float>(),
+        data["gravity"]["y"].get<float>(),
         data["gravity"]["z"].get<float>());
-    
+
     float utc = data["UTC"].get<float>();
     float time = data["Time"].get<float>();
-    
+
     auto wind_speed = state_vector::Vec3(
-        data["wind_speed"]["x"].get<float>(), 
-        data["wind_speed"]["y"].get<float>(), 
+        data["wind_speed"]["x"].get<float>(),
+        data["wind_speed"]["y"].get<float>(),
         data["wind_speed"]["z"].get<float>());
 
     // Crea el estado general usando todos los argumentos requeridos

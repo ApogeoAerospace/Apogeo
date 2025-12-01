@@ -268,7 +268,7 @@ void SimulationEngine::shutdown() {
     auto& output_manager = OutputManager::getInstance();
     output_manager.finalizeOutput();
     output_manager.printSummary();
-    
+
     LOG_INFO("Simulation shutdown complete", "SimulationEngine");
 }
 

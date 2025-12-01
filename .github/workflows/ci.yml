@@ -36,6 +36,13 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
       
+      - name: Limpiar vcpkg si existe
+        run: |
+          if [ -d "vcpkg" ]; then
+            echo "Removing existing vcpkg directory..."
+            rm -rf vcpkg
+          fi
+      
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v3
@@ -61,9 +68,25 @@ jobs:
       - name: Configurar vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
+          # Remove vcpkg directory if it exists but is not a git repo
+          if [ -d "vcpkg" ] && [ ! -d "vcpkg/.git" ]; then
+            echo "Removing incomplete vcpkg directory..."
+            rm -rf vcpkg
+          fi
+          
+          if [ ! -d "vcpkg" ]; then
+            echo "Cloning vcpkg repository..."
+            git clone https://github.com/Microsoft/vcpkg.git
+          else
+            echo "vcpkg directory exists, pulling latest changes..."
+            cd vcpkg && git pull && cd ..
+          fi
+          
           cd vcpkg
-          ./bootstrap-vcpkg.sh
+          if [ ! -f "vcpkg" ] && [ ! -f "vcpkg.exe" ]; then
+            echo "Bootstrapping vcpkg..."
+            ./bootstrap-vcpkg.sh
+          fi
           ./vcpkg install
       
       - name: Verificar instalación vcpkg
@@ -93,6 +116,13 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
+
+      - name: Limpiar vcpkg si existe
+        run: |
+          if [ -d "vcpkg" ]; then
+            echo "Removing existing vcpkg directory..."
+            rm -rf vcpkg
+          fi
 
       - name: Configurar Python 3.x
         uses: actions/setup-python@v5

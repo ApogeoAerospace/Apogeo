@@ -30,7 +30,7 @@ protected:
             {"Time", 0.0},
             {"wind_speed", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
         };
-        
+
         std::ofstream state_file(test_state_file);
         state_file << test_state.dump(4);
         state_file.close();
@@ -64,7 +64,7 @@ protected:
         config_file << test_config.dump(4);
         config_file.close();
     }
-    
+
     void TearDown() override {
         // Clean up test files
         if (fs::exists("test_data")) {
