@@ -38,7 +38,7 @@ SimulationEngine::~SimulationEngine() noexcept {
 bool SimulationEngine::initialize(const std::string& state_filepath) {
     LOG_INFO("Initializing simulation with state file: " + state_filepath, "SimulationEngine");
 
-    // Verificar que el archivo existe
+    // Verify that the file exists
     if (!std::filesystem::exists(state_filepath)) {
         LOG_ERROR("State file not found: " + state_filepath, "SimulationEngine");
         return false;
@@ -101,7 +101,7 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
 
     // Initialize TimeManager with current UTC time
     auto& time_manager = TimeManager::getInstance();
-    time_manager.initialize(); // Usa tiempo UTC actual como inicio
+    time_manager.initialize(); // Use current UTC time as start
 
     // Load plugins from configuration
     if (!plugin_manager_->load_plugins_from_config()) {
@@ -122,7 +122,7 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
 void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
     LOG_INFO("Loading plugin: " + name + " (type: " + std::to_string(plugin_type) + ")", "SimulationEngine");
 
-    // Traducimos el tipo de plugin a la enumeración adecuada
+    // Translate plugin type to appropriate enumeration
     PluginType type;
     switch (plugin_type) {
         case 0:
@@ -172,11 +172,11 @@ void SimulationEngine::run_tick() {
         plugin_manager_->run_simulation_cycle_improved(current_state_buffer_, delta_time);
     }
 
-    // VALIDACIÓN RÁPIDA: Detectar colisiones con el suelo inmediatamente
+    // QUICK VALIDATION: Detect ground collisions immediately
     auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
     if (state && state->position()) {
         double pos_z = state->position()->z();
-        // Detección rápida para coordenadas locales
+        // Quick detection for local coordinates
         if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
             LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
             LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
@@ -185,7 +185,7 @@ void SimulationEngine::run_tick() {
         }
     }
 
-    // Validación completa solo cada 50 ticks
+    // Full validation only every 50 ticks
     if (iteration_count_ % 50 == 0) {
         if (!validate_simulation_state()) {
             LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
@@ -198,7 +198,7 @@ void SimulationEngine::run_tick() {
     simulation_time_.store(simulation_time_.load() + delta_time);
     iteration_count_++;
 
-    // Record state using TimeManager time (solo si el estado es válido)
+    // Record state using TimeManager time (only if state is valid)
     auto& output_manager = OutputManager::getInstance();
     output_manager.recordState(current_state_buffer_, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
 
@@ -206,8 +206,7 @@ void SimulationEngine::run_tick() {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
     last_tick_duration_ = duration.count() / 1000.0; // Convert to milliseconds
 
-    // LOGGING DE PERFORMANCE: Infrecuente y detallado para análisis técnico
-    // Nota: El progreso de simulación se reporta en main.cpp con mayor frecuencia
+    // Log performance metrics periodically
     if (iteration_count_ % 5000 == 0) {
         LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
                 " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");
@@ -296,23 +295,23 @@ bool SimulationEngine::validate_simulation_state() const {
             return false;
         }
 
-        // DETECCIÓN DE COLISIÓN CON EL SUELO
-        const double EARTH_RADIUS = 6378137.0;  // m - Radio de la Tierra (WGS84)
+        // GROUND COLLISION DETECTION
+        const double EARTH_RADIUS = 6378137.0;  // m - Earth radius (WGS84)
         const double LOCAL_COORD_THRESHOLD = 1000000.0;  // 1000 km
 
         double pos_x = state->position()->x();
         double pos_y = state->position()->y();
         double pos_z = state->position()->z();
 
-        // Calcular distancia al centro de la Tierra
+        // Calculate distance to Earth center
         double distance_from_center = std::sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z);
 
-        // Detectar sistema de coordenadas
+        // Detect coordinate system
         bool is_geocentric = (distance_from_center > LOCAL_COORD_THRESHOLD ||
                              std::abs(pos_z) > LOCAL_COORD_THRESHOLD);
 
         if (is_geocentric) {
-            // COORDENADAS GEOCÉNTRICAS (ECEF): Verificar distancia al centro
+            // GEOCENTRIC COORDINATES (ECEF): Check distance to center
             if (distance_from_center < EARTH_RADIUS) {
                 double altitude = distance_from_center - EARTH_RADIUS;
                 LOG_ERROR("Ground collision detected! Altitude: " + std::to_string(altitude) + " m",
@@ -323,7 +322,7 @@ bool SimulationEngine::validate_simulation_state() const {
                 return false;
             }
         } else {
-            // COORDENADAS LOCALES: Verificar Z < 0 (bajo el suelo)
+            // LOCAL COORDINATES: Check Z < 0 (below ground)
             if (pos_z < 0.0) {
                 LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m",
                          "SimulationEngine");
@@ -343,13 +342,13 @@ bool SimulationEngine::validate_simulation_state() const {
             return false;
         }
 
-        // NUEVO: Verificar velocidades supersónicas extremas (posible error numérico)
+        // NEW: Check extreme supersonic velocities (possible numerical error)
         double vel_x = state->velocity()->x();
         double vel_y = state->velocity()->y();
         double vel_z = state->velocity()->z();
         double speed = std::sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
 
-        const double ESCAPE_VELOCITY = 11200.0;  // m/s - Velocidad de escape de la Tierra
+        const double ESCAPE_VELOCITY = 11200.0;  // m/s - Earth escape velocity
         if (speed > ESCAPE_VELOCITY * 2.0) {
             LOG_WARNING("Extreme velocity detected: " + std::to_string(speed) + " m/s (Mach " +
                        std::to_string(speed/343.0) + ")", "SimulationEngine");
