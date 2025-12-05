@@ -2446,17 +2446,18 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         """Serve available plugins"""
         plugins = []
         
-        # Check both build/plugins and build/lib directories
+        # Check build/plugins, build/lib, and build/bin directories
         plugins_dirs = [
             self.build_dir / "plugins",
-            self.build_dir / "lib"
+            self.build_dir / "lib",
+            self.build_dir / "bin"
         ]
         
         plugin_definitions = {
-            "test_force": {
-                "name": "Force Generator",
+            "example_plugin": {
+                "name": "Example Plugin",
                 "type": 1,
-                "description": "Generates constant forces and torques for testing",
+                "description": "Example plugin for testing and demonstration",
                 "enabled": False
             },
             "aerodynamics": {
@@ -2504,12 +2505,26 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     "enable_wind_effects": True,
                     "enable_gravity_variation": True
                 }
+            },
+            "programming": {
+                "name": "Programming",
+                "type": 0,
+                "description": "Programmable logic and control sequences",
+                "enabled": False
             }
         }
         
+        # Determine plugin extension based on platform
+        if platform.system() == "Windows":
+            plugin_pattern = "lib*.dll"
+        elif platform.system() == "Darwin":
+            plugin_pattern = "lib*.dylib"
+        else:  # Linux
+            plugin_pattern = "lib*.so"
+        
         for plugins_dir in plugins_dirs:
             if plugins_dir.exists():
-                for plugin_file in plugins_dir.glob("lib*.dylib"):
+                for plugin_file in plugins_dir.glob(plugin_pattern):
                     # Extract plugin name from filename
                     plugin_name = plugin_file.stem.replace("lib", "")
                     

@@ -108,9 +108,9 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedAtmosphere) {
     auto state = state_vector::GetGeneralState(builder.GetBufferPointer());
     ASSERT_NE(state, nullptr);
 
-    EXPECT_DOUBLE_EQ(state->atm_density(), 1.225);
-    EXPECT_DOUBLE_EQ(state->atm_pressure(), 101325.0);
-    EXPECT_DOUBLE_EQ(state->atm_temperature(), 288.15);
+    EXPECT_FLOAT_EQ(state->atm_density(), 1.225f);
+    EXPECT_FLOAT_EQ(state->atm_pressure(), 101325.0f);
+    EXPECT_FLOAT_EQ(state->atm_temperature(), 288.15f);
 }
 
 TEST_F(InitialStateLoaderTest, ValidateLoadedGravity) {
@@ -121,9 +121,9 @@ TEST_F(InitialStateLoaderTest, ValidateLoadedGravity) {
     ASSERT_NE(state, nullptr);
     ASSERT_NE(state->gravity(), nullptr);
 
-    EXPECT_DOUBLE_EQ(state->gravity()->x(), 0.0);
-    EXPECT_DOUBLE_EQ(state->gravity()->y(), -9.81);
-    EXPECT_DOUBLE_EQ(state->gravity()->z(), 0.0);
+    EXPECT_FLOAT_EQ(state->gravity()->x(), 0.0f);
+    EXPECT_FLOAT_EQ(state->gravity()->y(), -9.81f);
+    EXPECT_FLOAT_EQ(state->gravity()->z(), 0.0f);
 }
 
 TEST_F(InitialStateLoaderTest, ValidateLoadedWindSpeed) {

@@ -64,10 +64,10 @@ class PluginsHandler(BaseHandler):
     
     # Plugin definitions
     PLUGIN_DEFINITIONS = {
-        "test_force": {
-            "name": "Force Generator",
+        "example_plugin": {
+            "name": "Example Plugin",
             "type": 1,
-            "description": "Generates constant forces and torques for testing",
+            "description": "Example plugin for testing and demonstration",
             "enabled": False
         },
         "aerodynamics": {
@@ -115,6 +115,12 @@ class PluginsHandler(BaseHandler):
                 "enable_wind_effects": True,
                 "enable_gravity_variation": True
             }
+        },
+        "programming": {
+            "name": "Programming",
+            "type": 0,
+            "description": "Programmable logic and control sequences",
+            "enabled": False
         }
     }
     
@@ -133,7 +139,8 @@ class PluginsHandler(BaseHandler):
         # Search directories
         plugins_dirs = [
             self.config.build_dir / "plugins",
-            self.config.build_dir / "lib"
+            self.config.build_dir / "lib",
+            self.config.build_dir / "bin"
         ]
         
         # Find plugin libraries

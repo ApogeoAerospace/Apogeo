@@ -226,7 +226,7 @@ void PhysicsIntegrator::toFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
 
     // Create gravity vector (default Earth gravity)
     auto gravity = state_vector::Vec3(0.0f, 0.0f, -9.81f);
-    
+
     // Create wind speed vector (no wind by default)
     auto wind_speed = state_vector::Vec3(0.0f, 0.0f, 0.0f);
 
