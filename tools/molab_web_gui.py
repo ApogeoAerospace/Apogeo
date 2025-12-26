@@ -860,14 +860,14 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                             <label>
                                 <input type="checkbox" id="${inputId}" ${value ? 'checked' : ''} 
                                        onchange="updatePluginParameter(${index}, '${key}', this.checked)">
-                                ${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                ${key.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase())}
                             </label>
                         </div>
                     `;
                 } else if (typeof value === 'number') {
                     html += `
                         <div class="param-group">
-                            <label for="${inputId}">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
+                            <label for="${inputId}">${key.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase())}</label>
                             <input type="number" id="${inputId}" value="${value}" step="any"
                                    onchange="updatePluginParameter(${index}, '${key}', parseFloat(this.value))">
                         </div>
@@ -875,7 +875,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 } else {
                     html += `
                         <div class="param-group">
-                            <label for="${inputId}">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
+                            <label for="${inputId}">${key.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase())}</label>
                             <input type="text" id="${inputId}" value="${value}"
                                    onchange="updatePluginParameter(${index}, '${key}', this.value)">
                         </div>
@@ -2446,17 +2446,18 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         """Serve available plugins"""
         plugins = []
         
-        # Check both build/plugins and build/lib directories
+        # Check build/plugins, build/lib, and build/bin directories
         plugins_dirs = [
             self.build_dir / "plugins",
-            self.build_dir / "lib"
+            self.build_dir / "lib",
+            self.build_dir / "bin"
         ]
         
         plugin_definitions = {
-            "test_force": {
-                "name": "Force Generator",
+            "example_plugin": {
+                "name": "Example Plugin",
                 "type": 1,
-                "description": "Generates constant forces and torques for testing",
+                "description": "Example plugin for testing and demonstration",
                 "enabled": False
             },
             "aerodynamics": {
@@ -2504,12 +2505,26 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     "enable_wind_effects": True,
                     "enable_gravity_variation": True
                 }
+            },
+            "programming": {
+                "name": "Programming",
+                "type": 0,
+                "description": "Programmable logic and control sequences",
+                "enabled": False
             }
         }
         
+        # Determine plugin extension based on platform
+        if platform.system() == "Windows":
+            plugin_pattern = "lib*.dll"
+        elif platform.system() == "Darwin":
+            plugin_pattern = "lib*.dylib"
+        else:  # Linux
+            plugin_pattern = "lib*.so"
+        
         for plugins_dir in plugins_dirs:
             if plugins_dir.exists():
-                for plugin_file in plugins_dir.glob("lib*.dylib"):
+                for plugin_file in plugins_dir.glob(plugin_pattern):
                     # Extract plugin name from filename
                     plugin_name = plugin_file.stem.replace("lib", "")
                     
@@ -2750,29 +2765,29 @@ def main():
     """Start the web server"""
     port = 8082
     
-    print(f"🌐 Starting MoLab Web Interface...")
-    print(f"🔗 Server will be available at: http://localhost:{port}")
-    print(f"📁 Project root: {Path(__file__).parent.parent}")
+    print(f"[WEB] Starting MoLab Web Interface...")
+    print(f"[WEB] Server will be available at: http://localhost:{port}")
+    print(f"[WEB] Project root: {Path(__file__).parent.parent}")
     
     try:
         with socketserver.TCPServer(("", port), MoLabWebHandler) as httpd:
-            print(f"✅ Server started on port {port}")
-            print(f"🚀 Opening browser...")
+            print(f"[OK] Server started on port {port}")
+            print(f"[WEB] Opening browser...")
             
             # Try to open browser
             try:
                 webbrowser.open(f'http://localhost:{port}')
             except:
-                print("⚠️  Could not open browser automatically")
+                print("[WARN] Could not open browser automatically")
                 print(f"   Please open: http://localhost:{port}")
             
-            print(f"⏹️  Press Ctrl+C to stop the server")
+            print(f"[INFO] Press Ctrl+C to stop the server")
             httpd.serve_forever()
             
     except KeyboardInterrupt:
-        print(f"\n👋 Server stopped")
+        print(f"\n[INFO] Server stopped")
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"[ERROR] Error starting server: {e}")
 
 if __name__ == "__main__":
     main()

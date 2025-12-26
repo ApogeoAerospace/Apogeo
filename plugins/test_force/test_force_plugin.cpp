@@ -116,7 +116,7 @@ PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
  * CONFIGURACIÓN PARA COMPILAR Y USAR ESTE PLUGIN:
  *
  * 1. Compilar como shared library:
- *    cd /Users/johancastrillon/Documents/MoLab/build
+ *    cd /Documents/MoLab/build
  *    g++ -shared -fPIC -std=c++17 -I../src -I. \
  *        -o plugins/libtest_force.dylib \
  *        ../plugins/test_force/test_force_plugin.cpp

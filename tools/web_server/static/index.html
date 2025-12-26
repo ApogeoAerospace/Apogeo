@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoLab Aerospace Simulator</title>
+    
+    <!-- External dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🚀 MoLab</h1>
+            <p>Web Interface for Realistic Aerospace Simulations</p>
+            <p class="version">v2.0 - Refactored</p>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Status Bar -->
+            <div id="status" class="status info">
+                🔄 Loading system status...
+                <button onclick="app.forceRefresh()" class="btn btn-secondary">🔄 Force Refresh</button>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="tabs">
+                <button class="tab active" data-tab="simulation">⚙️ Simulation</button>
+                <button class="tab" data-tab="physics">⚗️ Physics</button>
+                <button class="tab" data-tab="plugins">🔌 Plugins</button>
+                <button class="tab" data-tab="output">📊 Output</button>
+                <button class="tab" data-tab="results">📈 Results</button>
+            </nav>
+            
+            <!-- Tab Content: Simulation -->
+            <section id="simulation-tab" class="tab-content active">
+                <h3>⚙️ Simulation Configuration</h3>
+                
+                <!-- Mission Templates -->
+                <div class="mission-templates">
+                    <h4>🚀 Mission Templates</h4>
+                    <div class="template-cards" id="template-cards">
+                        <button class="template-card" data-template="suborbital">
+                            <h5>🚀 Launch - Suborbital Flight</h5>
+                            <p>High altitude trajectory with parabolic arc</p>
+                        </button>
+                        <button class="template-card" data-template="atmospheric">
+                            <h5>🌍 Atmospheric Test</h5>
+                            <p>Low altitude flight with atmospheric effects</p>
+                        </button>
+                        <button class="template-card" data-template="landing">
+                            <h5>🌌 Re-entry</h5>
+                            <p>Controlled descent and landing sequence</p>
+                        </button>
+                        <button class="template-card" data-template="orbital">
+                            <h5>🛰️ Orbital Insertion</h5>
+                            <p>Multi-stage ascent to orbital velocity</p>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Simulation Parameters -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="time-step">Time Step (seconds)</label>
+                        <input type="number" id="time-step" min="0.001" max="1.0" step="0.001" value="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (seconds)</label>
+                        <input type="number" id="duration" min="1" max="1000" value="10">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="log-level">Log Level</label>
+                        <select id="log-level">
+                            <option value="INFO" selected>INFO</option>
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-logging" checked>
+                            Enable Logging
+                        </label>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Tab Content: Physics -->
+            <section id="physics-tab" class="tab-content">
+                <h3>⚗️ Physics Configuration</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-gravity" checked>
+                            Enable Gravity
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="gravity-magnitude">Gravity (m/s²)</label>
+                        <input type="number" id="gravity-magnitude" min="0" max="50" step="0.01" value="9.81">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="integrator-type">Integrator</label>
+                        <select id="integrator-type">
+                            <option value="euler">Euler</option>
+                            <option value="runge_kutta_4" selected>Runge-Kutta 4</option>
+                            <option value="verlet">Verlet</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="enable-drag">
+                            Atmospheric Drag
+                        </label>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Tab Content: Plugins -->
+            <section id="plugins-tab" class="tab-content">
+                <h3>🔌 Plugin Configuration</h3>
+                <div id="plugins-list">
+                    <p class="loading">Loading plugins...</p>
+                </div>
+            </section>
+            
+            <!-- Tab Content: Output -->
+            <section id="output-tab" class="tab-content">
+                <h3>📊 Output Configuration</h3>
+                
+                <div class="form-group">
+                    <label>Output Formats:</label>
+                    <div>
+                        <label>
+                            <input type="checkbox" id="enable-csv" checked>
+                            CSV Format
+                        </label>
+                        <br>
+                        <label>
+                            <input type="checkbox" id="enable-json">
+                            JSON Format
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="output-interval">Output Interval</label>
+                        <input type="number" id="output-interval" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="output-directory">Output Directory</label>
+                        <input type="text" id="output-directory" value="output">
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Tab Content: Results -->
+            <section id="results-tab" class="tab-content">
+                <h3>📈 Simulation Results</h3>
+                
+                <div class="results-controls">
+                    <button class="btn btn-info" onclick="app.results.loadResults()">🔄 Refresh Results</button>
+                </div>
+                
+                <div id="results-list" class="results-list">
+                    <p>Click "Refresh Results" to load available simulation results.</p>
+                </div>
+                
+                <div id="chart-container" class="chart-container" style="display: none;">
+                    <!-- Summary Statistics Container -->
+                    <div id="summary-stats" class="stats-container">
+                        <!-- Mission Overview Section -->
+                        <div class="stats-row primary">
+                            <div class="stat-section">
+                                <h3>🚀 Mission Overview</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card highlight">
+                                        <h4>⏱️ Flight Duration</h4>
+                                        <div class="value" data-stat="duration">0.00</div>
+                                        <div class="unit">seconds</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>📊 Data Points</h4>
+                                        <div class="value" data-stat="totalPoints">0</div>
+                                        <div class="unit">samples</div>
+                                    </div>
+                                    <div class="stat-card highlight">
+                                        <h4>📏 Total Distance</h4>
+                                        <div class="value" data-stat="distance">0.0</div>
+                                        <div class="unit">meters</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>📐 Straight Distance</h4>
+                                        <div class="value" data-stat="straightDistance">0.0</div>
+                                        <div class="unit">meters</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Trajectory Analysis -->
+                            <div class="stat-section">
+                                <h3>📈 Trajectory Analysis</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card">
+                                        <h4 title="Diferencia entre altitud final e inicial. Positivo = ascendió, Negativo = descendió">🏔️ Altitude Change (Δh)</h4>
+                                        <div class="value" data-stat="altitudeChange">0.0</div>
+                                        <div class="unit">meters</div>
+                                        <div class="description">Initial → Final altitude difference</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4 title="Distancia horizontal (X-Y) recorrida desde inicio hasta fin">🌍 Horizontal Distance (Ground)</h4>
+                                        <div class="value" data-stat="horizontalDistance">0.0</div>
+                                        <div class="unit">meters</div>
+                                        <div class="description">Ground distance traveled (X-Y plane)</div>
+                                    </div>
+                                    <div class="stat-card highlight">
+                                        <h4 title="Altitud máxima alcanzada durante toda la simulación">⛰️ Maximum Altitude</h4>
+                                        <div class="value" data-stat="maxAltitude">0.0</div>
+                                        <div class="unit">meters</div>
+                                        <div class="description">Peak altitude reached</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4 title="Ratio entre distancia en línea recta vs distancia total recorrida">📊 Flight Efficiency</h4>
+                                        <div class="value" data-stat="flightEfficiency">0.0</div>
+                                        <div class="unit">%</div>
+                                        <div class="description">Straight/Total distance ratio</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Performance Metrics -->
+                            <div class="stat-section">
+                                <h3>⚡ Performance Metrics</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card">
+                                        <h4>🚀 Initial Speed</h4>
+                                        <div class="value" data-stat="initialSpeed">0.0</div>
+                                        <div class="unit">m/s</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>🎯 Final Speed</h4>
+                                        <div class="value" data-stat="finalSpeed">0.0</div>
+                                        <div class="unit">m/s</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>📊 Speed Change</h4>
+                                        <div class="value" data-stat="speedChange">0.0</div>
+                                        <div class="unit">m/s</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>🔥 Avg Acceleration</h4>
+                                        <div class="value" data-stat="avgAcceleration">0.00</div>
+                                        <div class="unit">m/s²</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Analysis Section -->
+                        <div class="stats-row secondary">
+                            <div class="stat-section">
+                                <h3>🔬 Advanced Analysis</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card">
+                                        <h4 title="Velocidad promedio durante toda la simulación">🌊 Average Speed</h4>
+                                        <div class="value" data-stat="avgSpeed">0.0</div>
+                                        <div class="unit">m/s</div>
+                                        <div class="description">Total distance / Total time</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4 title="Velocidad promedio de cambio de altitud. Positivo = subiendo, Negativo = bajando">📈 Ascent Rate (Climb Rate)</h4>
+                                        <div class="value" data-stat="ascentRate">0.0</div>
+                                        <div class="unit">m/s</div>
+                                        <div class="description">Altitude Change / Time (vertical speed avg)</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4 title="Cambio en energía cinética específica">⚡ Energy Change</h4>
+                                        <div class="value" data-stat="energyChange">0.0</div>
+                                        <div class="unit">J/kg</div>
+                                        <div class="description">Final KE - Initial KE (per unit mass)</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4 title="Ratio entre velocidad horizontal y vertical al final">🎯 Final H/V Ratio</h4>
+                                        <div class="value" data-stat="hvRatio">N/A</div>
+                                        <div class="unit">ratio</div>
+                                        <div class="description">Horizontal velocity / Vertical velocity</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Velocity Analysis -->
+                            <div class="stat-section">
+                                <h3>🚀 Velocity Analysis</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card multi-value">
+                                        <h4>🎯 Final Horizontal</h4>
+                                        <div class="value" data-stat="finalVelX">0.0 m/s</div>
+                                        <div class="value" data-stat="finalVelY">0.0 m/s</div>
+                                        <div class="value" data-stat="finalVelHTotal">0.0 m/s</div>
+                                    </div>
+                                    <div class="stat-card multi-value">
+                                        <h4>📈 Final Vertical</h4>
+                                        <div class="value" data-stat="finalVelZ">0.0 m/s</div>
+                                        <div class="value" data-stat="finalVelZAbs">0.0 m/s</div>
+                                        <div class="value" data-stat="finalVelDirection">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Aerospace Physics Section -->
+                        <div class="stats-row primary">
+                            <div class="stat-section">
+                                <h3>📍 Position Details</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card multi-value">
+                                        <h4>🎯 Initial Position</h4>
+                                        <div class="value" data-stat="initialPosX">0.0m</div>
+                                        <div class="value" data-stat="initialPosY">0.0m</div>
+                                        <div class="value" data-stat="initialPosZ">0.0m</div>
+                                    </div>
+                                    <div class="stat-card multi-value">
+                                        <h4>🏁 Final Position</h4>
+                                        <div class="value" data-stat="finalPosX">0.0m</div>
+                                        <div class="value" data-stat="finalPosY">0.0m</div>
+                                        <div class="value" data-stat="finalPosZ">0.0m</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-section">
+                                <h3>🚀 Aerospace Physics</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card">
+                                        <h4>🌌 Max Altitude</h4>
+                                        <div class="value" data-stat="maxAltitudeKm">0.0</div>
+                                        <div class="unit">km</div>
+                                        <div class="subtext" data-stat="altitudeText">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>💨 Max Mach Number</h4>
+                                        <div class="value" data-stat="maxMach">0.00</div>
+                                        <div class="unit">Mach</div>
+                                        <div class="subtext" data-stat="machText">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>⚡ G-Force Peak</h4>
+                                        <div class="value" data-stat="maxGForce">0.0</div>
+                                        <div class="unit">g</div>
+                                        <div class="subtext" data-stat="gForceText">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>🛰️ Orbital Velocity</h4>
+                                        <div class="value" data-stat="orbitalVelocity">0.0</div>
+                                        <div class="unit">%</div>
+                                        <div class="subtext" data-stat="orbitalText">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-section">
+                                <h3>🎯 Mission Classification</h3>
+                                <div class="stat-cards">
+                                    <div class="stat-card">
+                                        <h4>🚀 Flight Type</h4>
+                                        <div class="value" data-stat="flightType">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>⏱️ Flight Phase</h4>
+                                        <div class="value" data-stat="flightPhase">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>🎖️ Mission Success</h4>
+                                        <div class="value" data-stat="missionSuccess">—</div>
+                                        <div class="unit" data-stat="successIcon">—</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <h4>📊 Realism Score</h4>
+                                        <div class="value" data-stat="realismScore">0</div>
+                                        <div class="unit">%</div>
+                                        <div class="subtext" data-stat="realismText">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Alerts -->
+                        <div class="performance-alerts-section" id="performance-alerts">
+                            <!-- Alerts will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Navigation -->
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" data-chart="trajectory">🛸 Trajectory</button>
+                        <button class="chart-tab" data-chart="velocity">🚀 Velocity</button>
+                        <button class="chart-tab" data-chart="altitude">🏔️ Altitude</button>
+                        <button class="chart-tab" data-chart="speed">⚡ Speed</button>
+                        <button class="chart-tab" data-chart="atmosphere">🌫️ Atmosphere</button>
+                        <button class="chart-tab" data-chart="gravity">⚖️ Gravity</button>
+                    </div>
+                    
+                    <!-- Chart Canvases -->
+                    <div id="trajectory-chart-panel" class="chart-panel active">
+                        <h4>🛸 3D Trajectory Analysis</h4>
+                        <canvas id="trajectory-chart" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div id="velocity-chart-panel" class="chart-panel">
+                        <h4>🚀 Velocity Components</h4>
+                        <canvas id="velocity-chart" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div id="altitude-chart-panel" class="chart-panel">
+                        <h4>🏔️ Altitude Profile</h4>
+                        <canvas id="altitude-chart" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div id="speed-chart-panel" class="chart-panel">
+                        <h4>⚡ Speed Analysis</h4>
+                        <canvas id="speed-chart" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div id="atmosphere-chart-panel" class="chart-panel">
+                        <h4>🌫️ Atmospheric Properties (ISA Model)</h4>
+                        <canvas id="atmosphere-chart" class="chart-canvas"></canvas>
+                    </div>
+                    
+                    <div id="gravity-chart-panel" class="chart-panel">
+                        <h4>⚖️ Gravity Field</h4>
+                        <canvas id="gravity-chart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h3>Control Panel</h3>
+                
+                <!-- Progress Section -->
+                <div id="progress-section" class="progress-section" style="display: none;">
+                    <h4>🚀 Simulation Progress</h4>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">0% - Initializing...</div>
+                    <div id="progress-message" class="progress-message"></div>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="control-buttons">
+                    <button class="btn btn-info" onclick="app.saveConfig()">💾 Save Config</button>
+                    <button class="btn btn-primary" onclick="app.simulation.runSimulation()" id="run-btn">🚀 Run Simulation</button>
+                    <button class="btn btn-success" onclick="app.results.loadResults()">📊 View Results</button>
+                    <button class="btn btn-warning" onclick="app.simulation.cancelSimulation()" id="cancel-btn" style="display: none;">⏹️ Cancel</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- HTML Templates -->
+    <template id="result-item-template">
+        <div class="result-item">
+            <h4 class="result-filename">📊 Filename</h4>
+            <p class="result-info">📅 Modified: <span class="result-date"></span> | 📁 Size: <span class="result-size"></span> KB</p>
+            <button class="btn btn-primary result-visualize-btn">📈 Visualize</button>
+        </div>
+    </template>
+    
+    <template id="performance-alert-template">
+        <div class="performance-alert">
+            <h4 class="alert-title"></h4>
+            <p class="alert-message"></p>
+        </div>
+    </template>
+    
+    <!-- JavaScript Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/simulation.js"></script>
+    <script src="js/results.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/templates.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

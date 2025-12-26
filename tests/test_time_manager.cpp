@@ -151,3 +151,118 @@ TEST_F(TimeManagerTest, GetCurrentUTCString) {
     std::string utc_string = time_manager.getCurrentUTCString();
     EXPECT_FALSE(utc_string.empty());
 }
+
+TEST_F(TimeManagerTest, NegativeTimeUpdate) {
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.setSimulationTime(10.0);
+
+    // Update with negative time
+    time_manager.updateSimulationTime(-1.0);
+
+    // Should handle gracefully
+    EXPECT_GE(time_manager.getSimulationTime(), 0.0);
+}
+
+TEST_F(TimeManagerTest, LargeTimeUpdate) {
+    auto& time_manager = TimeManager::getInstance();
+
+    // Update with very large time step
+    time_manager.updateSimulationTime(1000000.0);
+
+    EXPECT_DOUBLE_EQ(time_manager.getSimulationTime(), 1000000.0);
+}
+
+TEST_F(TimeManagerTest, ZeroTimeUpdate) {
+    auto& time_manager = TimeManager::getInstance();
+
+    double initial = time_manager.getSimulationTime();
+    time_manager.updateSimulationTime(0.0);
+
+    EXPECT_DOUBLE_EQ(time_manager.getSimulationTime(), initial);
+}
+
+TEST_F(TimeManagerTest, MultipleResets) {
+    auto& time_manager = TimeManager::getInstance();
+
+    time_manager.updateSimulationTime(5.0);
+    time_manager.reset();
+    EXPECT_DOUBLE_EQ(time_manager.getSimulationTime(), 0.0);
+
+    time_manager.updateSimulationTime(10.0);
+    time_manager.reset();
+    EXPECT_DOUBLE_EQ(time_manager.getSimulationTime(), 0.0);
+}
+
+TEST_F(TimeManagerTest, SetNegativeTime) {
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.setSimulationTime(-5.0);
+
+    // Should allow negative time or handle gracefully
+    EXPECT_NO_THROW(time_manager.getSimulationTime());
+}
+
+TEST_F(TimeManagerTest, GetStartUTCAfterInitialize) {
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.initialize();
+
+    double start_utc = time_manager.getStartUTC();
+    EXPECT_GT(start_utc, 0.0);
+}
+
+TEST_F(TimeManagerTest, TimeConversionSymmetry) {
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.initialize(1000.0, 0.0);
+
+    double original_sim_time = 50.0;
+    double utc = time_manager.simulationTimeToUTC(original_sim_time);
+    double converted_back = time_manager.utcToSimulationTime(utc);
+
+    EXPECT_DOUBLE_EQ(original_sim_time, converted_back);
+}
+
+TEST_F(TimeManagerTest, AccumulatedTimeError) {
+    auto& time_manager = TimeManager::getInstance();
+
+    // Small time steps can accumulate floating point errors
+    double dt = 0.000001;
+    for (int i = 0; i < 1000000; ++i) {
+        time_manager.updateSimulationTime(dt);
+    }
+
+    // Should be close to 1.0 despite potential floating point errors
+    EXPECT_NEAR(time_manager.getSimulationTime(), 1.0, 0.01);
+}
+
+TEST_F(TimeManagerTest, InitializeMultipleTimes) {
+    auto& time_manager = TimeManager::getInstance();
+
+    time_manager.initialize(1000.0, 0.0);
+    double first_start = time_manager.getStartUTC();
+
+    time_manager.initialize(2000.0, 0.0);
+    double second_start = time_manager.getStartUTC();
+
+    EXPECT_NE(first_start, second_start);
+    EXPECT_DOUBLE_EQ(second_start, 2000.0);
+}
+
+TEST_F(TimeManagerTest, SimTimeIncreasesMonotonically) {
+    auto& time_manager = TimeManager::getInstance();
+
+    double prev_time = time_manager.getSimulationTime();
+    for (int i = 0; i < 100; ++i) {
+        time_manager.updateSimulationTime(0.01);
+        double curr_time = time_manager.getSimulationTime();
+        EXPECT_GE(curr_time, prev_time);
+        prev_time = curr_time;
+    }
+}
+
+TEST_F(TimeManagerTest, UTCStringFormat) {
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.initialize(1000000000.0, 0.0);
+
+    std::string utc_str = time_manager.getCurrentUTCString();
+    // Should contain digits
+    EXPECT_TRUE(utc_str.find_first_of("0123456789") != std::string::npos);
+}

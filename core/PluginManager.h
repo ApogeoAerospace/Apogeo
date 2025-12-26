@@ -27,6 +27,8 @@ namespace MoLab {
     class PhysicsIntegrator;
 }
 
+namespace MoLab {
+
 /**
  * @brief Estructura que representa un plugin cargado con información extendida.
  */
@@ -205,5 +207,7 @@ private:
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};
     mutable std::mutex force_mutex_;
 };
+
+} // namespace MoLab
 
 #endif

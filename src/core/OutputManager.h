@@ -45,7 +45,7 @@ public:
 
 private:
     OutputManager() = default;
-    ~OutputManager();
+    ~OutputManager() noexcept;
 
     OutputManager(const OutputManager&) = delete;
     OutputManager& operator=(const OutputManager&) = delete;
@@ -71,6 +71,7 @@ private:
     // File handles
     std::unique_ptr<std::ofstream> csv_file_;
     std::unique_ptr<std::ofstream> json_file_;
+    std::unique_ptr<std::ofstream> binary_file_;
     std::string run_name_;
 
     // Thread safety

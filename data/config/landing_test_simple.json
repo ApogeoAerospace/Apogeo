@@ -1,0 +1,18 @@
+{
+    "simulation": {
+        "time_step": 0.02,
+        "duration": 20.0,
+        "max_iterations": 1000,
+        "log_level": "INFO"
+    },
+    "physics": {
+        "integrator_type": "runge_kutta_4"
+    },
+    "initial_state_file": "data/initial_state/landing_state.json",
+    "plugins": [],
+    "output": {
+        "csv_enabled": true,
+        "json_enabled": true,
+        "output_interval": 1
+    }
+}
