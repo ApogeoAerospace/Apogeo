@@ -63,3 +63,4 @@ vcpkg_installed/
 /vcpkg_installed/vcpkg/compiler-file-hash-cache.json
 /vcpkg_installed/vcpkg/manifest-info.json
 /vcpkg_installed/vcpkg/status
+/data/initial_state/temp_web_state_20251211_161606.json
