@@ -119,7 +119,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
         }
     }
 
-    // OPTIMIZACIÓN CRÍTICA: Pre-allocate vector capacity to avoid reallocations
+    // Pre-allocate vector capacity to avoid reallocations
     // Eliminates cuadrática degradation in performance
     data_points_.clear();
 

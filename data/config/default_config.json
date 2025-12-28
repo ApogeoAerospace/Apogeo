@@ -18,7 +18,7 @@
         {
             "name": "example_plugin",
             "type": 0,
-            "library_path": "libexample_plugin",
+            "library_path": "example_plugin",
             "enabled": true,
             "parameters": {
                 "step_size": 1.0,
@@ -28,7 +28,7 @@
         {
             "name": "aerodynamics",
             "type": 1,
-            "library_path": "libaerodynamics",
+            "library_path": "aerodynamics",
             "enabled": true,
             "parameters": {
                 "drag_coefficient": 0.47,
@@ -39,7 +39,7 @@
         {
             "name": "propulsion",
             "type": 1,
-            "library_path": "libpropulsion",
+            "library_path": "propulsion",
             "enabled": true,
             "parameters": {
                 "max_thrust": 10000.0,
@@ -50,7 +50,7 @@
         {
             "name": "environment",
             "type": 0,
-            "library_path": "libenvironment",
+            "library_path": "environment",
             "enabled": true,
             "parameters": {
                 "atmospheric_model": "standard",

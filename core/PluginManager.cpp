@@ -300,13 +300,12 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         plugin_force = accumulated_force_;
         plugin_torque = accumulated_torque_;
     }
-
+            
     // Convert plugin forces to Vector3
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
-    Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
+    Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);    
 
-    // Add environmental forces (gravity)
-    total_force = total_force + Vector3(0.0, 0.0, -9.81 * physics_state.mass);
+    // Nota: No se agregan fuerzas ambientales aquí. Solo se integran fuerzas/torques provenientes de plugins paralelos.
 
     // Integrate physics
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);

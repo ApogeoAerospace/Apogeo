@@ -18,7 +18,7 @@
     {
       "name": "aerodynamics",
       "type": 1,
-      "library_path": "build/plugins/libaerodynamics.dylib",
+      "library_path": "aerodynamics",
       "enabled": true,
       "parameters": {
         "reference_area": 0.785,
