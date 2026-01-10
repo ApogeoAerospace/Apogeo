@@ -271,7 +271,7 @@ void SimulationEngine::shutdown() {
     LOG_INFO("Simulation shutdown complete", "SimulationEngine");
 }
 
-bool SimulationEngine::validate_simulation_state() const {
+bool SimulationEngine::validate_simulation_state() const { // GROUND COLLISION es tarea de el modulo de Ambiente
     std::lock_guard<std::mutex> lock(state_mutex_);
 
     if (current_state_buffer_.empty()) {
@@ -359,7 +359,7 @@ bool SimulationEngine::validate_simulation_state() const {
     return true;
 }
 
-void SimulationEngine::print_performance_metrics() const {
+void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRICS SHOULD NOT BE MANAGED IN THE SIMULATOR BUT IN VISUALIZATION ENGINE
     if (!plugin_manager_) {
         return;
     }
