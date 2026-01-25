@@ -28,6 +28,7 @@
     "plugins": [
         {
             "name": "aerodynamics",
+            "library_path": "build/bin/libaerodynamics.dll",
             "type": 1,
             "enabled": true,
             "parameters": {
@@ -43,6 +44,7 @@
         },
         {
             "name": "propulsion",
+            "library_path": "build/bin/libpropulsion.dll",
             "type": 1, 
             "enabled": true,
             "parameters": {
@@ -59,7 +61,8 @@
         },
         {
             "name": "structures",
-            "type": 2,
+            "library_path": "build/bin/libstructures.dll",
+            "type": 1,
             "enabled": true,
             "parameters": {
                 "dry_mass": 10000.0,
@@ -73,7 +76,8 @@
         },
         {
             "name": "environment",
-            "type": 2,
+            "library_path": "build/bin/libenvironment.dll",
+            "type": 1,
             "enabled": true,
             "parameters": {
                 "enable_atmospheric_model": true,

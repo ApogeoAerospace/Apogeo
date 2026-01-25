@@ -53,18 +53,52 @@ struct AerodynamicsPluginInstance {
 
 // Funciones auxiliares
 double calculateAirDensity(double altitude) {
-    // Modelo de atmósfera estándar internacional
+    // Modelo ISA (International Standard Atmosphere)
     if (altitude < 0) altitude = 0;
 
-    // Hasta 11km (troposfera)
+    const double R = 287.05;  // J/(kg·K) - Constante del gas para aire
+    const double g = 9.80665; // m/s² - Gravedad estándar
+
+    // TROPOSFERA (0 - 11 km)
     if (altitude <= 11000.0) {
-        double temperature = 288.15 - 0.0065 * altitude;  // K
-        double pressure = 101325.0 * pow(temperature / 288.15, 5.256);  // Pa
-        return pressure / (287.0 * temperature);  // kg/m³
+        const double T0 = 288.15;    // K - Temperatura a nivel del mar
+        const double P0 = 101325.0;  // Pa - Presión a nivel del mar
+        const double L = 0.0065;     // K/m - Gradiente térmico
+
+        double T = T0 - L * altitude;
+        double P = P0 * pow(T / T0, g / (R * L));
+        return P / (R * T);  // ρ = P/(RT)
     }
 
-    // Estratosfera simplificada (11-20km)
-    return AIR_DENSITY_SEA_LEVEL * exp(-altitude / SCALE_HEIGHT);
+    // ESTRATOSFERA BAJA (11 - 25 km)
+    else if (altitude <= 25000.0) {
+        const double T11 = 216.65;   // K - Temperatura a 11 km
+        const double P11 = 22632.1;  // Pa - Presión a 11 km
+
+        double h = altitude - 11000.0;
+        double P = P11 * exp(-g * h / (R * T11));
+        return P / (R * T11);
+    }
+
+    // ESTRATOSFERA MEDIA (25 - 47 km)
+    else if (altitude <= 47000.0) {
+        const double T25 = 216.65;
+        const double P25 = 2488.66;
+        const double L = -0.003;     // Inversión térmica
+
+        double h = altitude - 25000.0;
+        double T = T25 + L * h;
+        double P = P25 * pow(T / T25, g / (R * L));
+        return P / (R * T);
+    }
+
+    // MESOSFERA Y SUPERIORES (>47 km)
+    else {
+        const double rho_47 = 0.00142;  // kg/m³ a 47 km
+        const double H = 6400.0;        // m - Scale height
+        double h = altitude - 47000.0;
+        return rho_47 * exp(-h / H);
+    }
 }
 
 double calculateMachNumber(double velocity, double altitude) {
@@ -126,8 +160,16 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 }
 
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
-    if (!handle || !data || !data->state_buffer || !data->force_out) {
+    if (!handle || !data || !data->state_buffer) {
         return -1; // Error: parámetros inválidos
+    }
+
+    // Compatibilidad con ambas versiones de la API
+    PluginVector3* force_output = data->output_force ? data->output_force : data->force_out;
+    PluginVector3* torque_output = data->output_torque ? data->output_torque : data->torque_out;
+
+    if (!force_output) {
+        return -1; // Error: sin puntero de salida para fuerzas
     }
 
     AerodynamicsPluginInstance* instance = reinterpret_cast<AerodynamicsPluginInstance*>(handle);
@@ -229,15 +271,15 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     }
 
     // Asignar fuerzas de salida
-    data->force_out->x = static_cast<float>(force_x);
-    data->force_out->y = static_cast<float>(force_y);
-    data->force_out->z = static_cast<float>(force_z);
+    force_output->x = static_cast<float>(force_x);
+    force_output->y = static_cast<float>(force_y);
+    force_output->z = static_cast<float>(force_z);
 
     // Torque (momento aerodinámico) - simplificado
-    if (data->torque_out) {
-        data->torque_out->x = 0.0;
-        data->torque_out->y = 0.0;
-        data->torque_out->z = 0.0;
+    if (torque_output) {
+        torque_output->x = 0.0;
+        torque_output->y = 0.0;
+        torque_output->z = 0.0;
     }
 
     return 0; // Éxito

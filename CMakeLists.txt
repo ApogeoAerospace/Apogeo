@@ -151,7 +151,9 @@ if(ENABLE_TESTING)
         tests/test_physics_integrator.cpp
         tests/test_time_manager.cpp
         tests/test_logger.cpp
-	tests/test_output_manager.cpp
+        tests/test_output_manager.cpp
+        tests/test_simulation_engine.cpp
+        tests/test_initial_state_loader.cpp
     )
     
     target_link_libraries(core_tests PRIVATE

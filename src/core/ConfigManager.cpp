@@ -21,9 +21,15 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
 
         // Parse different sections
-        if (!parseSimulationConfig(config_json)) return false;
-        if (!parsePhysicsConfig(config_json)) return false;
-        if (!parsePluginConfigs(config_json)) return false;
+        if (!parseSimulationConfig(config_json)) {
+            return false;
+        }
+        if (!parsePhysicsConfig(config_json)) {
+            return false;
+        }
+        if (!parsePluginConfigs(config_json)) {
+            return false;
+        }
 
         // Parse file paths
         if (config_json.contains("initial_state_file")) {

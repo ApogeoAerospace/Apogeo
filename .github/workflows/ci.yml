@@ -36,6 +36,13 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
       
+      - name: Limpiar vcpkg si existe
+        run: |
+          if [ -d "vcpkg" ]; then
+            echo "Removing existing vcpkg directory..."
+            rm -rf vcpkg
+          fi
+      
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v3
@@ -61,9 +68,25 @@ jobs:
       - name: Configurar vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git
+          # Remove vcpkg directory if it exists but is not a git repo
+          if [ -d "vcpkg" ] && [ ! -d "vcpkg/.git" ]; then
+            echo "Removing incomplete vcpkg directory..."
+            rm -rf vcpkg
+          fi
+          
+          if [ ! -d "vcpkg" ]; then
+            echo "Cloning vcpkg repository..."
+            git clone https://github.com/Microsoft/vcpkg.git
+          else
+            echo "vcpkg directory exists, pulling latest changes..."
+            cd vcpkg && git pull && cd ..
+          fi
+          
           cd vcpkg
-          ./bootstrap-vcpkg.sh
+          if [ ! -f "vcpkg" ] && [ ! -f "vcpkg.exe" ]; then
+            echo "Bootstrapping vcpkg..."
+            ./bootstrap-vcpkg.sh
+          fi
           ./vcpkg install
       
       - name: Verificar instalación vcpkg
@@ -93,6 +116,13 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
+
+      - name: Limpiar vcpkg si existe
+        run: |
+          if [ -d "vcpkg" ]; then
+            echo "Removing existing vcpkg directory..."
+            rm -rf vcpkg
+          fi
 
       - name: Configurar Python 3.x
         uses: actions/setup-python@v5
@@ -486,12 +516,12 @@ jobs:
             echo "::warning::⚠️ clang-tidy reportó problemas durante el análisis (exit code: ${CLANG_TIDY_EXIT_CODE})"
           fi
           
-          # VALIDACIÓN ESTRICTA: Máximo 444 advertencias permitidas
+          # VALIDACIÓN ESTRICTA: Máximo 10 advertencias permitidas
           if [ "$WARNING_COUNT" -ge 445 ]; then
             echo "❌ ERROR: Demasiadas advertencias de clang-tidy"
             echo "   Actual: $WARNING_COUNT advertencias"
-            echo "   Máximo permitido: 444 advertencias"
-            echo "   Exceso: $((WARNING_COUNT - 444)) advertencias"
+            echo "   Máximo permitido: 10 advertencias"
+            echo "   Exceso: $((WARNING_COUNT - 10)) advertencias"
             echo ""
             echo "🔧 Acción requerida: Corregir advertencias antes de continuar"
             echo "   Por favor revisa el reporte de clang-tidy y soluciona las advertencias"
@@ -499,7 +529,7 @@ jobs:
           elif [ "$WARNING_COUNT" -gt 50 ]; then
             echo "::warning::⚠️ Muchas advertencias de clang-tidy ($WARNING_COUNT). Se recomienda corregirlas."
           else
-            echo "✅ Advertencias dentro del límite aceptable: $WARNING_COUNT <= 444"
+            echo "✅ Advertencias dentro del límite aceptable: $WARNING_COUNT <= 10"
           fi
           
           if [ "$ERROR_COUNT" -gt 0 ]; then
@@ -550,7 +580,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Tests Unitarios**: Tasa de éxito >= 95% requerida" >> $GITHUB_STEP_SUMMARY
           echo "- **Cobertura de Código**: >= 44% requerida" >> $GITHUB_STEP_SUMMARY
-          echo "- **Análisis Estático**: 0 errores críticos requeridos, <= 444 advertencias" >> $GITHUB_STEP_SUMMARY
+          echo "- **Análisis Estático**: 0 errores críticos requeridos, <= 10 advertencias" >> $GITHUB_STEP_SUMMARY
           echo "- **Esquemas FlatBuffers**: Validación sintáctica completa" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then

@@ -187,8 +187,10 @@ void calculateAtmosphericProperties(EnvironmentPluginInstance* instance, double 
 }
 
 double calculateLocalGravity(double altitude) {
-    // Variación de gravedad con altitud
     double r = EARTH_RADIUS + altitude;
+    if (r < EARTH_RADIUS * 0.5) {  // Protección contra valores incorrectos
+        return STANDARD_GRAVITY;
+    }
     return GRAVITATIONAL_CONSTANT * EARTH_MASS / (r * r);
 }
 
@@ -304,8 +306,16 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 }
 
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
-    if (!handle || !data || !data->state_buffer || !data->force_out) {
+    if (!handle || !data || !data->state_buffer) {
         return -1; // Error: parámetros inválidos
+    }
+
+    // Compatibilidad con ambas versiones de la API
+    PluginVector3* force_output = data->output_force ? data->output_force : data->force_out;
+    PluginVector3* torque_output = data->output_torque ? data->output_torque : data->torque_out;
+
+    if (!force_output) {
+        return -1; // Error: sin puntero de salida para fuerzas
     }
 
     EnvironmentPluginInstance* instance = reinterpret_cast<EnvironmentPluginInstance*>(handle);
@@ -396,35 +406,60 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
 
     // VARIACIÓN GRAVITACIONAL
     if (instance->enable_gravity_variation) {
-        // Corrección gravitacional (diferencia respecto a gravedad estándar)
-        double gravity_correction = instance->local_gravity - STANDARD_GRAVITY;
-        double mass = 1000.0;  // Masa estimada
+        // CORRECCIÓN: Usar gravedad completa, no diferencia
+        double mass = 1000.0;  // TODO: obtener masa real del state
 
-        // Fuerza gravitacional adicional (hacia el centro de la Tierra)
-        double earth_center_x = -pos_x;
-        double earth_center_y = -pos_y;
-        double earth_center_z = -pos_z;
-        double distance_to_center = sqrt(earth_center_x*earth_center_x +
-                                       earth_center_y*earth_center_y +
-                                       earth_center_z*earth_center_z);
+        // Calcular distancia al centro de la Tierra
+        double distance_to_center = sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z);
 
-        if (distance_to_center > 0) {
-            force_x += mass * gravity_correction * (earth_center_x / distance_to_center);
-            force_y += mass * gravity_correction * (earth_center_y / distance_to_center);
-            force_z += mass * gravity_correction * (earth_center_z / distance_to_center);
+        // Si estamos muy cerca del centro (error), usar posición por defecto
+        if (distance_to_center < EARTH_RADIUS * 0.5) {
+            // Asumir superficie de la Tierra
+            distance_to_center = EARTH_RADIUS;
+            pos_z = EARTH_RADIUS;  // Colocar en superficie
+        }
+
+        // Calcular magnitud de gravedad con ley del cuadrado inverso
+        double gravity_magnitude = GRAVITATIONAL_CONSTANT * EARTH_MASS /
+                                  (distance_to_center * distance_to_center);
+
+        // DIRECCIÓN: Hacia el centro de la Tierra
+        double unit_x = -pos_x / distance_to_center;
+        double unit_y = -pos_y / distance_to_center;
+        double unit_z = -pos_z / distance_to_center;
+
+        // Fuerza gravitacional F = mg
+        force_x += mass * gravity_magnitude * unit_x;
+        force_y += mass * gravity_magnitude * unit_y;
+        force_z += mass * gravity_magnitude * unit_z;
+
+        // Perturbación J2 (achatamiento terrestre) - importante para órbitas
+        if (distance_to_center > EARTH_RADIUS) {
+            const double J2 = 1.08262668e-3;
+            double r_ratio = EARTH_RADIUS / distance_to_center;
+            double z_over_r = pos_z / distance_to_center;
+
+            double j2_factor = 1.5 * J2 * r_ratio * r_ratio;
+            double j2_radial = j2_factor * (1.0 - 5.0 * z_over_r * z_over_r);
+            double j2_axial = j2_factor * (3.0 - 5.0 * z_over_r * z_over_r);
+
+            // Aplicar correcciones J2
+            force_x *= (1.0 + j2_radial);
+            force_y *= (1.0 + j2_radial);
+            force_z += mass * gravity_magnitude * j2_axial * z_over_r;
         }
     }
 
     // Asignar fuerzas de salida
-    data->force_out->x = static_cast<float>(force_x);
-    data->force_out->y = static_cast<float>(force_y);
-    data->force_out->z = static_cast<float>(force_z);
+    force_output->x = static_cast<float>(force_x);
+    force_output->y = static_cast<float>(force_y);
+    force_output->z = static_cast<float>(force_z);
 
     // No hay torques ambientales significativos en este modelo simplificado
-    if (data->torque_out) {
-        data->torque_out->x = 0.0;
-        data->torque_out->y = 0.0;
-        data->torque_out->z = 0.0;
+    if (torque_output) {
+        torque_output->x = 0.0;
+        torque_output->y = 0.0;
+        torque_output->z = 0.0;
     }
 
     return 0; // Éxito

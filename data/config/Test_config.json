@@ -25,7 +25,7 @@
         "enable_inertia_calculation": true,
         "enable_structural_analysis": true
       },
-      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libstructures.dylib"
+      "library_path": "/Documents/MoLab/build/lib/libstructures.dylib"
     },
     {
       "name": "Environment",
@@ -37,7 +37,7 @@
         "enable_wind_effects": true,
         "enable_gravity_variation": true
       },
-      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libenvironment.dylib"
+      "library_path": "/Documents/MoLab/build/lib/libenvironment.dylib"
     },
     {
       "name": "Propulsion",
@@ -50,7 +50,7 @@
         "engine_on": true,
         "enable_fuel_consumption": true
       },
-      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libpropulsion.dylib"
+      "library_path": "/Documents/MoLab/build/lib/libpropulsion.dylib"
     },
     {
       "name": "Aerodynamics",
@@ -63,7 +63,7 @@
         "enable_drag": true,
         "enable_altitude_effects": true
       },
-      "library_path": "/Users/johancastrillon/Documents/MoLab/build/lib/libaerodynamics.dylib"
+      "library_path": "/Documents/MoLab/build/lib/libaerodynamics.dylib"
     }
   ],
   "output": {

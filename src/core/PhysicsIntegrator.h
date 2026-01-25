@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <cmath>
 #include "flatbuffers/flatbuffers.h"
 #include "state_vector_generated.h"
 

@@ -25,23 +25,37 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
 
     // Extrae los datos del JSON y construye el FlatBuffer
     auto position = state_vector::Vec3(
-        data["position"]["x"], data["position"]["y"], data["position"]["z"]);
+        data["position"]["x"].get<float>(),
+        data["position"]["y"].get<float>(),
+        data["position"]["z"].get<float>());
 
     auto velocity = state_vector::Vec3(
-        data["velocity"]["x"], data["velocity"]["y"], data["velocity"]["z"]);
+        data["velocity"]["x"].get<float>(),
+        data["velocity"]["y"].get<float>(),
+        data["velocity"]["z"].get<float>());
 
     auto orientation = state_vector::Quaternion(
-        data["orientation"]["x"], data["orientation"]["y"], data["orientation"]["z"], data["orientation"]["w"]);
+        data["orientation"]["x"].get<float>(),
+        data["orientation"]["y"].get<float>(),
+        data["orientation"]["z"].get<float>(),
+        data["orientation"]["w"].get<float>());
 
-    float atm_density = data["atm_density"];
-    float atm_pressure = data["atm_pressure"];
-    float atm_temperature = data["atm_temperature"];
+    float atm_density = data["atm_density"].get<float>();
+    float atm_pressure = data["atm_pressure"].get<float>();
+    float atm_temperature = data["atm_temperature"].get<float>();
+
     auto gravity = state_vector::Vec3(
-        data["gravity"]["x"], data["gravity"]["y"], data["gravity"]["z"]);
-    float utc = data["UTC"];
-    float time = data["Time"];
+        data["gravity"]["x"].get<float>(),
+        data["gravity"]["y"].get<float>(),
+        data["gravity"]["z"].get<float>());
+
+    float time = data["Time"].get<float>();
+    float utc = data["UTC"].get<float>();
+
     auto wind_speed = state_vector::Vec3(
-        data["wind_speed"]["x"], data["wind_speed"]["y"], data["wind_speed"]["z"]);
+        data["wind_speed"]["x"].get<float>(),
+        data["wind_speed"]["y"].get<float>(),
+        data["wind_speed"]["z"].get<float>());
 
     // Crea el estado general usando todos los argumentos requeridos
     auto general_state = state_vector::CreateGeneralState(
@@ -53,8 +67,8 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
         atm_pressure,
         atm_temperature,
         &gravity,
-        utc,
         time,
+        utc,
         &wind_speed
     );
 
