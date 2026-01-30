@@ -41,9 +41,9 @@ add_custom_target(
 
 # --- Configuración del núcleo ---
 set(CORE_SOURCES
-    core/SimulationEngine.cpp
-    core/PluginManager.cpp
-    core/InitialStateLoader.cpp
+    src/core/SimulationEngine.cpp
+    src/core/PluginManager.cpp
+    src/core/InitialStateLoader.cpp
     src/core/ConfigManager.cpp
     src/core/PhysicsIntegrator.cpp
     src/core/OutputManager.cpp
@@ -82,10 +82,10 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/output"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/initial_state.json
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/default_state.json # Hardcoded initial stante file
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/config/default_config.json
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/config/default_config.json # Hardcoded config file
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMENT "Copiando archivos de configuración y creando directorios..."
 )
