@@ -35,7 +35,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
-            initial_state_file_ = "data/initial_state.json";
+            initial_state_file_ = "data/initial_state/default_state.json";
         }
 
         if (config_json.contains("output_directory")) {
@@ -72,9 +72,6 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
 
         // Physics config
-        config_json["physics"]["enable_gravity"] = physics_config_.enable_gravity;
-        config_json["physics"]["enable_atmospheric_drag"] = physics_config_.enable_atmospheric_drag;
-        config_json["physics"]["enable_wind_effects"] = physics_config_.enable_wind_effects;
         config_json["physics"]["integration_tolerance"] = physics_config_.integration_tolerance;
         config_json["physics"]["integrator_type"] = physics_config_.integrator_type;
 
@@ -121,15 +118,12 @@ void ConfigManager::setDefaults() {
     simulation_config_.log_level = "INFO";
 
     // Physics defaults
-    physics_config_.enable_gravity = true;
-    physics_config_.enable_atmospheric_drag = true;
-    physics_config_.enable_wind_effects = false;
     physics_config_.integration_tolerance = 1e-6;
     physics_config_.integrator_type = "runge_kutta_4";
 
     plugin_configs_.clear();
 
-    initial_state_file_ = "data/initial_state.json";
+    initial_state_file_ = "data/initial_state/default_state.json";
     output_directory_ = "output/";
 
     LOG_INFO("Using default configuration", "ConfigManager");
@@ -167,16 +161,10 @@ bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
         if (json.contains("physics")) {
             const auto& physics = json["physics"];
 
-            physics_config_.enable_gravity = physics.value("enable_gravity", true);
-            physics_config_.enable_atmospheric_drag = physics.value("enable_atmospheric_drag", true);
-            physics_config_.enable_wind_effects = physics.value("enable_wind_effects", false);
             physics_config_.integration_tolerance = physics.value("integration_tolerance", 1e-6);
             physics_config_.integrator_type = physics.value("integrator_type", "runge_kutta_4");
         } else {
             // Use defaults
-            physics_config_.enable_gravity = true;
-            physics_config_.enable_atmospheric_drag = true;
-            physics_config_.enable_wind_effects = false;
             physics_config_.integration_tolerance = 1e-6;
             physics_config_.integrator_type = "runge_kutta_4";
         }

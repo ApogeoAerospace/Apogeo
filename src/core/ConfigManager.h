@@ -25,9 +25,6 @@ struct SimulationConfig {
 };
 
 struct PhysicsConfig {
-    bool enable_gravity;
-    bool enable_atmospheric_drag;
-    bool enable_wind_effects;
     double integration_tolerance;
     std::string integrator_type; // "euler", "runge_kutta_4", "verlet"
 };

@@ -83,14 +83,6 @@ TEST_F(ConfigManagerTest, InvalidConfigFileUsesDefaults) {
     EXPECT_GT(sim_config.time_step, 0.0);
 }
 
-TEST_F(ConfigManagerTest, GravityEnabled) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_TRUE(physics_config.enable_gravity);
-}
-
 TEST_F(ConfigManagerTest, IntegratorType) {
     auto& config_manager = ConfigManager::getInstance();
     config_manager.loadConfig(test_config_file);
@@ -118,22 +110,6 @@ TEST_F(ConfigManagerTest, GetOutputDirectory) {
     config_manager.loadConfig(test_config_file);
 
     EXPECT_EQ(config_manager.getOutputDirectory(), "output/");
-}
-
-TEST_F(ConfigManagerTest, AtmosphericDragEnabled) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_FALSE(physics_config.enable_atmospheric_drag);
-}
-
-TEST_F(ConfigManagerTest, WindEffectsEnabled) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_FALSE(physics_config.enable_wind_effects);
 }
 
 TEST_F(ConfigManagerTest, IntegrationTolerance) {
@@ -220,9 +196,6 @@ TEST_F(ConfigManagerTest, ConfigWithDifferentValues) {
     EXPECT_FALSE(sim_config.enable_logging);
 
     const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_FALSE(physics_config.enable_gravity);
-    EXPECT_TRUE(physics_config.enable_atmospheric_drag);
-    EXPECT_TRUE(physics_config.enable_wind_effects);
 
     std::remove(alt_config.c_str());
 }

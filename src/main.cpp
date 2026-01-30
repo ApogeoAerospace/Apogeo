@@ -11,7 +11,7 @@ void print_usage(const char* program_name) {
     std::cout << "  -c, --config <file>     Use specified configuration file\n";
     std::cout << "  -s, --state <file>      Use specified initial state file\n";
     std::cout << "  -t, --ticks <number>    Run specified number of ticks (default: full simulation)\n";
-    std::cout << "  -l, --log-level <level> Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)\n";
+    std::cout << "  -l, --log-level <level> Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) (default: INFO)\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  --version               Show version information\n";
     std::cout << "\nExamples:\n";
@@ -27,8 +27,7 @@ void print_version() {
 
 int main(int argc, char* argv[]) {
     // Parse command line arguments
-    std::string config_file = "data/default_config.json";
-    std::string state_file = "";
+    std::string config_file = "";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
 
@@ -46,13 +45,6 @@ int main(int argc, char* argv[]) {
                 config_file = argv[++i];
             } else {
                 std::cerr << "Error: --config requires a file path\n";
-                return 1;
-            }
-        } else if (arg == "-s" || arg == "--state") {
-            if (i + 1 < argc) {
-                state_file = argv[++i];
-            } else {
-                std::cerr << "Error: --state requires a file path\n";
                 return 1;
             }
         } else if (arg == "-t" || arg == "--ticks") {
@@ -113,13 +105,7 @@ int main(int argc, char* argv[]) {
         SimulationEngine engine;
 
         // Initialize with configuration
-        bool init_success = false;
-        if (!state_file.empty()) {
-            LOG_INFO("Using custom state file: " + state_file, "Main");
-            init_success = engine.initialize(state_file);
-        } else {
-            init_success = engine.initialize_with_config(config_file);
-        }
+        bool init_success = engine.initialize_with_config(config_file);
 
         if (!init_success) {
             LOG_CRITICAL("Failed to initialize simulation engine", "Main");
@@ -146,7 +132,7 @@ int main(int argc, char* argv[]) {
             }
 
             for (int i = 0; i < tick_count; ++i) {
-                // LOGGING DE PROGRESO: Frecuente y simple para interfaz web
+                // LOGGING DE PROGRESO: Frecuente y simple para interfaz externa
                 if (i % progress_interval == 0 || i == tick_count - 1) {
                     LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }
