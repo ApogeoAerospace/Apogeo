@@ -16,19 +16,30 @@ protected:
         fs::create_directories("test_output");
         fs::create_directories("test_logs");
 
-        // Create test state file
+        // Create test state file (new schema)
         test_state_file = "test_data/test_state.json";
         json test_state = {
+            {"sim_time", 0.0},
+            {"dt", 0.01},
             {"position", {{"x", 0.0}, {"y", 0.0}, {"z", 1000.0}}},
             {"velocity", {{"x", 10.0}, {"y", 0.0}, {"z", 0.0}}},
             {"orientation", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"w", 1.0}}},
+            {"angular_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}},
+            {"total_mass", 1000.0},
+            {"cg_location", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}},
+            {"inertia_tensor", {{"ixx", 10.0}, {"iyy", 12.0}, {"izz", 8.0}, {"ixy", 0.0}, {"ixz", 0.0}, {"iyz", 0.0}}},
+            {"propellant_masses", json::array({200.0, 150.0})},
+            {"mach_number", 0.3},
+            {"dynamic_pressure", 15000.0},
+            {"angle_of_attack", 5.0},
+            {"sideslip_angle", 0.0},
             {"atm_density", 1.225},
             {"atm_pressure", 101325.0},
             {"atm_temperature", 288.15},
+            {"wind_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}},
             {"gravity", {{"x", 0.0}, {"y", -9.81}, {"z", 0.0}}},
-            {"UTC", 1000000000},
-            {"Time", 0.0},
-            {"wind_speed", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
+            {"engines", json::array({ {{"throttle", 0.8}, {"tvc_angles", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}} }) },
+            {"surface_deflections", json::array({0.0, 0.0, 0.0})}
         };
 
         std::ofstream state_file(test_state_file);
@@ -39,23 +50,13 @@ protected:
         test_config_file = "test_data/test_config.json";
         json test_config = {
             {"simulation", {
-                {"time_step", 0.01},
                 {"duration", 1.0},
                 {"max_iterations", 100},
                 {"enable_logging", true},
                 {"log_file", "test_logs/test.log"},
                 {"log_level", "INFO"}
             }},
-            {"physics", {
-                {"enable_gravity", true},
-                {"enable_atmospheric_drag", false},
-                {"enable_wind_effects", false},
-                {"integration_tolerance", 1e-6},
-                {"integrator_type", "euler"}
-            }},
-            {"plugins", {
-                {"enabled_plugins", json::array()}
-            }},
+            {"plugins", json::array()}, // keep plugins empty for tests
             {"initial_state_file", test_state_file},
             {"output_directory", "test_output/"}
         };
@@ -163,16 +164,12 @@ TEST_F(SimulationEngineTest, ShutdownEngine) {
 TEST_F(SimulationEngineTest, LoadPluginWithInvalidType) {
     SimulationEngine engine;
     engine.initialize(test_state_file);
-
-    // Test with invalid plugin type
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 999));
 }
 
 TEST_F(SimulationEngineTest, LoadPluginWithValidTypes) {
     SimulationEngine engine;
     engine.initialize(test_state_file);
-
-    // Test with valid plugin types (won't actually load, but should handle gracefully)
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 0));
     EXPECT_NO_THROW(engine.load_plugin("test_plugin", 1));
 }
@@ -221,16 +218,17 @@ TEST_F(SimulationEngineTest, GroundCollisionDetection) {
     // Create state with negative Z (below ground in local coordinates)
     std::string collision_state_file = "test_data/collision_state.json";
     json collision_state = {
+        {"sim_time", 0.0},
+        {"dt", 0.01},
         {"position", {{"x", 0.0}, {"y", 0.0}, {"z", -10.0}}},
         {"velocity", {{"x", 0.0}, {"y", 0.0}, {"z", -100.0}}},
         {"orientation", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"w", 1.0}}},
+        {"angular_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}},
         {"atm_density", 1.225},
         {"atm_pressure", 101325.0},
         {"atm_temperature", 288.15},
         {"gravity", {{"x", 0.0}, {"y", -9.81}, {"z", 0.0}}},
-        {"UTC", 1000000000},
-        {"Time", 0.0},
-        {"wind_speed", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
+        {"wind_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
     };
 
     std::ofstream state_file(collision_state_file);
@@ -270,7 +268,6 @@ TEST_F(SimulationEngineTest, TickWithoutInitialization) {
 
 TEST_F(SimulationEngineTest, StateValidationWithEmptyBuffer) {
     SimulationEngine engine;
-    // Without initialization, state buffer should be empty
     EXPECT_FALSE(engine.validate_simulation_state());
 }
 

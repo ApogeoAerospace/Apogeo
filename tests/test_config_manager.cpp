@@ -13,20 +13,13 @@ protected:
         test_config_file = "test_config.json";
         json test_config = {
             {"simulation", {
-                {"time_step", 0.01},
                 {"duration", 100.0},
                 {"max_iterations", 10000},
                 {"enable_logging", true},
                 {"log_file", "logs/test.log"},
                 {"log_level", "INFO"}
             }},
-            {"physics", {
-                {"enable_gravity", true},
-                {"enable_atmospheric_drag", false},
-                {"enable_wind_effects", false},
-                {"integration_tolerance", 1e-6},
-                {"integrator_type", "runge_kutta_4"}
-            }},
+            // Physics section removed per new config design
             {"initial_state_file", "data/initial_state.json"},
             {"output_directory", "output/"}
         };
@@ -47,14 +40,6 @@ protected:
 TEST_F(ConfigManagerTest, LoadValidConfig) {
     auto& config_manager = ConfigManager::getInstance();
     EXPECT_TRUE(config_manager.loadConfig(test_config_file));
-}
-
-TEST_F(ConfigManagerTest, GetTimeStep) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& sim_config = config_manager.getSimulationConfig();
-    EXPECT_DOUBLE_EQ(sim_config.time_step, 0.01);
 }
 
 TEST_F(ConfigManagerTest, GetDuration) {
@@ -80,15 +65,7 @@ TEST_F(ConfigManagerTest, InvalidConfigFileUsesDefaults) {
 
     // Debe tener valores por defecto
     const auto& sim_config = config_manager.getSimulationConfig();
-    EXPECT_GT(sim_config.time_step, 0.0);
-}
-
-TEST_F(ConfigManagerTest, IntegratorType) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_EQ(physics_config.integrator_type, "runge_kutta_4");
+    EXPECT_EQ(sim_config.simulation_duration, 100.0);
 }
 
 TEST_F(ConfigManagerTest, ValidateConfigSuccess) {
@@ -110,14 +87,6 @@ TEST_F(ConfigManagerTest, GetOutputDirectory) {
     config_manager.loadConfig(test_config_file);
 
     EXPECT_EQ(config_manager.getOutputDirectory(), "output/");
-}
-
-TEST_F(ConfigManagerTest, IntegrationTolerance) {
-    auto& config_manager = ConfigManager::getInstance();
-    config_manager.loadConfig(test_config_file);
-
-    const auto& physics_config = config_manager.getPhysicsConfig();
-    EXPECT_DOUBLE_EQ(physics_config.integration_tolerance, 1e-6);
 }
 
 TEST_F(ConfigManagerTest, LoggingEnabled) {
@@ -144,40 +113,16 @@ TEST_F(ConfigManagerTest, LogLevelConfig) {
     EXPECT_EQ(sim_config.log_level, "INFO");
 }
 
-TEST_F(ConfigManagerTest, ReloadConfig) {
-    auto& config_manager = ConfigManager::getInstance();
-
-    // Load once
-    EXPECT_TRUE(config_manager.loadConfig(test_config_file));
-    const auto& sim_config1 = config_manager.getSimulationConfig();
-    double time_step1 = sim_config1.time_step;
-
-    // Reload
-    EXPECT_TRUE(config_manager.loadConfig(test_config_file));
-    const auto& sim_config2 = config_manager.getSimulationConfig();
-    double time_step2 = sim_config2.time_step;
-
-    EXPECT_DOUBLE_EQ(time_step1, time_step2);
-}
-
 TEST_F(ConfigManagerTest, ConfigWithDifferentValues) {
-    // Create a different config
+    // Create a different config without physics section
     std::string alt_config = "alt_test_config.json";
     json alt_test_config = {
         {"simulation", {
-            {"time_step", 0.05},
             {"duration", 200.0},
             {"max_iterations", 20000},
             {"enable_logging", false},
             {"log_file", "logs/alt.log"},
             {"log_level", "DEBUG"}
-        }},
-        {"physics", {
-            {"enable_gravity", false},
-            {"enable_atmospheric_drag", true},
-            {"enable_wind_effects", true},
-            {"integration_tolerance", 1e-8},
-            {"integrator_type", "verlet"}
         }},
         {"initial_state_file", "data/alt_state.json"},
         {"output_directory", "alt_output/"}
@@ -191,11 +136,13 @@ TEST_F(ConfigManagerTest, ConfigWithDifferentValues) {
     EXPECT_TRUE(config_manager.loadConfig(alt_config));
 
     const auto& sim_config = config_manager.getSimulationConfig();
-    EXPECT_DOUBLE_EQ(sim_config.time_step, 0.05);
     EXPECT_DOUBLE_EQ(sim_config.simulation_duration, 200.0);
+    EXPECT_EQ(sim_config.max_iterations, 20000);
     EXPECT_FALSE(sim_config.enable_logging);
+    EXPECT_EQ(sim_config.log_file, "logs/alt.log");
+    EXPECT_EQ(sim_config.log_level, "DEBUG");
 
-    const auto& physics_config = config_manager.getPhysicsConfig();
+    // Physics section removed: no physics_config usage here
 
     std::remove(alt_config.c_str());
 }
