@@ -141,43 +141,49 @@ void OutputManager::initializeOutput(const std::string& run_name) {
   last_recorded_tick_ = -1;
   initialized_ = true;
 
+  {
+    std::lock_guard<std::mutex> queue_lock(queue_mutex_);
+    pending_points_.clear();
+  }
+
+  writer_running_.store(true);
+  writer_thread_ = std::thread(&OutputManager::writerLoop, this);
+
   LOG_INFO("OutputManager initialized for run: " + run_name_, "OutputManager");
 }
 
 void OutputManager::recordState(const std::vector<uint8_t>& state_buffer, double simulation_time, double utc_time, int tick) {
-  if (tick % output_interval_ != 0) {
-    return;
-  }
-
-  std::lock_guard<std::mutex> lock(data_mutex_);
-
-  if (!initialized_) {
-    LOG_WARNING("OutputManager not initialized, skipping state recording", "OutputManager");
-    return;
-  }
-
   const state_vector::GeneralState* state = state_vector::GetGeneralState(state_buffer.data());
   if (!state) {
     LOG_ERROR("Failed to parse state buffer for output", "OutputManager");
     return;
   }
 
+  recordState(state, simulation_time, utc_time, tick);
+}
+
+void OutputManager::recordState(const state_vector::GeneralState* state, double simulation_time, double utc_time, int tick) {
+  if (tick % output_interval_ != 0) {
+    return;
+  }
+
+  if (!initialized_) {
+    LOG_WARNING("OutputManager not initialized, skipping state recording", "OutputManager");
+    return;
+  }
+
+  if (!state) {
+    LOG_ERROR("Invalid state pointer for output", "OutputManager");
+    return;
+  }
+
   SimulationDataPoint point = extractDataPoint(state, simulation_time, utc_time, tick);
-  data_points_.push_back(point);
 
-  if (output_csv_ && csv_file_ && csv_file_->is_open()) {
-    writeDataPointCSV(point, tick);
+  {
+    std::lock_guard<std::mutex> lock(queue_mutex_);
+    pending_points_.push_back({point, tick});
   }
-
-  if (output_json_ && json_file_ && json_file_->is_open()) {
-    writeDataPointJSON(point, tick);
-  }
-
-  if (output_binary_ && binary_file_ && binary_file_->is_open()) {
-    binary_file_->write(reinterpret_cast<const char*>(&point), sizeof(SimulationDataPoint));
-  }
-
-  last_recorded_tick_ = tick;
+  queue_cv_.notify_one();
 }
 
 void OutputManager::recordMetrics(const std::string& component, const std::string& metric_name, double value) {
@@ -186,11 +192,17 @@ void OutputManager::recordMetrics(const std::string& component, const std::strin
 }
 
 void OutputManager::finalizeOutput() {
-  std::lock_guard<std::mutex> lock(data_mutex_);
-
   if (!initialized_) {
     return;
   }
+
+  writer_running_.store(false);
+  queue_cv_.notify_all();
+  if (writer_thread_.joinable()) {
+    writer_thread_.join();
+  }
+
+  std::lock_guard<std::mutex> lock(data_mutex_);
 
   if (csv_file_ && csv_file_->is_open()) {
     csv_file_->close();
@@ -243,6 +255,8 @@ void OutputManager::printSummary() {
   LOG_INFO("Total data points: " + std::to_string(data_points_.size()), "OutputManager");
   LOG_INFO("Simulation time: " + std::to_string(first.time) + "s to " + std::to_string(last.time) + "s", "OutputManager");
 
+// POSICIÓN
+  LOG_INFO("=== TRAJECTORY (Position) ===", "OutputManager");
   LOG_INFO("Initial position: (" +
            std::to_string(first.position_x) + ", " +
            std::to_string(first.position_y) + ", " +
@@ -253,6 +267,15 @@ void OutputManager::printSummary() {
            std::to_string(last.position_y) + ", " +
            std::to_string(last.position_z) + ")", "OutputManager");
 
+  double distance = std::sqrt(
+      std::pow(last.position_x - first.position_x, 2) +
+      std::pow(last.position_y - first.position_y, 2) +
+      std::pow(last.position_z - first.position_z, 2)
+  );
+  LOG_INFO("Distance traveled: " + std::to_string(distance) + " units", "OutputManager");
+
+// VELOCIDAD
+  LOG_INFO("=== VELOCITY ===", "OutputManager");
   LOG_INFO("Initial velocity: (" +
            std::to_string(first.velocity_x) + ", " +
            std::to_string(first.velocity_y) + ", " +
@@ -263,12 +286,6 @@ void OutputManager::printSummary() {
            std::to_string(last.velocity_y) + ", " +
            std::to_string(last.velocity_z) + ")", "OutputManager");
 
-  double distance = std::sqrt(
-      std::pow(last.position_x - first.position_x, 2) +
-      std::pow(last.position_y - first.position_y, 2) +
-      std::pow(last.position_z - first.position_z, 2)
-  );
-  LOG_INFO("Distance traveled: " + std::to_string(distance) + " units", "OutputManager");
 
   LOG_INFO("Output files saved in: " + output_dir_, "OutputManager");
 }
@@ -415,4 +432,43 @@ void OutputManager::writeMetricsJSON() {
   }
 
   *json_file_ << "\n  }\n";
+}
+
+void OutputManager::writerLoop() {
+  for (;;) {
+    PendingPoint pending;
+    {
+      std::unique_lock<std::mutex> lock(queue_mutex_);
+      queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
+
+      if (!writer_running_.load() && pending_points_.empty()) {
+        return;
+      }
+
+      pending = std::move(pending_points_.front());
+      pending_points_.pop_front();
+    }
+
+    std::lock_guard<std::mutex> lock(data_mutex_);
+
+    if (!initialized_) {
+      continue;
+    }
+
+    data_points_.push_back(pending.point);
+
+    if (output_csv_ && csv_file_ && csv_file_->is_open()) {
+      writeDataPointCSV(pending.point, pending.tick);
+    }
+
+    if (output_json_ && json_file_ && json_file_->is_open()) {
+      writeDataPointJSON(pending.point, pending.tick);
+    }
+
+    if (output_binary_ && binary_file_ && binary_file_->is_open()) {
+      binary_file_->write(reinterpret_cast<const char*>(&pending.point), sizeof(SimulationDataPoint));
+    }
+
+    last_recorded_tick_ = pending.tick;
+  }
 }

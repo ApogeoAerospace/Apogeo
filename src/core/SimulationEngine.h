@@ -12,6 +12,10 @@ namespace MoLab {
     class PluginManager;
 }
 
+namespace state_vector {
+    struct GeneralState;
+}
+
 // Motor principal de simulación.
 // Orquesta carga de estado, ejecución de ticks y gestión de plugins.
 class SimulationEngine {
@@ -86,6 +90,7 @@ private:
     std::atomic<uint64_t> iteration_count_{0};
     std::atomic<double> last_tick_duration_{0.0};
     std::atomic<bool> is_running_{false};
+    bool validate_simulation_state(const state_vector::GeneralState* state) const;
 };
 
 #endif // SIMULATION_ENGINE_H

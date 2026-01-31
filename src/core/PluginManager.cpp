@@ -12,6 +12,9 @@
 #include <mutex>
 #include <future>
 #include <algorithm>
+#include <condition_variable>
+#include <deque>
+#include <functional>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,7 +22,71 @@
 
 namespace MoLab {
 
-PluginManager::PluginManager() : physics_integrator_(std::make_unique<PhysicsIntegrator>()) {
+class PluginTaskScheduler {
+public:
+    explicit PluginTaskScheduler(size_t thread_count) {
+        size_t count = std::max<size_t>(1, thread_count);
+        for (size_t i = 0; i < count; ++i) {
+            workers_.emplace_back([this]() { worker_loop(); });
+        }
+    }
+
+    ~PluginTaskScheduler() {
+        stop();
+    }
+
+    std::future<void> submit(std::function<void()> task) {
+        auto packaged = std::make_shared<std::packaged_task<void()>>(std::move(task));
+        std::future<void> future = packaged->get_future();
+        {
+            std::lock_guard<std::mutex> lock(queue_mutex_);
+            tasks_.emplace_back([packaged]() { (*packaged)(); });
+        }
+        queue_cv_.notify_one();
+        return future;
+    }
+
+    void stop() {
+        {
+            std::lock_guard<std::mutex> lock(queue_mutex_);
+            stopping_ = true;
+        }
+        queue_cv_.notify_all();
+        for (auto& worker : workers_) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+        workers_.clear();
+    }
+
+private:
+    void worker_loop() {
+        for (;;) {
+            std::function<void()> task;
+            {
+                std::unique_lock<std::mutex> lock(queue_mutex_);
+                queue_cv_.wait(lock, [this]() { return stopping_ || !tasks_.empty(); });
+                if (stopping_ && tasks_.empty()) {
+                    return;
+                }
+                task = std::move(tasks_.front());
+                tasks_.pop_front();
+            }
+            task();
+        }
+    }
+
+    std::vector<std::thread> workers_;
+    std::deque<std::function<void()>> tasks_;
+    std::mutex queue_mutex_;
+    std::condition_variable queue_cv_;
+    bool stopping_ = false;
+};
+
+PluginManager::PluginManager()
+    : physics_integrator_(std::make_unique<PhysicsIntegrator>()),
+      task_scheduler_(std::make_unique<PluginTaskScheduler>(std::thread::hardware_concurrency())) {
     LOG_INFO("PluginManager initialized", "PluginManager");
 }
 
@@ -140,8 +207,6 @@ bool PluginManager::load_plugins_from_config() {
 void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    std::lock_guard<std::mutex> lock(plugins_mutex_);
-
     // Fase 1: Ejecutar plugins secuenciales
     execute_sequential_plugins(state_buffer, delta_time);
 
@@ -155,10 +220,20 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, dou
     total_cycles_++;
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    total_cycle_time_.store(total_cycle_time_.load() + duration.count() / 1000.0); // Convert to milliseconds
+    total_cycle_time_.store(total_cycle_time_.load() + duration.count() / 1000.0);
 }
 
 void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time) {
+    std::vector<LoadedPlugin*> sequential_plugins;
+    {
+        std::lock_guard<std::mutex> lock(plugins_mutex_);
+        for (auto& plugin : loaded_plugins_) {
+            if (plugin.enabled && plugin.type == PluginType::SEQUENTIAL_STATE_MODIFIER) {
+                sequential_plugins.push_back(&plugin);
+            }
+        }
+    }
+
     PluginTickData tick_data = {};
     tick_data.state_buffer = state_buffer.data();
     tick_data.buffer_size = state_buffer.size();
@@ -168,23 +243,18 @@ void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffe
     tick_data.force_out = nullptr;
     tick_data.torque_out = nullptr;
 
-    for (auto& plugin : loaded_plugins_) {
-        if (!plugin.enabled || plugin.type != PluginType::SEQUENTIAL_STATE_MODIFIER) {
-            continue;
-        }
-
+    for (auto* plugin : sequential_plugins) {
         auto start_time = std::chrono::high_resolution_clock::now();
 
-        int32_t result = plugin.tick_func(plugin.handle, &tick_data);
+        int32_t result = plugin->tick_func(plugin->handle, &tick_data);
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        double exec_time = duration.count() / 1000.0; // Convert to milliseconds
+        double exec_time = duration.count() / 1000.0;
 
-        // Update metrics
-        plugin.execution_count++;
-        plugin.last_execution_time.store(exec_time);
-        plugin.total_execution_time.store(plugin.total_execution_time.load() + exec_time);
+        plugin->execution_count++;
+        plugin->last_execution_time.store(exec_time);
+        plugin->total_execution_time.store(plugin->total_execution_time.load() + exec_time);
 
         if (result != 0) {
             LOG_WARNING("Sequential plugin returned error code: " + std::to_string(result), "PluginManager");
@@ -213,9 +283,9 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
 
     // Execute plugins in parallel
     for (size_t i = 0; i < parallel_plugins.size(); ++i) {
-        auto& plugin = *parallel_plugins[i];
+        auto* plugin = parallel_plugins[i];
 
-        futures.emplace_back(std::async(std::launch::async, [&plugin, &state_buffer, &forces, &torques, delta_time, i]() {
+        futures.emplace_back(task_scheduler_->submit([plugin, &state_buffer, &forces, &torques, delta_time, i]() {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             PluginTickData tick_data = {};
@@ -227,16 +297,15 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
             tick_data.force_out = &forces[i];
             tick_data.torque_out = &torques[i];
 
-            int32_t result = plugin.tick_func(plugin.handle, &tick_data);
+            int32_t result = plugin->tick_func(plugin->handle, &tick_data);
 
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
             double exec_time = duration.count() / 1000.0;
 
-            // Update metrics
-            plugin.execution_count++;
-            plugin.last_execution_time.store(exec_time);
-            plugin.total_execution_time.store(plugin.total_execution_time.load() + exec_time);
+            plugin->execution_count++;
+            plugin->last_execution_time.store(exec_time);
+            plugin->total_execution_time.store(plugin->total_execution_time.load() + exec_time);
 
             if (result != 0) {
                 LOG_WARNING("Parallel plugin returned error code: " + std::to_string(result), "PluginManager");
@@ -283,17 +352,12 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         return;
     }
 
-    // Leer estado actual del FlatBuffer
     const state_vector::GeneralState* current_state = state_vector::GetGeneralState(state_buffer.data());
     if (!current_state) {
         LOG_ERROR("Failed to parse state buffer in physics integration", "PluginManager");
         return;
     }
 
-    // Convertir a estado interno para integración
-    PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
-
-    // Recuperar fuerzas/torques acumulados de plugins paralelos
     PluginVector3 plugin_force;
     PluginVector3 plugin_torque;
     {
@@ -305,10 +369,20 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Integrar física (PhysicsIntegrator actualiza sim_time internamente)
+    if (total_force.x == 0.0 && total_force.y == 0.0 && total_force.z == 0.0 &&
+        total_torque.x == 0.0 && total_torque.y == 0.0 && total_torque.z == 0.0) {
+
+        auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
+        if (mutable_state) {
+            float new_time = static_cast<float>(mutable_state->sim_time() + delta_time);
+            mutable_state->mutate_sim_time(new_time);
+        }
+        return;
+    }
+
+    PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
 
-    // Reconstruir el FlatBuffer con el esquema nuevo, preservando campos
     flatbuffers::FlatBufferBuilder builder;
 
     // Cinemática actualizada
@@ -429,6 +503,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
 std::vector<LoadedPlugin*> PluginManager::get_plugins_by_type(PluginType type) {
     std::vector<LoadedPlugin*> result;
+    std::lock_guard<std::mutex> lock(plugins_mutex_);
     for (auto& plugin : loaded_plugins_) {
         if (plugin.type == type && plugin.enabled) {
             result.push_back(&plugin);
@@ -481,6 +556,7 @@ void PluginManager::shutdown() {
 
     loaded_plugins_.clear();
     physics_integrator_.reset();
+    task_scheduler_.reset();
 
     LOG_INFO("PluginManager shutdown complete", "PluginManager");
 }

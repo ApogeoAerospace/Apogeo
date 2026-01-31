@@ -152,7 +152,6 @@ void SimulationEngine::run_tick() {
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  // Authoritative dt from buffer
   double delta_time = 0.0;
   {
     std::lock_guard<std::mutex> lock(state_mutex_);
@@ -175,11 +174,20 @@ void SimulationEngine::run_tick() {
     plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
   }
 
-  // Detect ground collisions immediately
-  auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
-  if (state && state->position()) {
+  const state_vector::GeneralState* state = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
+  }
+
+  if (!state) {
+    LOG_ERROR("Failed to parse state buffer after tick", "SimulationEngine");
+    is_running_ = false;
+    return;
+  }
+
+  if (state->position()) {
     double pos_z = state->position()->z();
-    // Quick detection for local coordinates
     if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
       LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
       LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
@@ -188,22 +196,19 @@ void SimulationEngine::run_tick() {
     }
   }
 
-  // Full validation only every 50 ticks
   if (iteration_count_ % 50 == 0) {
-    if (!validate_simulation_state()) {
+    if (!validate_simulation_state(state)) {
       LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
       is_running_ = false;
       return;
     }
   }
 
-  // Update simulation metrics
   simulation_time_.store(simulation_time_.load() + delta_time);
   iteration_count_++;
 
-  // Record state using TimeManager time (only if state is valid)
   auto& output_manager = OutputManager::getInstance();
-  output_manager.recordState(current_state_buffer_, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -271,7 +276,7 @@ void SimulationEngine::shutdown() {
     LOG_INFO("Simulation shutdown complete", "SimulationEngine");
 }
 
-bool SimulationEngine::validate_simulation_state() const { // GROUND COLLISION es tarea de el modulo de Ambiente
+bool SimulationEngine::validate_simulation_state() const {
     std::lock_guard<std::mutex> lock(state_mutex_);
 
     if (current_state_buffer_.empty()) {
@@ -279,10 +284,18 @@ bool SimulationEngine::validate_simulation_state() const { // GROUND COLLISION e
         return false;
     }
 
-    // Parse state and validate bounds
     const state_vector::GeneralState* state = state_vector::GetGeneralState(current_state_buffer_.data());
     if (!state) {
         LOG_ERROR("Failed to parse state buffer", "SimulationEngine");
+        return false;
+    }
+
+    return validate_simulation_state(state);
+}
+
+bool SimulationEngine::validate_simulation_state(const state_vector::GeneralState* state) const {
+    if (!state) {
+        LOG_ERROR("Invalid state pointer", "SimulationEngine");
         return false;
     }
 

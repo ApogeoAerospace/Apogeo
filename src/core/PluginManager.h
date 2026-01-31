@@ -25,6 +25,7 @@ enum class PluginType {
 // Forward declarations
 namespace MoLab {
     class PhysicsIntegrator;
+    class PluginTaskScheduler;
 }
 
 namespace MoLab {
@@ -183,6 +184,9 @@ private:
 
     // Integrador físico
     std::unique_ptr<MoLab::PhysicsIntegrator> physics_integrator_;
+
+    // Scheduler de tareas para plugins paralelos
+    std::unique_ptr<PluginTaskScheduler> task_scheduler_;
 
     // Almacenamiento de fuerzas para integración física
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};

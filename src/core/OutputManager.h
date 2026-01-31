@@ -5,6 +5,10 @@
 #include <vector>
 #include <mutex>
 #include <memory>
+#include <condition_variable>
+#include <deque>
+#include <thread>
+#include <atomic>
 #include "state_vector_generated.h"
 #include "nlohmann/json.hpp"
 
@@ -34,7 +38,8 @@ public:
     void setOutputInterval(int interval); // Save every N ticks
 
     // Data recording
-    void recordState(const std::vector<uint8_t>& state_buffer, double simulation_time, double utc_time, int tick);
+    void recordState(const std::vector<uint8_t>& state_buffer, double simulation_time, double utc_time, int tick); // OVERLOAD PARA TESTS ANTERIORES
+    void recordState(const state_vector::GeneralState* state, double simulation_time, double utc_time, int tick);
     void recordMetrics(const std::string& component, const std::string& metric_name, double value);
 
     // File operations
@@ -77,12 +82,24 @@ private:
     std::unique_ptr<std::ofstream> binary_file_;
     std::string run_name_;
 
+    struct PendingPoint {
+        SimulationDataPoint point;
+        int tick;
+    };
+
     // Thread safety
     std::mutex data_mutex_;
+    std::mutex queue_mutex_;
+    std::condition_variable queue_cv_;
+    std::deque<PendingPoint> pending_points_;
+    std::thread writer_thread_;
+    std::atomic<bool> writer_running_{false};
 
     // State tracking
     bool initialized_ = false;
     int last_recorded_tick_ = -1;
+
+    void writerLoop();
 };
 
 } // namespace MoLab
