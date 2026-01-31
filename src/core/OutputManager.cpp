@@ -41,6 +41,10 @@ void OutputManager::setOutputInterval(int interval) {
 }
 
 void OutputManager::initializeOutput(const std::string& run_name) {
+  if (initialized_) {
+    finalizeOutput();
+  }
+
   std::lock_guard<std::mutex> lock(data_mutex_);
 
   auto& time_manager = TimeManager::getInstance();

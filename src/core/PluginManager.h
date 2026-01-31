@@ -173,8 +173,8 @@ private:
     std::atomic<double> total_cycle_time_{0.0};
 
     // Métodos privados
-    void execute_sequential_plugins(std::vector<uint8_t>& state_buffer);
-    void execute_parallel_plugins(std::vector<uint8_t>& state_buffer);
+    void execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
+    void execute_parallel_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time);
 
     // Utilidades

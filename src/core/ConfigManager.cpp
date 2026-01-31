@@ -11,7 +11,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         if (!file.is_open()) {
             LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
             setDefaults();
-            return true; // Not an error, just use defaults
+            return false; // Defaults applied, but file not found
         }
 
         nlohmann::json config_json;

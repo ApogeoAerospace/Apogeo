@@ -38,6 +38,10 @@ SimulationEngine::~SimulationEngine() noexcept {
 bool SimulationEngine::initialize(const std::string& state_filepath) {
     LOG_INFO("Initializing simulation with state file: " + state_filepath, "SimulationEngine");
 
+    // Initialize TimeManager with current UTC time
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.initialize(); // Use current UTC time as start
+
     // Verify that the file exists
     if (!std::filesystem::exists(state_filepath)) {
         LOG_ERROR("State file not found: " + state_filepath, "SimulationEngine");
@@ -99,21 +103,10 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
         logger.setLogFile(sim_config.log_file);
     }
 
-    // Initialize TimeManager with current UTC time
-    auto& time_manager = TimeManager::getInstance();
-    time_manager.initialize(); // Use current UTC time as start
-
     // Load plugins from configuration
     if (!plugin_manager_->load_plugins_from_config()) {
         LOG_WARNING("Some plugins failed to load from configuration", "SimulationEngine");
     }
-
-    // Initialize output manager
-    auto& output_manager = OutputManager::getInstance();
-    output_manager.setOutputDirectory("output");
-    output_manager.setOutputFormats(true, true, false); // CSV and JSON
-    output_manager.setOutputInterval(5); // Optimized: Save every 5 ticks (balance speed/detail)
-    output_manager.initializeOutput("molab_simulation");
 
     // Initialize with state file
     return initialize(config_manager.getInitialStateFile());

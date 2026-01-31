@@ -112,6 +112,10 @@ bool PluginManager::load_plugins_from_config() {
             continue;
         }
 
+        if (!loaded_plugins_.empty()) {
+            loaded_plugins_.back().name = plugin_config.name;
+        }
+
         // Configure plugin with parameters if available
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {
             auto& last_plugin = loaded_plugins_.back();
@@ -138,17 +142,11 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, dou
 
     std::lock_guard<std::mutex> lock(plugins_mutex_);
 
-    // Crear datos del tick
-    PluginTickData tick_data = {};
-    tick_data.state_buffer = state_buffer.data();
-    tick_data.buffer_size = state_buffer.size();
-    tick_data.delta_time = delta_time;
-
     // Fase 1: Ejecutar plugins secuenciales
-    execute_sequential_plugins(state_buffer);
+    execute_sequential_plugins(state_buffer, delta_time);
 
     // Fase 2: Ejecutar plugins paralelos
-    execute_parallel_plugins(state_buffer);
+    execute_parallel_plugins(state_buffer, delta_time);
 
     // Fase 3: Aplicar integración física
     apply_physics_integration(state_buffer, delta_time);
@@ -160,12 +158,15 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, dou
     total_cycle_time_.store(total_cycle_time_.load() + duration.count() / 1000.0); // Convert to milliseconds
 }
 
-void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffer) {
+void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time) {
     PluginTickData tick_data = {};
     tick_data.state_buffer = state_buffer.data();
     tick_data.buffer_size = state_buffer.size();
+    tick_data.delta_time = delta_time;
     tick_data.output_force = nullptr;
     tick_data.output_torque = nullptr;
+    tick_data.force_out = nullptr;
+    tick_data.torque_out = nullptr;
 
     for (auto& plugin : loaded_plugins_) {
         if (!plugin.enabled || plugin.type != PluginType::SEQUENTIAL_STATE_MODIFIER) {
@@ -191,7 +192,7 @@ void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffe
     }
 }
 
-void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer) {
+void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer, double delta_time) {
     std::vector<std::future<void>> futures;
     std::vector<PluginVector3> forces;
     std::vector<PluginVector3> torques;
@@ -214,14 +215,17 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
     for (size_t i = 0; i < parallel_plugins.size(); ++i) {
         auto& plugin = *parallel_plugins[i];
 
-        futures.emplace_back(std::async(std::launch::async, [&plugin, &state_buffer, &forces, &torques, i]() {
+        futures.emplace_back(std::async(std::launch::async, [&plugin, &state_buffer, &forces, &torques, delta_time, i]() {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             PluginTickData tick_data = {};
             tick_data.state_buffer = state_buffer.data();
             tick_data.buffer_size = state_buffer.size();
+            tick_data.delta_time = delta_time;
             tick_data.output_force = &forces[i];
             tick_data.output_torque = &torques[i];
+            tick_data.force_out = &forces[i];
+            tick_data.torque_out = &torques[i];
 
             int32_t result = plugin.tick_func(plugin.handle, &tick_data);
 
