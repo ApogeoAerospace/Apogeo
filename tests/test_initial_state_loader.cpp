@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../core/InitialStateLoader.h"
+#include "InitialStateLoader.h"
 #include "state_vector_generated.h"
 #include <flatbuffers/flatbuffers.h>
 #include <fstream>

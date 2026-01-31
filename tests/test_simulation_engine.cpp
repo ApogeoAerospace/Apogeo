@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "../core/SimulationEngine.h"
-#include "../src/core/ConfigManager.h"
+#include "SimulationEngine.h"
+#include "ConfigManager.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <filesystem>
