@@ -153,31 +153,25 @@ void SimulationEngine::run_tick() {
   auto start_time = std::chrono::high_resolution_clock::now();
 
   double delta_time = 0.0;
+  const state_vector::GeneralState* state = nullptr;
+
   {
     std::lock_guard<std::mutex> lock(state_mutex_);
-    auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
-    if (state) {
-      delta_time = static_cast<double>(state->dt());
+    auto state_before = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
+    if (state_before) {
+      delta_time = static_cast<double>(state_before->dt());
+    }
+
+    if (delta_time > 0.0) {
+      plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
+      state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
     }
   }
+
   if (delta_time <= 0.0) {
     LOG_ERROR("Invalid dt in state buffer (<= 0). Aborting tick.", "SimulationEngine");
     is_running_ = false;
     return;
-  }
-
-  auto& time_manager = TimeManager::getInstance();
-  time_manager.updateSimulationTime(delta_time);
-
-  {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
-  }
-
-  const state_vector::GeneralState* state = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
   }
 
   if (!state) {
@@ -185,6 +179,9 @@ void SimulationEngine::run_tick() {
     is_running_ = false;
     return;
   }
+
+  auto& time_manager = TimeManager::getInstance();
+  time_manager.updateSimulationTime(delta_time);
 
   if (state->position()) {
     double pos_z = state->position()->z();
@@ -212,9 +209,8 @@ void SimulationEngine::run_tick() {
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-  last_tick_duration_ = duration.count() / 1000.0; // Convert to milliseconds
+  last_tick_duration_ = duration.count() / 1000.0;
 
-  // Log performance metrics periodically
   if (iteration_count_ % 5000 == 0) {
     LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
             " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");

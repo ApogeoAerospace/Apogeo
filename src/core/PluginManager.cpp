@@ -36,11 +36,12 @@ public:
     }
 
     std::future<void> submit(std::function<void()> task) {
-        auto packaged = std::make_shared<std::packaged_task<void()>>(std::move(task));
-        std::future<void> future = packaged->get_future();
+        Task queued;
+        queued.func = std::move(task);
+        std::future<void> future = queued.promise.get_future();
         {
             std::lock_guard<std::mutex> lock(queue_mutex_);
-            tasks_.emplace_back([packaged]() { (*packaged)(); });
+            tasks_.emplace_back(std::move(queued));
         }
         queue_cv_.notify_one();
         return future;
@@ -61,9 +62,14 @@ public:
     }
 
 private:
+    struct Task {
+        std::function<void()> func;
+        std::promise<void> promise;
+    };
+
     void worker_loop() {
         for (;;) {
-            std::function<void()> task;
+            Task task;
             {
                 std::unique_lock<std::mutex> lock(queue_mutex_);
                 queue_cv_.wait(lock, [this]() { return stopping_ || !tasks_.empty(); });
@@ -73,12 +79,17 @@ private:
                 task = std::move(tasks_.front());
                 tasks_.pop_front();
             }
-            task();
+            try {
+                task.func();
+                task.promise.set_value();
+            } catch (...) {
+                task.promise.set_exception(std::current_exception());
+            }
         }
     }
 
     std::vector<std::thread> workers_;
-    std::deque<std::function<void()>> tasks_;
+    std::deque<Task> tasks_;
     std::mutex queue_mutex_;
     std::condition_variable queue_cv_;
     bool stopping_ = false;
