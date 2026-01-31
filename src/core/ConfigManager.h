@@ -5,8 +5,10 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
+// Espacio de nombres principal del núcleo MoLab.
 namespace MoLab {
 
+// Configuración de un plugin cargable desde archivo de configuración.
 struct PluginConfig {
     std::string name;
     int type;
@@ -15,6 +17,7 @@ struct PluginConfig {
     nlohmann::json parameters;
 };
 
+// Configuración general de la simulación.
 struct SimulationConfig {
     double simulation_duration;
     int max_iterations;
@@ -23,14 +26,19 @@ struct SimulationConfig {
     std::string log_level;
 };
 
+// Gestor centralizado de configuración (singleton).
+// Carga, valida y expone valores de simulación y plugins.
 class ConfigManager {
 public:
+    // Acceso global a la instancia.
     static ConfigManager& getInstance() {
         static ConfigManager instance;
         return instance;
     }
 
+    // Carga configuración desde archivo (JSON).
     bool loadConfig(const std::string& config_file);
+    // Guarda configuración actual a archivo (JSON).
     bool saveConfig(const std::string& config_file) const;
 
     // Getters
@@ -53,8 +61,11 @@ private:
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
 
+    // Establece valores por defecto cuando no hay configuración válida.
     void setDefaults();
+    // Parseo de sección de simulación.
     bool parseSimulationConfig(const nlohmann::json& json);
+    // Parseo de sección de plugins.
     bool parsePluginConfigs(const nlohmann::json& json);
 
     SimulationConfig simulation_config_;

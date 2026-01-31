@@ -10,6 +10,7 @@
 
 namespace MoLab {
 
+// Vector matemático simple para física.
 struct Vector3 {
     double x, y, z;
 
@@ -44,6 +45,7 @@ struct Vector3 {
     }
 };
 
+// Derivadas de estado usadas por los integradores.
 struct StateDerivative {
     Vector3 velocity;        // d(position)/dt
     Vector3 acceleration;    // d(velocity)/dt
@@ -51,6 +53,7 @@ struct StateDerivative {
     Vector3 angular_acceleration; // d(angular_velocity)/dt
 };
 
+// Estado físico simplificado para integración numérica.
 struct PhysicsState {
     Vector3 position;
     Vector3 velocity;
@@ -62,6 +65,7 @@ struct PhysicsState {
     PhysicsState() : mass(1.0), time(0.0) {}
 };
 
+// Integrador físico con múltiples métodos (Euler/RK4/Verlet).
 class PhysicsIntegrator {
 public:
     enum class IntegratorType {

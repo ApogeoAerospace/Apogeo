@@ -3,6 +3,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Utilidades para crear el estado inicial de simulación desde JSON.
 namespace InitialStateLoader {
     /**
      * Rellena un FlatBufferBuilder con un estado de vehículo.

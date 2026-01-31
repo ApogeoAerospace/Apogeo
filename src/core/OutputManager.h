@@ -10,6 +10,7 @@
 
 namespace MoLab {
 
+// Punto de datos de salida con métricas principales del estado.
 struct SimulationDataPoint {
     double time;           // Simulation time (relative)
     double utc_time;       // UTC time (absolute)
@@ -21,6 +22,8 @@ struct SimulationDataPoint {
     double wind_speed_x, wind_speed_y, wind_speed_z;
 };
 
+// Gestor de salida de resultados y métricas (singleton).
+// Controla formatos (CSV/JSON/binario) y persistencia periódica.
 class OutputManager {
 public:
     static OutputManager& getInstance();

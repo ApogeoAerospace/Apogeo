@@ -10,6 +10,7 @@
 
 namespace MoLab {
 
+// Niveles de severidad del sistema de logging.
 enum class LogLevel {
     DEBUG = 0,
     INFO = 1,
@@ -18,18 +19,23 @@ enum class LogLevel {
     CRITICAL = 4
 };
 
+// Logger singleton para mensajes con timestamp y nivel.
+// Soporta salida a consola y a archivo.
 class Logger {
 public:
+    // Acceso global a la instancia.
     static Logger& getInstance() {
         static Logger instance;
         return instance;
     }
 
+    // Define el nivel mínimo de salida.
     void setLogLevel(LogLevel level) {
         std::lock_guard<std::mutex> lock(mutex_);
         current_level_ = level;
     }
 
+    // Configura archivo de log (append).
     void setLogFile(const std::string& filename) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (log_file_.is_open()) {
@@ -38,6 +44,7 @@ public:
         log_file_.open(filename, std::ios::app);
     }
 
+    // Emite un mensaje con formato y control de nivel.
     void log(LogLevel level, const std::string& message, const std::string& component = "") {
         if (level < current_level_) return;
 
@@ -71,7 +78,7 @@ public:
         }
     }
 
-    // Convenience methods
+    // Métodos de conveniencia por nivel.
     void debug(const std::string& message, const std::string& component = "") {
         log(LogLevel::DEBUG, message, component);
     }
@@ -103,6 +110,7 @@ private:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
+    // Conversión de nivel a string legible.
     std::string levelToString(LogLevel level) {
         switch (level) {
             case LogLevel::DEBUG: return "DEBUG";
@@ -119,7 +127,7 @@ private:
     std::mutex mutex_;
 };
 
-// Convenience macros
+// Macros de conveniencia para logging.
 #define LOG_DEBUG(msg, component) MoLab::Logger::getInstance().debug(msg, component)
 #define LOG_INFO(msg, component) MoLab::Logger::getInstance().info(msg, component)
 #define LOG_WARNING(msg, component) MoLab::Logger::getInstance().warning(msg, component)

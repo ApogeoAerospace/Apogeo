@@ -12,6 +12,8 @@ namespace MoLab {
     class PluginManager;
 }
 
+// Motor principal de simulación.
+// Orquesta carga de estado, ejecución de ticks y gestión de plugins.
 class SimulationEngine {
 public:
     /*
