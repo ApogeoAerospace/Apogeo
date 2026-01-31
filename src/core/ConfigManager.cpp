@@ -9,9 +9,10 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
     try {
         std::ifstream file(config_file);
         if (!file.is_open()) {
+            // Archivo inexistente: usar valores por defecto y continuar
             LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
             setDefaults();
-            return false; // Defaults applied, but file not found
+            return false; // Se aplican defaults, pero no se cargó archivo
         }
 
         nlohmann::json config_json;
@@ -20,7 +21,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
 
         LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
 
-        // Parse sections
+        // Parsear secciones principales
         if (!parseSimulationConfig(config_json)) {
             return false;
         }
@@ -28,7 +29,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             return false;
         }
 
-        // File paths
+        // Rutas de archivos
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
@@ -41,6 +42,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             output_directory_ = "output/";
         }
 
+        // Validar coherencia general
         if (!validateConfig()) {
             LOG_ERROR("Configuration validation failed", "ConfigManager");
             return false;
@@ -50,6 +52,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         return true;
 
     } catch (const std::exception& e) {
+        // Falla al leer o parsear: usar defaults como fallback
         LOG_ERROR("Error loading config: " + std::string(e.what()), "ConfigManager");
         setDefaults();
         return false;
@@ -60,14 +63,14 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
     try {
         nlohmann::json config_json;
 
-        // Simulation config
+        // Configuración de simulación
         config_json["simulation"]["duration"] = simulation_config_.simulation_duration;
         config_json["simulation"]["max_iterations"] = simulation_config_.max_iterations;
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
 
-        // Plugin configs
+        // Configuración de plugins
         for (const auto& plugin : plugin_configs_) {
             nlohmann::json plugin_json;
             plugin_json["name"] = plugin.name;
@@ -78,7 +81,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
             config_json["plugins"].push_back(plugin_json);
         }
 
-        // File paths
+        // Rutas de archivos
         config_json["initial_state_file"] = initial_state_file_;
         config_json["output_directory"] = output_directory_;
 
@@ -101,15 +104,17 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 }
 
 void ConfigManager::setDefaults() {
-    // Simulation defaults
+    // Valores por defecto de simulación
     simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
 
+    // Limpiar configuración de plugins
     plugin_configs_.clear();
 
+    // Rutas por defecto
     initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
@@ -126,6 +131,7 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
             simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
+            // Si no hay sección, usar defaults
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
@@ -155,6 +161,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                     plugin.parameters = plugin_json["parameters"];
                 }
 
+                // Solo agregar si hay nombre y ruta válida
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
                 }
@@ -169,6 +176,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 }
 
 bool ConfigManager::validateConfig() const {
+    // Validación básica de simulación
     if (simulation_config_.simulation_duration <= 0) {
         LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
         return false;
@@ -179,7 +187,7 @@ bool ConfigManager::validateConfig() const {
         return false;
     }
 
-    // Validate plugins
+    // Validación de plugins
     for (const auto& plugin : plugin_configs_) {
         if (plugin.name.empty()) {
             LOG_ERROR("Plugin name cannot be empty", "ConfigManager");

@@ -22,6 +22,7 @@
 
 namespace MoLab {
 
+// Scheduler simple para ejecutar tareas de plugins en paralelo.
 class PluginTaskScheduler {
 public:
     explicit PluginTaskScheduler(size_t thread_count) {
@@ -106,8 +107,7 @@ PluginManager::~PluginManager() {
 }
 
 bool PluginManager::load_plugin(const std::string& path, PluginType type) {
-    // Mutex ya obtenido por load_plugins_from_config() - no necesitamos otro lock aquí
-
+    // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
     plugin.path = path;
@@ -115,25 +115,22 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 
     LOG_INFO("Loading plugin: " + path, "PluginManager");
 
-    // Carga de biblioteca compartida según el sistema operativo
 #ifdef _WIN32
     plugin.lib_handle = LoadLibrary(path.c_str());
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + path, "PluginManager");
         return false;
     }
-    // Obtiene las direcciones de las funciones de la API del plugin
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(GetProcAddress(plugin.lib_handle, "plugin_create_instance"));
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(GetProcAddress(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
-#else // POSIX
+#else
     plugin.lib_handle = dlopen(path.c_str(), RTLD_LAZY);
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + path + " - " + std::string(dlerror()), "PluginManager");
         return false;
     }
-    // Obtiene las direcciones de las funciones de la API del plugin
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(dlsym(plugin.lib_handle, "plugin_create_instance"));
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(dlsym(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(dlsym(plugin.lib_handle, "plugin_tick"));
@@ -142,7 +139,6 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
         LOG_ERROR("Failed to find required plugin API functions in: " + path, "PluginManager");
-        // Note: configure_func is optional for backward compatibility
 #ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
@@ -194,7 +190,6 @@ bool PluginManager::load_plugins_from_config() {
             loaded_plugins_.back().name = plugin_config.name;
         }
 
-        // Configure plugin with parameters if available
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {
             auto& last_plugin = loaded_plugins_.back();
             if (last_plugin.configure_func) {
@@ -218,16 +213,15 @@ bool PluginManager::load_plugins_from_config() {
 void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Fase 1: Ejecutar plugins secuenciales
+    // Fase 1: ejecución secuencial (modifica estado)
     execute_sequential_plugins(state_buffer, delta_time);
 
-    // Fase 2: Ejecutar plugins paralelos
+    // Fase 2: ejecución paralela (calcula fuerzas)
     execute_parallel_plugins(state_buffer, delta_time);
 
-    // Fase 3: Aplicar integración física
+    // Fase 3: integración física con fuerzas/torques acumulados
     apply_physics_integration(state_buffer, delta_time);
 
-    // Actualizar métricas
     total_cycles_++;
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -278,11 +272,9 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
     std::vector<PluginVector3> forces;
     std::vector<PluginVector3> torques;
 
-    // Get parallel plugins
     auto parallel_plugins = get_plugins_by_type(PluginType::PARALLEL_PHYSICS_CALCULATOR);
 
     if (parallel_plugins.empty()) {
-        // Reset forces if no plugins
         std::lock_guard<std::mutex> lock(force_mutex_);
         accumulated_force_ = {0.0f, 0.0f, 0.0f};
         accumulated_torque_ = {0.0f, 0.0f, 0.0f};
@@ -292,7 +284,6 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
     forces.resize(parallel_plugins.size());
     torques.resize(parallel_plugins.size());
 
-    // Execute plugins in parallel
     for (size_t i = 0; i < parallel_plugins.size(); ++i) {
         auto* plugin = parallel_plugins[i];
 
@@ -324,12 +315,10 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
         }));
     }
 
-    // Wait for all plugins to complete
     for (auto& future : futures) {
         future.wait();
     }
 
-    // Sum up forces and torques
     PluginVector3 total_force = {0.0f, 0.0f, 0.0f};
     PluginVector3 total_torque = {0.0f, 0.0f, 0.0f};
 
@@ -345,7 +334,6 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
         total_torque.z += torque.z;
     }
 
-    // Store total forces for physics integration
     {
         std::lock_guard<std::mutex> lock(force_mutex_);
         accumulated_force_ = total_force;
@@ -380,6 +368,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
+    // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
     if (total_force.x == 0.0 && total_force.y == 0.0 && total_force.z == 0.0 &&
         total_torque.x == 0.0 && total_torque.y == 0.0 && total_torque.z == 0.0) {
 
@@ -421,7 +410,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Air data
+    // Datos aerodinámicos
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();
@@ -440,14 +429,13 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         propellant_masses_fb = builder.CreateVector(pm_vec);
     }
 
-    // Arrays: engines (vector of structs) - preserve by copying
+    // Engines (vector de structs)
     flatbuffers::Offset<flatbuffers::Vector<const state_vector::EngineCmd*>> engines_fb;
     if (auto engines = current_state->engines()) {
         std::vector<state_vector::EngineCmd> eng_vec;
         eng_vec.reserve(engines->size());
         for (size_t i = 0; i < engines->size(); ++i) {
             const state_vector::EngineCmd* ec = engines->Get(i);
-            // tvc_angles is a struct; access via '.' on the returned struct
             const state_vector::Vec3 tvc = ec->tvc_angles();
             eng_vec.emplace_back(ec->throttle(), tvc);
         }
@@ -462,14 +450,10 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         surface_deflections_fb = builder.CreateVector(sd_vec);
     }
 
-    // Construir GeneralState preservando dt (o actualizándolo con delta_time)
+    // Construir GeneralState preservando dt
     state_vector::GeneralStateBuilder gs_builder(builder);
     gs_builder.add_sim_time(static_cast<float>(new_state.time));
-    // Preserve the integrator step in the buffer to avoid dt becoming 0 after rebuild.
-    // Option A: keep previous dt from buffer
     gs_builder.add_dt(current_state->dt());
-    // Option B (if you want dt to reflect the actual integrator step used):
-    // gs_builder.add_dt(static_cast<float>(delta_time));
 
     gs_builder.add_position(&position);
     gs_builder.add_velocity(&velocity);

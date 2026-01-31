@@ -22,7 +22,7 @@ OutputManager::~OutputManager() noexcept {
       finalizeOutput();
     }
   } catch (const std::exception&) {
-    // no-throw
+    // Destructor no debe lanzar error
   }
 }
 
@@ -47,6 +47,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
 
   std::lock_guard<std::mutex> lock(data_mutex_);
 
+  // Construir nombre de ejecución con timestamp UTC
   auto& time_manager = TimeManager::getInstance();
   double current_utc = time_manager.getCurrentRealTimeUTC();
   std::time_t time_t_val = static_cast<std::time_t>(current_utc);
@@ -107,7 +108,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
     }
   }
 
-  // Binary
+  // Binario
   if (output_binary_) {
     std::string binary_path = output_dir_ + "/" + run_name_ + ".bin";
     binary_file_ = std::make_unique<std::ofstream>(binary_path, std::ios::binary);
@@ -120,12 +121,11 @@ void OutputManager::initializeOutput(const std::string& run_name) {
 
   data_points_.clear();
 
-  // Pre-reserva: usa duración/intervalo, y un paso estimado (preferentemente desde config duración y intervalo).
+  // Pre-reserva de memoria según duración esperada
   try {
     auto& config = ConfigManager::getInstance().getSimulationConfig();
     double simulation_duration = config.simulation_duration;
-    // Nota: el dt autoritativo está en el buffer; aquí usamos una estimación conservadora.
-    double assumed_step = 0.01; // fallback razonable
+    double assumed_step = 0.01;
     if (simulation_duration > 0.0) {
       int total_ticks = static_cast<int>(simulation_duration / assumed_step);
       int expected_points = (total_ticks / output_interval_) + 100;
@@ -251,12 +251,12 @@ void OutputManager::printSummary() {
   const auto& first = data_points_.front();
   const auto& last = data_points_.back();
 
-  LOG_INFO("=== SIMULATION RESULTS SUMMARY ===", "OutputManager");
+  LOG_INFO("=== RESUMEN DE RESULTADOS ===", "OutputManager");
   LOG_INFO("Total data points: " + std::to_string(data_points_.size()), "OutputManager");
   LOG_INFO("Simulation time: " + std::to_string(first.time) + "s to " + std::to_string(last.time) + "s", "OutputManager");
 
-// POSICIÓN
-  LOG_INFO("=== TRAJECTORY (Position) ===", "OutputManager");
+  // POSICIÓN
+  LOG_INFO("=== TRAYECTORIA (POSICIÓN) ===", "OutputManager");
   LOG_INFO("Initial position: (" +
            std::to_string(first.position_x) + ", " +
            std::to_string(first.position_y) + ", " +
@@ -274,8 +274,8 @@ void OutputManager::printSummary() {
   );
   LOG_INFO("Distance traveled: " + std::to_string(distance) + " units", "OutputManager");
 
-// VELOCIDAD
-  LOG_INFO("=== VELOCITY ===", "OutputManager");
+  // VELOCIDAD
+  LOG_INFO("=== VELOCIDAD ===", "OutputManager");
   LOG_INFO("Initial velocity: (" +
            std::to_string(first.velocity_x) + ", " +
            std::to_string(first.velocity_y) + ", " +
@@ -286,7 +286,6 @@ void OutputManager::printSummary() {
            std::to_string(last.velocity_y) + ", " +
            std::to_string(last.velocity_z) + ")", "OutputManager");
 
-
   LOG_INFO("Output files saved in: " + output_dir_, "OutputManager");
 }
 
@@ -295,21 +294,21 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
   point.time = time;
   point.utc_time = utc_time;
 
-  // Position
+  // Posición
   if (state->position()) {
     point.position_x = state->position()->x();
     point.position_y = state->position()->y();
     point.position_z = state->position()->z();
   }
 
-  // Velocity
+  // Velocidad
   if (state->velocity()) {
     point.velocity_x = state->velocity()->x();
     point.velocity_y = state->velocity()->y();
     point.velocity_z = state->velocity()->z();
   }
 
-  // Orientation (quaternion)
+  // Orientación (cuaternión)
   if (state->orientation()) {
     point.orientation_x = state->orientation()->x();
     point.orientation_y = state->orientation()->y();
@@ -317,12 +316,12 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.orientation_w = state->orientation()->w();
   }
 
-  // Atmospheric data: read directly from buffer
+  // Datos atmosféricos
   point.atm_density = state->atm_density();
   point.atm_pressure = state->atm_pressure();
   point.atm_temperature = state->atm_temperature();
 
-  // Gravity: read directly from buffer
+  // Gravedad
   if (state->gravity()) {
     point.gravity_x = state->gravity()->x();
     point.gravity_y = state->gravity()->y();
@@ -333,7 +332,7 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.gravity_z = 0.0;
   }
 
-  // Wind velocity: read directly from buffer (schema update)
+  // Viento
   if (state->wind_velocity()) {
     point.wind_speed_x = state->wind_velocity()->x();
     point.wind_speed_y = state->wind_velocity()->y();

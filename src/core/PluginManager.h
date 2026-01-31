@@ -80,7 +80,7 @@ struct LoadedPlugin {
           destroy_func(other.destroy_func),
           lib_handle(other.lib_handle) {
 
-        // Reset other object
+        // Resetear el objeto origen
         other.handle = nullptr;
         other.create_func = nullptr;
         other.configure_func = nullptr;
@@ -105,7 +105,7 @@ struct LoadedPlugin {
             destroy_func = other.destroy_func;
             lib_handle = other.lib_handle;
 
-            // Reset other object
+            // Resetear el objeto origen
             other.handle = nullptr;
             other.create_func = nullptr;
             other.configure_func = nullptr;
@@ -165,15 +165,15 @@ public:
     std::vector<PluginMetrics> get_plugin_metrics() const;
 
 private:
-    // Contenedores de plugins thread-safe
+    // Contenedores de plugins con protección de concurrencia
     std::vector<LoadedPlugin> loaded_plugins_;
     mutable std::mutex plugins_mutex_;
 
-    // Métricas globales
+    // Métricas globales del ciclo de simulación
     std::atomic<uint64_t> total_cycles_{0};
     std::atomic<double> total_cycle_time_{0.0};
 
-    // Métodos privados
+    // Métodos internos de ejecución
     void execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void execute_parallel_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time);
@@ -188,7 +188,7 @@ private:
     // Scheduler de tareas para plugins paralelos
     std::unique_ptr<PluginTaskScheduler> task_scheduler_;
 
-    // Almacenamiento de fuerzas para integración física
+    // Acumuladores de fuerzas/torques (plugins paralelos)
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};
     mutable std::mutex force_mutex_;
