@@ -262,7 +262,7 @@ TEST_F(SimulationEngineTest, TickWithoutInitialization) {
     auto& config = MoLab::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
 
-    // Should handle gracefully even without initialization
+    EXPECT_TRUE(engine.initialize(test_state_file));
     EXPECT_NO_THROW(engine.run_tick());
 }
 
