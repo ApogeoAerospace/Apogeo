@@ -375,25 +375,34 @@ void OutputManager::writeDataPointCSV(const SimulationDataPoint& point, int tick
 }
 
 void OutputManager::writeDataPointJSON(const SimulationDataPoint& point, int tick) {
-  if (!json_file_ || !json_file_->is_open()) {
-    return;
-  }
+    if (!json_file_ || !json_file_->is_open()) {
+        return;
+    }
 
-  if (last_recorded_tick_ >= 0) {
-    *json_file_ << ",\n";
-  }
+    if (last_recorded_tick_ >= 0) {
+        *json_file_ << ",\n";
+    }
 
-  *json_file_ << "    {\n";
-  *json_file_ << "      \"tick\": " << tick << ",\n";
-  *json_file_ << "      \"simulation_time\": " << std::fixed << std::setprecision(6) << point.time << ",\n";
-  *json_file_ << "      \"utc_time\": " << std::fixed << std::setprecision(6) << point.utc_time << ",\n";
-  *json_file_ << "      \"position\": [" << point.position_x << ", " << point.position_y << ", " << point.position_z << "],\n";
-  *json_file_ << "      \"velocity\": [" << point.velocity_x << ", " << point.velocity_y << ", " << point.velocity_z << "],\n";
-  *json_file_ << "      \"orientation\": [" << point.orientation_x << ", " << point.orientation_y << ", " << point.orientation_z << ", " << point.orientation_w << "],\n";
-  *json_file_ << "      \"atmosphere\": {\"density\": " << point.atm_density << ", \"pressure\": " << point.atm_pressure << ", \"temperature\": " << point.atm_temperature << "},\n";
-  *json_file_ << "      \"gravity\": [" << point.gravity_x << ", " << point.gravity_y << ", " << point.gravity_z << "],\n";
-  *json_file_ << "      \"wind\": [" << point.wind_speed_x << ", " << point.wind_speed_y << ", " << point.wind_speed_z << "]\n";
-  *json_file_ << "    }";
+    auto format_fixed = [](double value, int precision) {
+        std::ostringstream stream;
+        stream.setf(std::ios::fixed);
+        stream << std::setprecision(precision) << value;
+        return stream.str();
+    };
+
+    *json_file_ << "    {\n";
+    *json_file_ << "      \"tick\": " << tick << ",\n";
+    *json_file_ << "      \"simulation_time\": " << format_fixed(point.time, 6) << ",\n";
+    *json_file_ << "      \"utc_time\": " << format_fixed(point.utc_time, 6) << ",\n";
+    *json_file_ << "      \"position\": [" << format_fixed(point.position_x, 6) << ", " << format_fixed(point.position_y, 6) << ", " << format_fixed(point.position_z, 6) << "],\n";
+    *json_file_ << "      \"velocity\": [" << format_fixed(point.velocity_x, 6) << ", " << format_fixed(point.velocity_y, 6) << ", " << format_fixed(point.velocity_z, 6) << "],\n";
+    *json_file_ << "      \"orientation\": [" << format_fixed(point.orientation_x, 6) << ", " << format_fixed(point.orientation_y, 6) << ", " << format_fixed(point.orientation_z, 6) << ", " << format_fixed(point.orientation_w, 6) << "],\n";
+    *json_file_ << "      \"atmosphere\": {\"density\": " << format_fixed(point.atm_density, 3)
+               << ", \"pressure\": " << format_fixed(point.atm_pressure, 0)
+               << ", \"temperature\": " << format_fixed(point.atm_temperature, 2) << "},\n";
+    *json_file_ << "      \"gravity\": [" << format_fixed(point.gravity_x, 2) << ", " << format_fixed(point.gravity_y, 2) << ", " << format_fixed(point.gravity_z, 2) << "],\n";
+    *json_file_ << "      \"wind\": [" << format_fixed(point.wind_speed_x, 2) << ", " << format_fixed(point.wind_speed_y, 2) << ", " << format_fixed(point.wind_speed_z, 2) << "]\n";
+    *json_file_ << "    }";
 }
 
 void OutputManager::writeMetricsJSON() {
