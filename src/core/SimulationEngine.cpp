@@ -183,16 +183,6 @@ void SimulationEngine::run_tick() {
   auto& time_manager = TimeManager::getInstance();
   time_manager.updateSimulationTime(delta_time);
 
-  if (state->position()) {
-    double pos_z = state->position()->z();
-    if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
-      LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
-      LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
-      is_running_ = false;
-      return;
-    }
-  }
-
   if (iteration_count_ % 50 == 0) {
     if (!validate_simulation_state(state)) {
       LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
@@ -303,44 +293,6 @@ bool SimulationEngine::validate_simulation_state(const state_vector::GeneralStat
             LOG_ERROR("NaN detected in position", "SimulationEngine");
             return false;
         }
-
-        // GROUND COLLISION DETECTION
-        const double EARTH_RADIUS = 6378137.0;  // m - Earth radius (WGS84)
-        const double LOCAL_COORD_THRESHOLD = 1000000.0;  // 1000 km
-
-        double pos_x = state->position()->x();
-        double pos_y = state->position()->y();
-        double pos_z = state->position()->z();
-
-        // Calculate distance to Earth center
-        double distance_from_center = std::sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z);
-
-        // Detect coordinate system
-        bool is_geocentric = (distance_from_center > LOCAL_COORD_THRESHOLD ||
-                             std::abs(pos_z) > LOCAL_COORD_THRESHOLD);
-
-        if (is_geocentric) {
-            // GEOCENTRIC COORDINATES (ECEF): Check distance to center
-            if (distance_from_center < EARTH_RADIUS) {
-                double altitude = distance_from_center - EARTH_RADIUS;
-                LOG_ERROR("Ground collision detected! Altitude: " + std::to_string(altitude) + " m",
-                         "SimulationEngine");
-                LOG_ERROR("Object is " + std::to_string(-altitude/1000.0) + " km below surface",
-                         "SimulationEngine");
-                LOG_ERROR("Simulation terminated to prevent unphysical results", "SimulationEngine");
-                return false;
-            }
-        } else {
-            // LOCAL COORDINATES: Check Z < 0 (below ground)
-            if (pos_z < 0.0) {
-                LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m",
-                         "SimulationEngine");
-                LOG_ERROR("Object is " + std::to_string(-pos_z) + " m below surface (local coordinates)",
-                         "SimulationEngine");
-                LOG_ERROR("Simulation terminated to prevent unphysical results", "SimulationEngine");
-                return false;
-            }
-        }
     }
 
     if (state->velocity()) {
@@ -351,13 +303,12 @@ bool SimulationEngine::validate_simulation_state(const state_vector::GeneralStat
             return false;
         }
 
-        // NEW: Check extreme supersonic velocities (possible numerical error)
         double vel_x = state->velocity()->x();
         double vel_y = state->velocity()->y();
         double vel_z = state->velocity()->z();
         double speed = std::sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
 
-        const double ESCAPE_VELOCITY = 11200.0;  // m/s - Earth escape velocity
+        const double ESCAPE_VELOCITY = 11200.0;
         if (speed > ESCAPE_VELOCITY * 2.0) {
             LOG_WARNING("Extreme velocity detected: " + std::to_string(speed) + " m/s (Mach " +
                        std::to_string(speed/343.0) + ")", "SimulationEngine");
