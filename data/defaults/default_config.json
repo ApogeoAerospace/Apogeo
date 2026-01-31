@@ -1,0 +1,43 @@
+{
+    "simulation": {
+        "time_step": 0.01,
+        "duration": 100.0,
+        "max_iterations": 10000,
+        "enable_logging": true,
+        "log_file": "logs/molab.log",
+        "log_level": "INFO"
+    },
+    "plugins": [
+        {
+            "name": "example_plugin",
+            "type": 0,
+            "library_path": "example_plugin",
+            "enabled": true,
+            "parameters": {
+                "step_size": 1.0,
+                "debug_output": false
+            }
+        }
+    ],
+    "initial_state_file": "data/default_state.json",
+    "output_directory": "output/",
+    "logging": {
+        "console_output": true,
+        "file_output": true,
+        "log_rotation": true,
+        "max_file_size_mb": 100,
+        "max_files": 5
+    },
+    "performance": {
+        "enable_metrics": true,
+        "metrics_output_interval": 1000,
+        "enable_profiling": false,
+        "thread_pool_size": 4
+    },
+    "validation": {
+        "validate_state_bounds": true,
+        "max_position_magnitude": 1000000.0,
+        "max_velocity_magnitude": 10000.0,
+        "enable_nan_checks": true
+    }
+}
