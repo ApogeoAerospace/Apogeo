@@ -38,15 +38,28 @@ public:
     // Configura archivo de log (append).
     void setLogFile(const std::string& filename) {
         std::lock_guard<std::mutex> lock(mutex_);
+        log_file_path_ = filename;
         if (log_file_.is_open()) {
             log_file_.close();
         }
-        log_file_.open(filename, std::ios::app);
+        if (!log_file_path_.empty()) {
+            log_file_.open(log_file_path_, std::ios::app);
+        }
+    }
+
+    void closeLogFile() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (log_file_.is_open()) {
+            log_file_.close();
+        }
+        log_file_path_.clear();
     }
 
     // Emite un mensaje con formato y control de nivel.
     void log(LogLevel level, const std::string& message, const std::string& component = "") {
-        if (level < current_level_) return;
+        if (level < current_level_) {
+            return;
+        }
 
         std::lock_guard<std::mutex> lock(mutex_);
 
@@ -72,9 +85,15 @@ public:
         std::cout << log_line << std::endl;
 
         // Output to file if available
-        if (log_file_.is_open()) {
-            log_file_ << log_line << std::endl;
-            log_file_.flush();
+        if (!log_file_path_.empty()) {
+            if (!log_file_.is_open()) {
+                log_file_.open(log_file_path_, std::ios::app);
+            }
+            if (log_file_.is_open()) {
+                log_file_ << log_line << std::endl;
+                log_file_.flush();
+                log_file_.close();
+            }
         }
     }
 
@@ -124,6 +143,7 @@ private:
 
     LogLevel current_level_;
     std::ofstream log_file_;
+    std::string log_file_path_;
     std::mutex mutex_;
 };
 

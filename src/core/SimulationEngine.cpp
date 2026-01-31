@@ -25,13 +25,10 @@ SimulationEngine::SimulationEngine()
 
 SimulationEngine::~SimulationEngine() noexcept {
     try {
-        if (is_running_) {
-            shutdown();
-        }
+        shutdown();
         LOG_INFO("SimulationEngine destroyed", "SimulationEngine");
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         // Cannot throw from destructor
-        // shutdown() should be noexcept-safe
     }
 }
 
