@@ -192,10 +192,10 @@ void OutputManager::recordMetrics(const std::string& component, const std::strin
 }
 
 void OutputManager::finalizeOutput() {
-    if (!initialized_) {
-        return;
-    }
-    
+  if (!initialized_) {
+    return;
+  }
+
   writer_running_.store(false);
   queue_cv_.notify_all();
   if (writer_thread_.joinable()) {
