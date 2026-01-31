@@ -139,24 +139,9 @@ public:
     bool load_plugins_from_config();
 
     /**
-     * @brief Descarga un plugin específico
-     */
-    bool unload_plugin(const std::string& path);
-
-    /**
-     * @brief Habilita o deshabilita un plugin
-     */
-    bool set_plugin_enabled(const std::string& path, bool enabled);
-
-    /**
-     * @brief Ejecuta un ciclo de simulación con todos los plugins cargados.
-     */
-    void run_simulation_cycle(std::vector<uint8_t>& state_buffer);
-
-    /**
      * @brief Ejecuta un ciclo de simulación mejorado con integración física
      */
-    void run_simulation_cycle_improved(std::vector<uint8_t>& state_buffer, double delta_time);
+    void run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time);
 
     /**
      * @brief Libera todos los recursos y descarga todos los plugins.
@@ -166,7 +151,6 @@ public:
     // Métodos de información y estadísticas
     size_t get_plugin_count() const;
     std::vector<std::string> get_loaded_plugin_names() const;
-    bool is_plugin_loaded(const std::string& path) const;
 
     // Métricas de rendimiento
     struct PluginMetrics {
@@ -178,7 +162,6 @@ public:
     };
 
     std::vector<PluginMetrics> get_plugin_metrics() const;
-    void reset_plugin_metrics();
 
 private:
     // Contenedores de plugins thread-safe
@@ -196,7 +179,6 @@ private:
 
     // Utilidades
     std::vector<LoadedPlugin*> get_plugins_by_type(PluginType type);
-    bool validate_plugin_api(const LoadedPlugin& plugin) const;
     void cleanup_plugin(LoadedPlugin& plugin);
 
     // Integrador físico

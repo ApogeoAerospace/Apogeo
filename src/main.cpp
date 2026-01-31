@@ -16,7 +16,7 @@ void print_usage(const char* program_name) {
     std::cout << "  --version               Show version information\n";
     std::cout << "\nExamples:\n";
     std::cout << "  " << program_name << " --config data/default_config.json\n";
-    std::cout << "  " << program_name << " --state data/initial_state.json --ticks 100\n";
+    std::cout << "  " << program_name << " --state data/default_state.json --ticks 100\n";
 }
 
 void print_version() {
@@ -27,7 +27,7 @@ void print_version() {
 
 int main(int argc, char* argv[]) {
     // Parse command line arguments
-    std::string config_file = "";
+    std::string config_file = "data/default_config.json";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
 

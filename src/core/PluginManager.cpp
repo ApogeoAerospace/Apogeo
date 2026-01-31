@@ -133,11 +133,7 @@ bool PluginManager::load_plugins_from_config() {
     return all_loaded;
 }
 
-void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer) {
-    run_simulation_cycle_improved(state_buffer, 0.01); // Default time step
-}
-
-void PluginManager::run_simulation_cycle_improved(std::vector<uint8_t>& state_buffer, double delta_time) {
+void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     std::lock_guard<std::mutex> lock(plugins_mutex_);
@@ -283,16 +279,17 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         return;
     }
 
-    // Parse current state from FlatBuffer
+    // Leer estado actual del FlatBuffer
     const state_vector::GeneralState* current_state = state_vector::GetGeneralState(state_buffer.data());
     if (!current_state) {
         LOG_ERROR("Failed to parse state buffer in physics integration", "PluginManager");
         return;
     }
 
+    // Convertir a estado interno para integración
     PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
 
-    // Get accumulated forces from plugins
+    // Recuperar fuerzas/torques acumulados de plugins paralelos
     PluginVector3 plugin_force;
     PluginVector3 plugin_torque;
     {
@@ -300,65 +297,130 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         plugin_force = accumulated_force_;
         plugin_torque = accumulated_torque_;
     }
-            
-    // Convert plugin forces to Vector3
+
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
-    Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);    
+    Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Nota: No se agregan fuerzas ambientales aquí. Solo se integran fuerzas/torques provenientes de plugins paralelos.
-
-    // Integrate physics
+    // Integrar física (PhysicsIntegrator actualiza sim_time internamente)
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
 
-    // Create new FlatBuffer preserving original fields
+    // Reconstruir el FlatBuffer con el esquema nuevo, preservando campos
     flatbuffers::FlatBufferBuilder builder;
 
-    // Create Vec3 structs with updated values
+    // Cinemática actualizada
     auto position = state_vector::Vec3(new_state.position.x, new_state.position.y, new_state.position.z);
     auto velocity = state_vector::Vec3(new_state.velocity.x, new_state.velocity.y, new_state.velocity.z);
     auto orientation = state_vector::Quaternion(new_state.orientation.x, new_state.orientation.y, new_state.orientation.z, 1.0f);
+    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x, new_state.angular_velocity.y, new_state.angular_velocity.z);
 
-    // Preserve environmental fields from original state
-    auto gravity = state_vector::Vec3(
-        current_state->gravity() ? current_state->gravity()->x() : 0.0f,
-        current_state->gravity() ? current_state->gravity()->y() : 0.0f,
-        current_state->gravity() ? current_state->gravity()->z() : -9.81f
+    // Entorno: usar punteros del estado actual (si existen)
+    const state_vector::Vec3* gravity_ptr = current_state->gravity();
+    const state_vector::Vec3* wind_ptr = current_state->wind_velocity();
+
+    // Propiedades de masa y CG
+    float total_mass = current_state->total_mass();
+    state_vector::Vec3 cg_loc = current_state->cg_location()
+        ? state_vector::Vec3(current_state->cg_location()->x(), current_state->cg_location()->y(), current_state->cg_location()->z())
+        : state_vector::Vec3(0.0f, 0.0f, 0.0f);
+
+    state_vector::InertiaTensor inertia_tensor(
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->ixx() : 0.0f,
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->iyy() : 0.0f,
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->izz() : 0.0f,
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->ixy() : 0.0f,
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->ixz() : 0.0f,
+        current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    auto wind_speed = state_vector::Vec3(
-        current_state->wind_speed() ? current_state->wind_speed()->x() : 0.0f,
-        current_state->wind_speed() ? current_state->wind_speed()->y() : 0.0f,
-        current_state->wind_speed() ? current_state->wind_speed()->z() : 0.0f
-    );
+    // Air data
+    float mach_number = current_state->mach_number();
+    float dynamic_pressure = current_state->dynamic_pressure();
+    float angle_of_attack = current_state->angle_of_attack();
+    float sideslip_angle = current_state->sideslip_angle();
 
-    // Create GeneralState with updated time
-    auto general_state = state_vector::CreateGeneralState(builder,
-        &position,
-        &velocity,
-        &orientation,
-        current_state->atm_density(),
-        current_state->atm_pressure(),
-        current_state->atm_temperature(),
-        &gravity,
-        static_cast<float>(new_state.time),  // Updated time
-        current_state->UTC(),
-        &wind_speed
-    );
+    float atm_density = current_state->atm_density();
+    float atm_pressure = current_state->atm_pressure();
+    float atm_temperature = current_state->atm_temperature();
 
+    // Arrays: copiar si existen
+    flatbuffers::Offset<flatbuffers::Vector<float>> propellant_masses_fb;
+    if (auto pm = current_state->propellant_masses()) {
+        std::vector<float> pm_vec;
+        pm_vec.reserve(pm->size());
+        for (auto v : *pm) pm_vec.push_back(v);
+        propellant_masses_fb = builder.CreateVector(pm_vec);
+    }
+
+    // Arrays: engines (vector of structs) - preserve by copying
+    flatbuffers::Offset<flatbuffers::Vector<const state_vector::EngineCmd*>> engines_fb;
+    if (auto engines = current_state->engines()) {
+        std::vector<state_vector::EngineCmd> eng_vec;
+        eng_vec.reserve(engines->size());
+        for (size_t i = 0; i < engines->size(); ++i) {
+            const state_vector::EngineCmd* ec = engines->Get(i);
+            // tvc_angles is a struct; access via '.' on the returned struct
+            const state_vector::Vec3 tvc = ec->tvc_angles();
+            eng_vec.emplace_back(ec->throttle(), tvc);
+        }
+        engines_fb = builder.CreateVectorOfStructs(eng_vec);
+    }
+
+    flatbuffers::Offset<flatbuffers::Vector<float>> surface_deflections_fb;
+    if (auto sd = current_state->surface_deflections()) {
+        std::vector<float> sd_vec;
+        sd_vec.reserve(sd->size());
+        for (auto v : *sd) sd_vec.push_back(v);
+        surface_deflections_fb = builder.CreateVector(sd_vec);
+    }
+
+    // Construir GeneralState preservando dt (o actualizándolo con delta_time)
+    state_vector::GeneralStateBuilder gs_builder(builder);
+    gs_builder.add_sim_time(static_cast<float>(new_state.time));
+    // Preserve the integrator step in the buffer to avoid dt becoming 0 after rebuild.
+    // Option A: keep previous dt from buffer
+    gs_builder.add_dt(current_state->dt());
+    // Option B (if you want dt to reflect the actual integrator step used):
+    // gs_builder.add_dt(static_cast<float>(delta_time));
+
+    gs_builder.add_position(&position);
+    gs_builder.add_velocity(&velocity);
+    gs_builder.add_orientation(&orientation);
+    gs_builder.add_angular_velocity(&angular_velocity);
+
+    gs_builder.add_total_mass(total_mass);
+    gs_builder.add_cg_location(&cg_loc);
+    gs_builder.add_inertia_tensor(&inertia_tensor);
+    if (propellant_masses_fb.o != 0) gs_builder.add_propellant_masses(propellant_masses_fb);
+
+    gs_builder.add_mach_number(mach_number);
+    gs_builder.add_dynamic_pressure(dynamic_pressure);
+    gs_builder.add_angle_of_attack(angle_of_attack);
+    gs_builder.add_sideslip_angle(sideslip_angle);
+
+    gs_builder.add_atm_density(atm_density);
+    gs_builder.add_atm_pressure(atm_pressure);
+    gs_builder.add_atm_temperature(atm_temperature);
+
+    if (wind_ptr) gs_builder.add_wind_velocity(wind_ptr);
+    if (gravity_ptr) gs_builder.add_gravity(gravity_ptr);
+
+    if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
+    if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);
+
+    auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    // Update state buffer
+    // Actualizar buffer de estado
     const uint8_t* new_buffer = builder.GetBufferPointer();
     uint32_t new_size = builder.GetSize();
     state_buffer.assign(new_buffer, new_buffer + new_size);
 
-    LOG_DEBUG("Physics integrated with real forces. Time: " + std::to_string(new_state.time) +
-              ", Position: (" + std::to_string(new_state.position.x) + ", " +
-              std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) +
-              "), Total Force: (" + std::to_string(total_force.x) + ", " +
-              std::to_string(total_force.y) + ", " + std::to_string(total_force.z) +
-              "), Plugin Force: (" + std::to_string(plugin_force.x) + ", " +
-              std::to_string(plugin_force.y) + ", " + std::to_string(plugin_force.z) + ")", "PluginManager");
+    LOG_DEBUG(
+        "Physics integrated; sim_time=" + std::to_string(new_state.time) +
+        " pos=(" + std::to_string(new_state.position.x) + ", " +
+        std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) + ")",
+        "PluginManager"
+    );
 }
 
 std::vector<LoadedPlugin*> PluginManager::get_plugins_by_type(PluginType type) {

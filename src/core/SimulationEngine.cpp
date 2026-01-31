@@ -152,104 +152,111 @@ void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
 }
 
 void SimulationEngine::run_tick() {
-    if (!is_running_) {
-        is_running_ = true;
-        LOG_INFO("Starting simulation", "SimulationEngine");
-    }
+  if (!is_running_) {
+    is_running_ = true;
+    LOG_INFO("Starting simulation", "SimulationEngine");
+  }
 
-    auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Get configuration for time step
-    const auto& config = ConfigManager::getInstance().getSimulationConfig();
-    double delta_time = config.time_step;
-
-    // Update TimeManager
-    auto& time_manager = TimeManager::getInstance();
-    time_manager.updateSimulationTime(delta_time);
-
-    {
-        std::lock_guard<std::mutex> lock(state_mutex_);
-        plugin_manager_->run_simulation_cycle_improved(current_state_buffer_, delta_time);
-    }
-
-    // QUICK VALIDATION: Detect ground collisions immediately
+  // Authoritative dt from buffer
+  double delta_time = 0.0;
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
     auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
-    if (state && state->position()) {
-        double pos_z = state->position()->z();
-        // Quick detection for local coordinates
-        if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
-            LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
-            LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
-            is_running_ = false;
-            return;
-        }
+    if (state) {
+      delta_time = static_cast<double>(state->dt());
     }
+  }
+  if (delta_time <= 0.0) {
+    LOG_ERROR("Invalid dt in state buffer (<= 0). Aborting tick.", "SimulationEngine");
+    is_running_ = false;
+    return;
+  }
 
-    // Full validation only every 50 ticks
-    if (iteration_count_ % 50 == 0) {
-        if (!validate_simulation_state()) {
-            LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
-            is_running_ = false;
-            return;
-        }
+  auto& time_manager = TimeManager::getInstance();
+  time_manager.updateSimulationTime(delta_time);
+
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
+  }
+
+  // Detect ground collisions immediately
+  auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
+  if (state && state->position()) {
+    double pos_z = state->position()->z();
+    // Quick detection for local coordinates
+    if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
+      LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
+      LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
+      is_running_ = false;
+      return;
     }
+  }
 
-    // Update simulation metrics
-    simulation_time_.store(simulation_time_.load() + delta_time);
-    iteration_count_++;
-
-    // Record state using TimeManager time (only if state is valid)
-    auto& output_manager = OutputManager::getInstance();
-    output_manager.recordState(current_state_buffer_, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
-
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    last_tick_duration_ = duration.count() / 1000.0; // Convert to milliseconds
-
-    // Log performance metrics periodically
-    if (iteration_count_ % 5000 == 0) {
-        LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
-                " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");
-        LOG_INFO("Simulation time: " + std::to_string(time_manager.getSimulationTime()) + "s", "SimulationEngine");
-        LOG_INFO("Current UTC: " + time_manager.getCurrentUTCString(), "SimulationEngine");
+  // Full validation only every 50 ticks
+  if (iteration_count_ % 50 == 0) {
+    if (!validate_simulation_state()) {
+      LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
+      is_running_ = false;
+      return;
     }
+  }
+
+  // Update simulation metrics
+  simulation_time_.store(simulation_time_.load() + delta_time);
+  iteration_count_++;
+
+  // Record state using TimeManager time (only if state is valid)
+  auto& output_manager = OutputManager::getInstance();
+  output_manager.recordState(current_state_buffer_, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+  last_tick_duration_ = duration.count() / 1000.0; // Convert to milliseconds
+
+  // Log performance metrics periodically
+  if (iteration_count_ % 5000 == 0) {
+    LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
+            " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");
+    LOG_INFO("Simulation time: " + std::to_string(time_manager.getSimulationTime()) + "s", "SimulationEngine");
+    LOG_INFO("Current UTC: " + time_manager.getCurrentUTCString(), "SimulationEngine");
+  }
 }
 
 bool SimulationEngine::run_simulation() {
-    const auto& config = ConfigManager::getInstance().getSimulationConfig();
+  const auto& config = ConfigManager::getInstance().getSimulationConfig();
 
-    LOG_INFO("Starting full simulation run", "SimulationEngine");
-    LOG_INFO("Duration: " + std::to_string(config.simulation_duration) + "s", "SimulationEngine");
-    LOG_INFO("Time step: " + std::to_string(config.time_step) + "s", "SimulationEngine");
-    LOG_INFO("Max iterations: " + std::to_string(config.max_iterations), "SimulationEngine");
+  LOG_INFO("Starting full simulation run", "SimulationEngine");
+  LOG_INFO("Duration: " + std::to_string(config.simulation_duration) + "s", "SimulationEngine");
+  LOG_INFO("Max iterations: " + std::to_string(config.max_iterations), "SimulationEngine");
 
-    auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_time = std::chrono::high_resolution_clock::now();
 
-    while (simulation_time_.load() < config.simulation_duration &&
-           iteration_count_ < config.max_iterations) {
+  while (simulation_time_.load() < config.simulation_duration &&
+         iteration_count_ < config.max_iterations) {
 
-        run_tick();
+    run_tick();
 
-        // Optimized: Validation removed (already done inside run_tick at line 184)
-        // Redundant validation was causing 10-15% performance overhead
-        if (!is_running_) {
-            LOG_ERROR("Simulation terminated early", "SimulationEngine");
-            return false;
-        }
+    if (!is_running_) {
+      LOG_ERROR("Simulation terminated early", "SimulationEngine");
+      return false;
     }
+  }
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    LOG_INFO("Simulation completed successfully", "SimulationEngine");
-    LOG_INFO("Total iterations: " + std::to_string(iteration_count_), "SimulationEngine");
-    LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
-    LOG_INFO("Real time: " + std::to_string(duration.count()) + "ms", "SimulationEngine");
+  LOG_INFO("Simulation completed successfully", "SimulationEngine");
+  LOG_INFO("Total iterations: " + std::to_string(iteration_count_), "SimulationEngine");
+  LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
+  LOG_INFO("Real time: " + std::to_string(duration.count()) + "ms", "SimulationEngine");
 
-    // Print plugin metrics
-    print_performance_metrics();
+  // Print plugin metrics
+  print_performance_metrics();
 
-    return true;
+  return true;
 }
 
 void SimulationEngine::shutdown() {

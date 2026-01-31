@@ -20,22 +20,19 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
 
         LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
 
-        // Parse different sections
+        // Parse sections
         if (!parseSimulationConfig(config_json)) {
-            return false;
-        }
-        if (!parsePhysicsConfig(config_json)) {
             return false;
         }
         if (!parsePluginConfigs(config_json)) {
             return false;
         }
 
-        // Parse file paths
+        // File paths
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
-            initial_state_file_ = "data/initial_state/default_state.json";
+            initial_state_file_ = "data/default_state.json";
         }
 
         if (config_json.contains("output_directory")) {
@@ -64,16 +61,11 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
         nlohmann::json config_json;
 
         // Simulation config
-        config_json["simulation"]["time_step"] = simulation_config_.time_step;
         config_json["simulation"]["duration"] = simulation_config_.simulation_duration;
         config_json["simulation"]["max_iterations"] = simulation_config_.max_iterations;
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
-
-        // Physics config
-        config_json["physics"]["integration_tolerance"] = physics_config_.integration_tolerance;
-        config_json["physics"]["integrator_type"] = physics_config_.integrator_type;
 
         // Plugin configs
         for (const auto& plugin : plugin_configs_) {
@@ -110,20 +102,15 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 
 void ConfigManager::setDefaults() {
     // Simulation defaults
-    simulation_config_.time_step = 0.01; // 10ms
-    simulation_config_.simulation_duration = 100.0; // 100 seconds
+    simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
 
-    // Physics defaults
-    physics_config_.integration_tolerance = 1e-6;
-    physics_config_.integrator_type = "runge_kutta_4";
-
     plugin_configs_.clear();
 
-    initial_state_file_ = "data/initial_state/default_state.json";
+    initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
     LOG_INFO("Using default configuration", "ConfigManager");
@@ -133,16 +120,12 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
     try {
         if (json.contains("simulation")) {
             const auto& sim = json["simulation"];
-
-            simulation_config_.time_step = sim.value("time_step", 0.01);
             simulation_config_.simulation_duration = sim.value("duration", 100.0);
             simulation_config_.max_iterations = sim.value("max_iterations", 10000);
             simulation_config_.enable_logging = sim.value("enable_logging", true);
             simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
-            // Use defaults if section doesn't exist
-            simulation_config_.time_step = 0.01;
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
@@ -152,25 +135,6 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Error parsing simulation config: " + std::string(e.what()), "ConfigManager");
-        return false;
-    }
-}
-
-bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
-    try {
-        if (json.contains("physics")) {
-            const auto& physics = json["physics"];
-
-            physics_config_.integration_tolerance = physics.value("integration_tolerance", 1e-6);
-            physics_config_.integrator_type = physics.value("integrator_type", "runge_kutta_4");
-        } else {
-            // Use defaults
-            physics_config_.integration_tolerance = 1e-6;
-            physics_config_.integrator_type = "runge_kutta_4";
-        }
-        return true;
-    } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing physics config: " + std::string(e.what()), "ConfigManager");
         return false;
     }
 }
@@ -205,12 +169,6 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 }
 
 bool ConfigManager::validateConfig() const {
-    // Validate simulation config
-    if (simulation_config_.time_step <= 0) {
-        LOG_ERROR("Invalid time step: must be positive", "ConfigManager");
-        return false;
-    }
-
     if (simulation_config_.simulation_duration <= 0) {
         LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
         return false;
@@ -218,30 +176,6 @@ bool ConfigManager::validateConfig() const {
 
     if (simulation_config_.max_iterations <= 0) {
         LOG_ERROR("Invalid max iterations: must be positive", "ConfigManager");
-        return false;
-    }
-
-    // Validate physics config
-    if (physics_config_.integration_tolerance <= 0) {
-        LOG_ERROR("Invalid integration tolerance: must be positive", "ConfigManager");
-        return false;
-    }
-
-    // Validate integrator type
-    const std::vector<std::string> valid_integrators = {
-        "euler", "runge_kutta_4", "verlet"
-    };
-
-    bool valid_integrator = false;
-    for (const auto& integrator : valid_integrators) {
-        if (physics_config_.integrator_type == integrator) {
-            valid_integrator = true;
-            break;
-        }
-    }
-
-    if (!valid_integrator) {
-        LOG_ERROR("Invalid integrator type: " + physics_config_.integrator_type, "ConfigManager");
         return false;
     }
 

@@ -1,10 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 #include <memory>
 #include <functional>
-#include <cmath>
 #include "flatbuffers/flatbuffers.h"
 #include "state_vector_generated.h"
 
@@ -89,8 +89,6 @@ public:
 
     // Utility functions for state conversion
     static PhysicsState fromFlatBuffer(const state_vector::GeneralState* fb_state);
-    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
-                            const PhysicsState& state);
 
 private:
     IntegratorType integrator_type_;
@@ -120,23 +118,5 @@ private:
     PhysicsState previous_state_;
     bool has_previous_state_;
 };
-
-// Utility functions for atmospheric effects
-namespace AtmosphericEffects {
-    Vector3 calculateDrag(const Vector3& velocity, double air_density,
-                         double drag_coefficient, double reference_area);
-
-    Vector3 calculateWind(const Vector3& wind_velocity, const Vector3& object_velocity,
-                         double air_density, double reference_area);
-
-    double calculateAirDensity(double altitude, double temperature = 288.15);
-}
-
-// Utility functions for gravitational effects
-namespace GravitationalEffects {
-    Vector3 calculateEarthGravity(const Vector3& position, double mass = 1.0);
-    Vector3 calculateCentralGravity(const Vector3& position, double central_mass,
-                                   double gravitational_constant = 6.67430e-11);
-}
 
 } // namespace MoLab
