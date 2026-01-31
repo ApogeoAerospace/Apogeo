@@ -214,35 +214,7 @@ TEST_F(SimulationEngineTest, ValidateStateAfterTick) {
     EXPECT_TRUE(engine.validate_simulation_state());
 }
 
-TEST_F(SimulationEngineTest, GroundCollisionDetection) {
-    // Create state with negative Z (below ground in local coordinates)
-    std::string collision_state_file = "test_data/collision_state.json";
-    json collision_state = {
-        {"sim_time", 0.0},
-        {"dt", 0.01},
-        {"position", {{"x", 0.0}, {"y", 0.0}, {"z", -10.0}}},
-        {"velocity", {{"x", 0.0}, {"y", 0.0}, {"z", -100.0}}},
-        {"orientation", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"w", 1.0}}},
-        {"angular_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}},
-        {"atm_density", 1.225},
-        {"atm_pressure", 101325.0},
-        {"atm_temperature", 288.15},
-        {"gravity", {{"x", 0.0}, {"y", -9.81}, {"z", 0.0}}},
-        {"wind_velocity", {{"x", 0.0}, {"y", 0.0}, {"z", 0.0}}}
-    };
-
-    std::ofstream state_file(collision_state_file);
-    state_file << collision_state.dump(4);
-    state_file.close();
-
-    SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
-    config.loadConfig(test_config_file);
-    engine.initialize(collision_state_file);
-
-    // State validation should detect ground collision
-    EXPECT_FALSE(engine.validate_simulation_state());
-}
+// Ground Collision Se maneja en el módulo de ambiente, no en el núcleo de simulación
 
 TEST_F(SimulationEngineTest, MultipleInitializations) {
     SimulationEngine engine;

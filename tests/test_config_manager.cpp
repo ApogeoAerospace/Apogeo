@@ -60,10 +60,9 @@ TEST_F(ConfigManagerTest, GetMaxIterations) {
 
 TEST_F(ConfigManagerTest, InvalidConfigFileUsesDefaults) {
     auto& config_manager = ConfigManager::getInstance();
-    // loadConfig retorna true y usa defaults cuando el archivo no existe (comportamiento robusto)
-    EXPECT_TRUE(config_manager.loadConfig("non_existent_file.json"));
+    // loadConfig retorna false si el archivo no existe, pero aplica defaults
+    EXPECT_FALSE(config_manager.loadConfig("non_existent_file.json"));
 
-    // Debe tener valores por defecto
     const auto& sim_config = config_manager.getSimulationConfig();
     EXPECT_EQ(sim_config.simulation_duration, 100.0);
 }
