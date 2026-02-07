@@ -9,10 +9,13 @@ Input Conditions
 * Chamber pressure
 * Mixture ratio (LOX/RP-1)
 * Ambient pressure (sea-level conditions)
+
 Output Parameter
 * Sea-level thrust
+
 Expected Value
 * 845,000 N
+
 Reference Source
 * SpaceX Falcon 9 User Guide
 
@@ -20,10 +23,13 @@ Reference Source
 Input Conditions
 * Nozzle expansion characteristics
 * Near-vacuum ambient pressure
+
 Output Parameter
 * Vacuum specific impulse
+
 Expected Value
 * 311 s
+
 Reference Source
 * SpaceX Falcon 9 User Guide
 
@@ -32,10 +38,13 @@ Input Conditions
 * Sea-level thrust
 * Sea-level specific impulse
 * Standard gravitational acceleration
+
 Output Parameter
 * Propellant mass flow rate
+
 Expected Value
 * Approximately 305 kg/s
+
 Reference Source
 * Calculated using the classical thrust equation
 * Sutton & Biblarz, Rocket Propulsion Elements
@@ -44,4 +53,5 @@ Reference Source
 The expected values used in these validation cases are stored in the reference data file included in the project repository. Depending on the validation scenario, parameters may act as inputs or outputs. This approach allows flexibility in evaluating different aspects of the propulsion model.
 Principio del formulario
 Final del formulario
+
 
