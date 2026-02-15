@@ -1,0 +1,101 @@
+{
+    "simulation": {
+        "duration": 100.0,
+        "max_iterations": 10,
+        "enable_logging": true,
+        "log_file": "logs/molab.log",
+        "log_level": "INFO"
+    },
+    "plugins": [
+        {
+            "name": "example_plugin",
+            "type": 0,
+            "library_path": "example_plugin",
+            "enabled": true,
+            "parameters": {
+                "step_size": 1.0,
+                "debug_output": false
+            }
+        }
+    ],
+    "initial_state_file": "data/default_state.json",
+    "output_directory": "output/",
+    "logging": {
+        "console_output": true,
+        "file_output": true,
+        "log_rotation": true,
+        "max_file_size_mb": 100,
+        "max_files": 5
+    },
+    "performance": {
+        "enable_metrics": true,
+        "metrics_output_interval": 1000,
+        "enable_profiling": false,
+        "thread_pool_size": 4
+    },
+    "validation": {
+        "max_position_magnitude": 1000000.0,
+        "max_velocity_magnitude": 10000.0,
+        "enable_nan_checks": true
+    },
+    "vehicle_models": {
+        "aero_database": {
+            "type": "lookup_table",
+            "source": {
+                "uri": "data/aero/vehicle_aero.db",
+                "format": "hdf5"
+            },
+            "axes": ["alpha_deg", "beta_deg", "mach"]
+        },
+        "reference_geometry": {
+            "source": {
+                "uri": "data/geometry/vehicle_geometry.csv",
+                "format": "csv"
+            }
+        },
+        "propulsion_model": {
+            "source": {
+                "uri": "data/propulsion/engine_curves.csv",
+                "format": "csv"
+            }
+        },
+        "mass_properties": {
+            "source": {
+                "uri": "data/mass/mass_properties.json",
+                "format": "json"
+            }
+        },
+        "physical_limits": {
+          "actuators": [
+              { "id": "fin_1", "max_rate_deg_s": 20.0, "range_deg": 30.0 }
+            ],
+            "structural": {
+                "source": {
+                    "uri": "data/limits/structural_limits.csv",
+                    "format": "csv"
+                }
+            }
+        }
+    },
+    "mission_environment": {
+        "planet_model": "WGS84",
+        "flight_sequence": {
+            "source": {
+                "uri": "data/missions/sequence.yaml",
+                "format": "yaml"
+            }
+        },
+        "atmosphere_wind": {
+            "model": "US_Standard_1976",
+            "wind_profile_source": {
+                "uri": "data/wind/wind_profile.csv",
+                "format": "csv"
+            }
+        },
+        "integrator_config": {
+            "method": "runge_kutta_4",
+            "rtol": 1e-6,
+            "atol": 1e-8
+        }
+    }
+}

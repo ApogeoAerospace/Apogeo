@@ -1,25 +1,89 @@
 namespace state_vector;
 
-// Ejemplo básico de un esquema FlatBuffers para un cohete
-// Se tiene en cuenta posición, velocidad, orientación y combustible
+// -----------------------------------------------------------------------
+// Estructuras Auxiliares
+// -----------------------------------------------------------------------
 
-struct Vec3 { x:float; y:float; z:float; }
-struct Quaternion { x:float; y:float; z:float; w:float; }
+struct Vec3 { 
+  x:float; 
+  y:float; 
+  z:float; 
+}
+
+struct Quaternion { 
+  x:float; 
+  y:float; 
+  z:float; 
+  w:float; 
+}
+
+struct InertiaTensor {
+  ixx:float;
+  iyy:float;
+  izz:float;
+  ixy:float;
+  ixz:float;
+  iyz:float;
+}
+
+struct EngineCmd {
+  throttle:float;    // Nivel de empuje
+  tvc_angles:Vec3;   // Ángulos de vectorización local del motor
+}
+
+// -----------------------------------------------------------------------
+// Tabla Principal
+// -----------------------------------------------------------------------
 
 table GeneralState {
-  // Estado del cohete
-  position:Vec3; // Body-fixed coordinates, m
-  velocity:Vec3;
-  orientation:Quaternion;
+  // -----------------------------------------------------------------------
+  // 2.1. Estado del Vehículo (Cinemática y Dinámica)
+  // -----------------------------------------------------------------------
+  
+  sim_time:float;           // Tiempo actual de la misión
+  dt:float;                 // Paso de tiempo del integrador
 
-  // Estado del entorno
-  atm_density:float; // kg/m^3
-  atm_pressure:float; // Pa
-  atm_temperature:float; // K (En el centro de masa, usar una gradiente para conseguir la temperatura en otros puntos)
-  gravity:Vec3; // m/s^2
-  Time:float; // Tiempo en segundos desde el inicio de la simulación
-  UTC:float; // Tiempo en segundos desde el 1 de enero de 1970 (Epoch time)
-  wind_speed:Vec3; // m/s
+  position:Vec3;            // Coordenadas inerciales
+  velocity:Vec3;            // Vector velocidad lineal
+  
+  orientation:Quaternion;   // Actitud
+  angular_velocity:Vec3;    // Tasas de rotación (P, Q, R)
+
+  total_mass:float;         // Masa total instantánea
+  cg_location:Vec3;         // Ubicación del Centro de Gravedad
+  inertia_tensor:InertiaTensor; // Tensor de Inercia
+
+  // Masa de combustible en cada tanque
+  propellant_masses:[float]; 
+
+  // -----------------------------------------------------------------------
+  // 2.2. Estado Aerodinámico (Air Data)
+  // -----------------------------------------------------------------------
+
+  mach_number:float;        // Número de Mach
+  dynamic_pressure:float;   // Presión dinámica
+
+  angle_of_attack:float;    // Alpha
+  sideslip_angle:float;     // Beta
+
+  // -----------------------------------------------------------------------
+  // 2.3. Entorno y Control
+  // -----------------------------------------------------------------------
+
+  atm_density:float;        // Densidad
+  atm_pressure:float;       // Presión estática
+  atm_temperature:float;    // Temperatura
+
+  wind_velocity:Vec3;       // Vector viento atmosférico
+  gravity:Vec3;             // Vector gravedad local
+
+  // Comandos de Propulsión por motor
+  // Lista de motores, cada uno con su throttle y TVC propio
+  engines:[EngineCmd]; 
+
+  // Deflexión de Superficies de Control
+  // Vector para N superficies
+  surface_deflections:[float]; 
 }
 
 root_type GeneralState;

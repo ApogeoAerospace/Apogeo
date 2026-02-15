@@ -9,9 +9,10 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
     try {
         std::ifstream file(config_file);
         if (!file.is_open()) {
+            // Archivo inexistente: usar valores por defecto y continuar
             LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
             setDefaults();
-            return true; // Not an error, just use defaults
+            return false; // Se aplican defaults, pero no se cargó archivo
         }
 
         nlohmann::json config_json;
@@ -20,22 +21,19 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
 
         LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
 
-        // Parse different sections
+        // Parsear secciones principales
         if (!parseSimulationConfig(config_json)) {
-            return false;
-        }
-        if (!parsePhysicsConfig(config_json)) {
             return false;
         }
         if (!parsePluginConfigs(config_json)) {
             return false;
         }
 
-        // Parse file paths
+        // Rutas de archivos
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
-            initial_state_file_ = "data/initial_state.json";
+            initial_state_file_ = "data/default_state.json";
         }
 
         if (config_json.contains("output_directory")) {
@@ -44,6 +42,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             output_directory_ = "output/";
         }
 
+        // Validar coherencia general
         if (!validateConfig()) {
             LOG_ERROR("Configuration validation failed", "ConfigManager");
             return false;
@@ -53,6 +52,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         return true;
 
     } catch (const std::exception& e) {
+        // Falla al leer o parsear: usar defaults como fallback
         LOG_ERROR("Error loading config: " + std::string(e.what()), "ConfigManager");
         setDefaults();
         return false;
@@ -63,22 +63,14 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
     try {
         nlohmann::json config_json;
 
-        // Simulation config
-        config_json["simulation"]["time_step"] = simulation_config_.time_step;
+        // Configuración de simulación
         config_json["simulation"]["duration"] = simulation_config_.simulation_duration;
         config_json["simulation"]["max_iterations"] = simulation_config_.max_iterations;
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
 
-        // Physics config
-        config_json["physics"]["enable_gravity"] = physics_config_.enable_gravity;
-        config_json["physics"]["enable_atmospheric_drag"] = physics_config_.enable_atmospheric_drag;
-        config_json["physics"]["enable_wind_effects"] = physics_config_.enable_wind_effects;
-        config_json["physics"]["integration_tolerance"] = physics_config_.integration_tolerance;
-        config_json["physics"]["integrator_type"] = physics_config_.integrator_type;
-
-        // Plugin configs
+        // Configuración de plugins
         for (const auto& plugin : plugin_configs_) {
             nlohmann::json plugin_json;
             plugin_json["name"] = plugin.name;
@@ -89,7 +81,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
             config_json["plugins"].push_back(plugin_json);
         }
 
-        // File paths
+        // Rutas de archivos
         config_json["initial_state_file"] = initial_state_file_;
         config_json["output_directory"] = output_directory_;
 
@@ -112,24 +104,18 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 }
 
 void ConfigManager::setDefaults() {
-    // Simulation defaults
-    simulation_config_.time_step = 0.01; // 10ms
-    simulation_config_.simulation_duration = 100.0; // 100 seconds
+    // Valores por defecto de simulación
+    simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
 
-    // Physics defaults
-    physics_config_.enable_gravity = true;
-    physics_config_.enable_atmospheric_drag = true;
-    physics_config_.enable_wind_effects = false;
-    physics_config_.integration_tolerance = 1e-6;
-    physics_config_.integrator_type = "runge_kutta_4";
-
+    // Limpiar configuración de plugins
     plugin_configs_.clear();
 
-    initial_state_file_ = "data/initial_state.json";
+    // Rutas por defecto
+    initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
     LOG_INFO("Using default configuration", "ConfigManager");
@@ -139,16 +125,13 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
     try {
         if (json.contains("simulation")) {
             const auto& sim = json["simulation"];
-
-            simulation_config_.time_step = sim.value("time_step", 0.01);
             simulation_config_.simulation_duration = sim.value("duration", 100.0);
             simulation_config_.max_iterations = sim.value("max_iterations", 10000);
             simulation_config_.enable_logging = sim.value("enable_logging", true);
             simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
-            // Use defaults if section doesn't exist
-            simulation_config_.time_step = 0.01;
+            // Si no hay sección, usar defaults
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
@@ -158,31 +141,6 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Error parsing simulation config: " + std::string(e.what()), "ConfigManager");
-        return false;
-    }
-}
-
-bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
-    try {
-        if (json.contains("physics")) {
-            const auto& physics = json["physics"];
-
-            physics_config_.enable_gravity = physics.value("enable_gravity", true);
-            physics_config_.enable_atmospheric_drag = physics.value("enable_atmospheric_drag", true);
-            physics_config_.enable_wind_effects = physics.value("enable_wind_effects", false);
-            physics_config_.integration_tolerance = physics.value("integration_tolerance", 1e-6);
-            physics_config_.integrator_type = physics.value("integrator_type", "runge_kutta_4");
-        } else {
-            // Use defaults
-            physics_config_.enable_gravity = true;
-            physics_config_.enable_atmospheric_drag = true;
-            physics_config_.enable_wind_effects = false;
-            physics_config_.integration_tolerance = 1e-6;
-            physics_config_.integrator_type = "runge_kutta_4";
-        }
-        return true;
-    } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing physics config: " + std::string(e.what()), "ConfigManager");
         return false;
     }
 }
@@ -203,6 +161,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                     plugin.parameters = plugin_json["parameters"];
                 }
 
+                // Solo agregar si hay nombre y ruta válida
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
                 }
@@ -217,12 +176,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 }
 
 bool ConfigManager::validateConfig() const {
-    // Validate simulation config
-    if (simulation_config_.time_step <= 0) {
-        LOG_ERROR("Invalid time step: must be positive", "ConfigManager");
-        return false;
-    }
-
+    // Validación básica de simulación
     if (simulation_config_.simulation_duration <= 0) {
         LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
         return false;
@@ -233,31 +187,7 @@ bool ConfigManager::validateConfig() const {
         return false;
     }
 
-    // Validate physics config
-    if (physics_config_.integration_tolerance <= 0) {
-        LOG_ERROR("Invalid integration tolerance: must be positive", "ConfigManager");
-        return false;
-    }
-
-    // Validate integrator type
-    const std::vector<std::string> valid_integrators = {
-        "euler", "runge_kutta_4", "verlet"
-    };
-
-    bool valid_integrator = false;
-    for (const auto& integrator : valid_integrators) {
-        if (physics_config_.integrator_type == integrator) {
-            valid_integrator = true;
-            break;
-        }
-    }
-
-    if (!valid_integrator) {
-        LOG_ERROR("Invalid integrator type: " + physics_config_.integrator_type, "ConfigManager");
-        return false;
-    }
-
-    // Validate plugins
+    // Validación de plugins
     for (const auto& plugin : plugin_configs_) {
         if (plugin.name.empty()) {
             LOG_ERROR("Plugin name cannot be empty", "ConfigManager");

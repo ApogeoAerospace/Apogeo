@@ -25,7 +25,7 @@ MoLab es un simulador aeroespacial modular con arquitectura basada en plugins qu
 
 ### 1. Preparar el entorno
 ```bash
-cd /Documents/MoLab
+cd /Users/johancastrillon/Documents/MoLab
 ```
 
 ### 2. Crear directorio de build

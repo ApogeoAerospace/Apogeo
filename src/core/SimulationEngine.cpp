@@ -5,10 +5,10 @@
 #include "SimulationEngine.h"
 #include "PluginManager.h"
 #include "InitialStateLoader.h"
-#include "../src/core/Logger.h"
-#include "../src/core/ConfigManager.h"
-#include "../src/core/OutputManager.h"
-#include "../src/core/TimeManager.h"
+#include "Logger.h"
+#include "ConfigManager.h"
+#include "OutputManager.h"
+#include "TimeManager.h"
 #include "state_vector_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
@@ -25,18 +25,19 @@ SimulationEngine::SimulationEngine()
 
 SimulationEngine::~SimulationEngine() noexcept {
     try {
-        if (is_running_) {
-            shutdown();
-        }
+        shutdown();
         LOG_INFO("SimulationEngine destroyed", "SimulationEngine");
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
         // Cannot throw from destructor
-        // shutdown() should be noexcept-safe
     }
 }
 
 bool SimulationEngine::initialize(const std::string& state_filepath) {
     LOG_INFO("Initializing simulation with state file: " + state_filepath, "SimulationEngine");
+
+    // Initialize TimeManager with current UTC time
+    auto& time_manager = TimeManager::getInstance();
+    time_manager.initialize(); // Use current UTC time as start
 
     // Verify that the file exists
     if (!std::filesystem::exists(state_filepath)) {
@@ -99,21 +100,10 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
         logger.setLogFile(sim_config.log_file);
     }
 
-    // Initialize TimeManager with current UTC time
-    auto& time_manager = TimeManager::getInstance();
-    time_manager.initialize(); // Use current UTC time as start
-
     // Load plugins from configuration
     if (!plugin_manager_->load_plugins_from_config()) {
         LOG_WARNING("Some plugins failed to load from configuration", "SimulationEngine");
     }
-
-    // Initialize output manager
-    auto& output_manager = OutputManager::getInstance();
-    output_manager.setOutputDirectory("output");
-    output_manager.setOutputFormats(true, true, false); // CSV and JSON
-    output_manager.setOutputInterval(5); // Optimized: Save every 5 ticks (balance speed/detail)
-    output_manager.initializeOutput("molab_simulation");
 
     // Initialize with state file
     return initialize(config_manager.getInitialStateFile());
@@ -152,104 +142,102 @@ void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
 }
 
 void SimulationEngine::run_tick() {
-    if (!is_running_) {
-        is_running_ = true;
-        LOG_INFO("Starting simulation", "SimulationEngine");
+  if (!is_running_) {
+    is_running_ = true;
+    LOG_INFO("Starting simulation", "SimulationEngine");
+  }
+
+  auto start_time = std::chrono::high_resolution_clock::now();
+
+  double delta_time = 0.0;
+  const state_vector::GeneralState* state = nullptr;
+
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    auto state_before = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
+    if (state_before) {
+      delta_time = static_cast<double>(state_before->dt());
     }
 
-    auto start_time = std::chrono::high_resolution_clock::now();
-
-    // Get configuration for time step
-    const auto& config = ConfigManager::getInstance().getSimulationConfig();
-    double delta_time = config.time_step;
-
-    // Update TimeManager
-    auto& time_manager = TimeManager::getInstance();
-    time_manager.updateSimulationTime(delta_time);
-
-    {
-        std::lock_guard<std::mutex> lock(state_mutex_);
-        plugin_manager_->run_simulation_cycle_improved(current_state_buffer_, delta_time);
+    if (delta_time > 0.0) {
+      plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
+      state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
     }
+  }
 
-    // QUICK VALIDATION: Detect ground collisions immediately
-    auto state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
-    if (state && state->position()) {
-        double pos_z = state->position()->z();
-        // Quick detection for local coordinates
-        if (std::abs(pos_z) < 100000.0 && pos_z < -1.0) {
-            LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m", "SimulationEngine");
-            LOG_ERROR("Simulation terminated due to ground collision", "SimulationEngine");
-            is_running_ = false;
-            return;
-        }
+  if (delta_time <= 0.0) {
+    LOG_ERROR("Invalid dt in state buffer (<= 0). Aborting tick.", "SimulationEngine");
+    is_running_ = false;
+    return;
+  }
+
+  if (!state) {
+    LOG_ERROR("Failed to parse state buffer after tick", "SimulationEngine");
+    is_running_ = false;
+    return;
+  }
+
+  auto& time_manager = TimeManager::getInstance();
+  time_manager.updateSimulationTime(delta_time);
+
+  if (iteration_count_ % 50 == 0) {
+    if (!validate_simulation_state(state)) {
+      LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
+      is_running_ = false;
+      return;
     }
+  }
 
-    // Full validation only every 50 ticks
-    if (iteration_count_ % 50 == 0) {
-        if (!validate_simulation_state()) {
-            LOG_ERROR("Simulation terminated due to invalid state", "SimulationEngine");
-            is_running_ = false;
-            return;
-        }
-    }
+  simulation_time_.store(simulation_time_.load() + delta_time);
+  iteration_count_++;
 
-    // Update simulation metrics
-    simulation_time_.store(simulation_time_.load() + delta_time);
-    iteration_count_++;
+  auto& output_manager = OutputManager::getInstance();
+  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
 
-    // Record state using TimeManager time (only if state is valid)
-    auto& output_manager = OutputManager::getInstance();
-    output_manager.recordState(current_state_buffer_, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+  last_tick_duration_ = duration.count() / 1000.0;
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    last_tick_duration_ = duration.count() / 1000.0; // Convert to milliseconds
-
-    // Log performance metrics periodically
-    if (iteration_count_ % 5000 == 0) {
-        LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
-                " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");
-        LOG_INFO("Simulation time: " + std::to_string(time_manager.getSimulationTime()) + "s", "SimulationEngine");
-        LOG_INFO("Current UTC: " + time_manager.getCurrentUTCString(), "SimulationEngine");
-    }
+  if (iteration_count_ % 5000 == 0) {
+    LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
+            " completed in " + std::to_string(last_tick_duration_) + "ms", "SimulationEngine");
+    LOG_INFO("Simulation time: " + std::to_string(time_manager.getSimulationTime()) + "s", "SimulationEngine");
+    LOG_INFO("Current UTC: " + time_manager.getCurrentUTCString(), "SimulationEngine");
+  }
 }
 
 bool SimulationEngine::run_simulation() {
-    const auto& config = ConfigManager::getInstance().getSimulationConfig();
+  const auto& config = ConfigManager::getInstance().getSimulationConfig();
 
-    LOG_INFO("Starting full simulation run", "SimulationEngine");
-    LOG_INFO("Duration: " + std::to_string(config.simulation_duration) + "s", "SimulationEngine");
-    LOG_INFO("Time step: " + std::to_string(config.time_step) + "s", "SimulationEngine");
-    LOG_INFO("Max iterations: " + std::to_string(config.max_iterations), "SimulationEngine");
+  LOG_INFO("Starting full simulation run", "SimulationEngine");
+  LOG_INFO("Duration: " + std::to_string(config.simulation_duration) + "s", "SimulationEngine");
+  LOG_INFO("Max iterations: " + std::to_string(config.max_iterations), "SimulationEngine");
 
-    auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_time = std::chrono::high_resolution_clock::now();
 
-    while (simulation_time_.load() < config.simulation_duration &&
-           iteration_count_ < config.max_iterations) {
+  while (simulation_time_.load() < config.simulation_duration &&
+         iteration_count_ < config.max_iterations) {
 
-        run_tick();
+    run_tick();
 
-        // Optimized: Validation removed (already done inside run_tick at line 184)
-        // Redundant validation was causing 10-15% performance overhead
-        if (!is_running_) {
-            LOG_ERROR("Simulation terminated early", "SimulationEngine");
-            return false;
-        }
+    if (!is_running_) {
+      LOG_ERROR("Simulation terminated early", "SimulationEngine");
+      return false;
     }
+  }
 
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    LOG_INFO("Simulation completed successfully", "SimulationEngine");
-    LOG_INFO("Total iterations: " + std::to_string(iteration_count_), "SimulationEngine");
-    LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
-    LOG_INFO("Real time: " + std::to_string(duration.count()) + "ms", "SimulationEngine");
+  LOG_INFO("Simulation completed successfully", "SimulationEngine");
+  LOG_INFO("Total iterations: " + std::to_string(iteration_count_), "SimulationEngine");
+  LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
+  LOG_INFO("Real time: " + std::to_string(duration.count()) + "ms", "SimulationEngine");
 
-    // Print plugin metrics
-    print_performance_metrics();
+  // Print plugin metrics
+  print_performance_metrics();
 
-    return true;
+  return true;
 }
 
 void SimulationEngine::shutdown() {
@@ -279,10 +267,18 @@ bool SimulationEngine::validate_simulation_state() const {
         return false;
     }
 
-    // Parse state and validate bounds
     const state_vector::GeneralState* state = state_vector::GetGeneralState(current_state_buffer_.data());
     if (!state) {
         LOG_ERROR("Failed to parse state buffer", "SimulationEngine");
+        return false;
+    }
+
+    return validate_simulation_state(state);
+}
+
+bool SimulationEngine::validate_simulation_state(const state_vector::GeneralState* state) const {
+    if (!state) {
+        LOG_ERROR("Invalid state pointer", "SimulationEngine");
         return false;
     }
 
@@ -294,44 +290,6 @@ bool SimulationEngine::validate_simulation_state() const {
             LOG_ERROR("NaN detected in position", "SimulationEngine");
             return false;
         }
-
-        // GROUND COLLISION DETECTION
-        const double EARTH_RADIUS = 6378137.0;  // m - Earth radius (WGS84)
-        const double LOCAL_COORD_THRESHOLD = 1000000.0;  // 1000 km
-
-        double pos_x = state->position()->x();
-        double pos_y = state->position()->y();
-        double pos_z = state->position()->z();
-
-        // Calculate distance to Earth center
-        double distance_from_center = std::sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z);
-
-        // Detect coordinate system
-        bool is_geocentric = (distance_from_center > LOCAL_COORD_THRESHOLD ||
-                             std::abs(pos_z) > LOCAL_COORD_THRESHOLD);
-
-        if (is_geocentric) {
-            // GEOCENTRIC COORDINATES (ECEF): Check distance to center
-            if (distance_from_center < EARTH_RADIUS) {
-                double altitude = distance_from_center - EARTH_RADIUS;
-                LOG_ERROR("Ground collision detected! Altitude: " + std::to_string(altitude) + " m",
-                         "SimulationEngine");
-                LOG_ERROR("Object is " + std::to_string(-altitude/1000.0) + " km below surface",
-                         "SimulationEngine");
-                LOG_ERROR("Simulation terminated to prevent unphysical results", "SimulationEngine");
-                return false;
-            }
-        } else {
-            // LOCAL COORDINATES: Check Z < 0 (below ground)
-            if (pos_z < 0.0) {
-                LOG_ERROR("Ground collision detected! Z position: " + std::to_string(pos_z) + " m",
-                         "SimulationEngine");
-                LOG_ERROR("Object is " + std::to_string(-pos_z) + " m below surface (local coordinates)",
-                         "SimulationEngine");
-                LOG_ERROR("Simulation terminated to prevent unphysical results", "SimulationEngine");
-                return false;
-            }
-        }
     }
 
     if (state->velocity()) {
@@ -342,13 +300,12 @@ bool SimulationEngine::validate_simulation_state() const {
             return false;
         }
 
-        // NEW: Check extreme supersonic velocities (possible numerical error)
         double vel_x = state->velocity()->x();
         double vel_y = state->velocity()->y();
         double vel_z = state->velocity()->z();
         double speed = std::sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
 
-        const double ESCAPE_VELOCITY = 11200.0;  // m/s - Earth escape velocity
+        const double ESCAPE_VELOCITY = 11200.0;
         if (speed > ESCAPE_VELOCITY * 2.0) {
             LOG_WARNING("Extreme velocity detected: " + std::to_string(speed) + " m/s (Mach " +
                        std::to_string(speed/343.0) + ")", "SimulationEngine");
@@ -359,7 +316,7 @@ bool SimulationEngine::validate_simulation_state() const {
     return true;
 }
 
-void SimulationEngine::print_performance_metrics() const {
+void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRICS SHOULD NOT BE MANAGED IN THE SIMULATOR BUT IN VISUALIZATION ENGINE
     if (!plugin_manager_) {
         return;
     }

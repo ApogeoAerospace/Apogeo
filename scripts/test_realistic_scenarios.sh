@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_ROOT="/Documents/MoLab"
+PROJECT_ROOT="/Users/johancastrillon/Documents/MoLab"
 BUILD_DIR="$PROJECT_ROOT/build"
 SIMULATOR="$BUILD_DIR/bin/simulator"
 RESULTS_DIR="$PROJECT_ROOT/results"

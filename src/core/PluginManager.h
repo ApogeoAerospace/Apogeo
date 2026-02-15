@@ -25,6 +25,7 @@ enum class PluginType {
 // Forward declarations
 namespace MoLab {
     class PhysicsIntegrator;
+    class PluginTaskScheduler;
 }
 
 namespace MoLab {
@@ -79,7 +80,7 @@ struct LoadedPlugin {
           destroy_func(other.destroy_func),
           lib_handle(other.lib_handle) {
 
-        // Reset other object
+        // Resetear el objeto origen
         other.handle = nullptr;
         other.create_func = nullptr;
         other.configure_func = nullptr;
@@ -104,7 +105,7 @@ struct LoadedPlugin {
             destroy_func = other.destroy_func;
             lib_handle = other.lib_handle;
 
-            // Reset other object
+            // Resetear el objeto origen
             other.handle = nullptr;
             other.create_func = nullptr;
             other.configure_func = nullptr;
@@ -139,24 +140,9 @@ public:
     bool load_plugins_from_config();
 
     /**
-     * @brief Descarga un plugin específico
-     */
-    bool unload_plugin(const std::string& path);
-
-    /**
-     * @brief Habilita o deshabilita un plugin
-     */
-    bool set_plugin_enabled(const std::string& path, bool enabled);
-
-    /**
-     * @brief Ejecuta un ciclo de simulación con todos los plugins cargados.
-     */
-    void run_simulation_cycle(std::vector<uint8_t>& state_buffer);
-
-    /**
      * @brief Ejecuta un ciclo de simulación mejorado con integración física
      */
-    void run_simulation_cycle_improved(std::vector<uint8_t>& state_buffer, double delta_time);
+    void run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time);
 
     /**
      * @brief Libera todos los recursos y descarga todos los plugins.
@@ -166,7 +152,6 @@ public:
     // Métodos de información y estadísticas
     size_t get_plugin_count() const;
     std::vector<std::string> get_loaded_plugin_names() const;
-    bool is_plugin_loaded(const std::string& path) const;
 
     // Métricas de rendimiento
     struct PluginMetrics {
@@ -178,31 +163,32 @@ public:
     };
 
     std::vector<PluginMetrics> get_plugin_metrics() const;
-    void reset_plugin_metrics();
 
 private:
-    // Contenedores de plugins thread-safe
+    // Contenedores de plugins con protección de concurrencia
     std::vector<LoadedPlugin> loaded_plugins_;
     mutable std::mutex plugins_mutex_;
 
-    // Métricas globales
+    // Métricas globales del ciclo de simulación
     std::atomic<uint64_t> total_cycles_{0};
     std::atomic<double> total_cycle_time_{0.0};
 
-    // Métodos privados
-    void execute_sequential_plugins(std::vector<uint8_t>& state_buffer);
-    void execute_parallel_plugins(std::vector<uint8_t>& state_buffer);
+    // Métodos internos de ejecución
+    void execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
+    void execute_parallel_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time);
 
     // Utilidades
     std::vector<LoadedPlugin*> get_plugins_by_type(PluginType type);
-    bool validate_plugin_api(const LoadedPlugin& plugin) const;
     void cleanup_plugin(LoadedPlugin& plugin);
 
     // Integrador físico
     std::unique_ptr<MoLab::PhysicsIntegrator> physics_integrator_;
 
-    // Almacenamiento de fuerzas para integración física
+    // Scheduler de tareas para plugins paralelos
+    std::unique_ptr<PluginTaskScheduler> task_scheduler_;
+
+    // Acumuladores de fuerzas/torques (plugins paralelos)
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};
     mutable std::mutex force_mutex_;
