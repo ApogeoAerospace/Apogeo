@@ -147,7 +147,7 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
     }
 
     // TODO: Leer masa total e inercia si procede
-    state.mass = 1000.0; // Placeholder
+    state.mass = fb_state->total_mass(); // Placeholder
 
     state.time = fb_state->sim_time();
     return state;
