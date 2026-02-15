@@ -18,7 +18,7 @@
     {
       "name": "environment",
       "type": 1,
-      "library_path": "build/plugins/libenvironment.dylib",
+      "library_path": "environment",
       "enabled": true,
       "parameters": {
         "enable_atmospheric_model": true,

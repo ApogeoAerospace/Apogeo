@@ -41,9 +41,9 @@ add_custom_target(
 
 # --- Configuración del núcleo ---
 set(CORE_SOURCES
-    core/SimulationEngine.cpp
-    core/PluginManager.cpp
-    core/InitialStateLoader.cpp
+    src/core/SimulationEngine.cpp
+    src/core/PluginManager.cpp
+    src/core/InitialStateLoader.cpp
     src/core/ConfigManager.cpp
     src/core/PhysicsIntegrator.cpp
     src/core/OutputManager.cpp
@@ -82,10 +82,10 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/output"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/initial_state/initial_state.json
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_state.json # Hardcoded initial state file
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/config/default_config.json
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_config.json # Hardcoded config file
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMENT "Copiando archivos de configuración y creando directorios..."
 )
@@ -94,11 +94,6 @@ add_custom_command(
 
 set(PLUGIN_NAMES
     example_plugin
-    aerodynamics
-    propulsion
-    environment
-    structures
-    programming
 )
 
 foreach(_plugin_name IN LISTS PLUGIN_NAMES)
@@ -120,6 +115,30 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
 
 endforeach()
+
+# ACTIVAR PLUGINS TEMPORALES (DESARROLLO)
+
+# set(TEMPORARY_PLUGINS
+#     aerodynamics
+#     structures
+#     propulsion
+#     environment
+#     programming
+#)
+
+# foreach(_temp_plugin IN LISTS TEMPORARY_PLUGINS)
+#     add_library(${_temp_plugin} SHARED
+#         plugins/temp/${_temp_plugin}/${_temp_plugin}.cpp
+#     )
+#     add_dependencies(${_temp_plugin} generate_flatbuffers)
+#     target_include_directories(${_temp_plugin} PRIVATE
+#         "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
+#         "${GENERATED_DIR}"
+#     )
+#     target_link_libraries(${_temp_plugin} PRIVATE flatbuffers::flatbuffers)
+#     list(APPEND PLUGIN_NAMES ${_temp_plugin})
+
+# endforeach()
 
 message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
 

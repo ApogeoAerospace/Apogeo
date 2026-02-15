@@ -12,78 +12,87 @@ namespace MoLab {
     class PluginManager;
 }
 
+namespace state_vector {
+    struct GeneralState;
+}
+
+// Motor principal de simulación.
+// Orquesta carga de estado, ejecución de ticks y gestión de plugins.
 class SimulationEngine {
 public:
     /*
-    * Class that represents the improved simulation engine.
-    * Contains methods to initialize simulation, load plugins,
-    * run simulation ticks and cleanup resources with thread safety.
+    * Clase que representa el motor de simulación mejorado.
+    * Contiene métodos para inicializar, cargar plugins,
+    * ejecutar ticks y limpiar recursos con seguridad de hilos.
     */
     SimulationEngine();
     ~SimulationEngine() noexcept;
 
-    // Prevent copy and assignment
+    // Evitar copia y asignación
     SimulationEngine(const SimulationEngine&) = delete;
     SimulationEngine& operator=(const SimulationEngine&) = delete;
 
     /*
-    * Initializes the simulation loading initial state from a JSON file.
+    * Inicializa la simulación cargando el estado inicial desde JSON.
     * Returns true if initialization was successful, false otherwise.
     */
     bool initialize(const std::string& state_filepath);
 
     /*
-    * Initializes the simulation with a configuration file.
+    * Inicializa la simulación desde archivo de configuración.
     * Loads configuration, sets up logging and plugins automatically.
     */
     bool initialize_with_config(const std::string& config_filepath);
 
     /*
-    * Loads a dynamic plugin library from the specified path.
+    * Carga un plugin dinámico desde ruta.
     */
     void load_plugin(const std::string& path, int plugin_type);
 
     /*
-    * Runs a simulation tick executing all loaded plugins.
+    * Ejecuta un tick completo de simulación.
     */
     void run_tick();
 
     /*
-    * Executes a complete simulation based on configuration.
+    * Ejecuta una simulación completa según configuración.
     * Returns true if simulation completed successfully.
     */
     bool run_simulation();
 
     /*
-    * Cleans up and releases simulation resources.
+    * Libera recursos y cierra la simulación.
     */
     void shutdown();
 
-    // Information and statistics methods
+    // Información de estado
     double get_simulation_time() const { return simulation_time_; }
     uint64_t get_iteration_count() const { return iteration_count_; }
     double get_last_tick_duration() const { return last_tick_duration_; }
     bool is_running() const { return is_running_; }
 
-    // Simulation state validation
+    // Validación del estado
     bool validate_simulation_state() const;
 
-    // Performance metrics
+    // Métricas de rendimiento
     void print_performance_metrics() const;
 
 private:
-    // Plugin manager that handles plugin loading and execution.
+    // Gestor de plugins
     std::unique_ptr<MoLab::PluginManager> plugin_manager_;
 
-    // Buffer containing current simulation state (thread-safe).
+    // Buffer de estado actual (thread-safe)
     std::vector<uint8_t> current_state_buffer_;
     mutable std::mutex state_mutex_;
 
-    // Simulation state
+    // Estado de simulación
     std::atomic<double> simulation_time_{0.0};
     std::atomic<uint64_t> iteration_count_{0};
     std::atomic<double> last_tick_duration_{0.0};
     std::atomic<bool> is_running_{false};
+
+    // Validación interna con estado pre‑parseado
+    bool validate_simulation_state(const state_vector::GeneralState* state) const;
 };
 
 #endif // SIMULATION_ENGINE_H

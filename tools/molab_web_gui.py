@@ -28,6 +28,8 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         self.build_dir = self.project_root / "build"
         self.config_dir = self.project_root / "data" / "config"
         self.output_dir = self.build_dir / "output"
+        # Create config directory if it doesn't exist
+        self.config_dir.mkdir(parents=True, exist_ok=True)
         super().__init__(*args, **kwargs)
 
     def do_GET(self):
@@ -1016,7 +1018,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         filtered.push({
                             "name": "propulsion",
                             "type": 1,
-                            "library_path": "build/bin/libpropulsion.dll",
+                            "library_path": "build/lib/libpropulsion.dylib",
                             "enabled": true,
                             "parameters": {
                                 "engine_type": parseInt(document.getElementById('engine-type').value),
@@ -2942,7 +2944,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
             # Create temporary config file
             temp_config = self.config_dir / f"temp_web_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            config["initial_state_file"] = str(self.project_root / "data" / "initial_state.json")
+            config["initial_state_file"] = str(self.project_root / "data" / "defaults" / "default_state.json")
             
             with open(temp_config, 'w') as f:
                 json.dump(config, f, indent=2)

@@ -8,13 +8,21 @@
     "log_level": "INFO"
   },
   "physics": {
-    "enable_gravity": true,
-    "gravity_magnitude": 9.81,
-    "enable_atmospheric_drag": false,
     "integration_tolerance": 1e-6,
     "integrator_type": "euler"
   },
-  "plugins": [],
+  "plugins": [
+    {
+      "name": "example_plugin",
+      "type": 0,
+      "library_path": "example_plugin",
+      "enabled": true,
+      "parameters": {
+        "step_size": 1.0,
+        "debug_output": false
+      }
+    }
+  ],
   "output": {
     "enable_csv": true,
     "enable_json": false,
@@ -39,5 +47,5 @@
     "position_bounds": [-100000, 100000],
     "velocity_bounds": [-1000, 1000]
   },
-  "initial_state_file": "data/initial_state/initial_state.json"
+  "initial_state_file": "data/default_state.json"
 }
