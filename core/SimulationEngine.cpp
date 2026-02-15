@@ -108,15 +108,20 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
         LOG_WARNING("Some plugins failed to load from configuration", "SimulationEngine");
     }
 
-    // Initialize output manager
+    // Initialize with state file (loads initial state, sets default output)
+    if (!initialize(config_manager.getInitialStateFile())) {
+        return false;
+    }
+
+    // Override output manager with user configuration (AFTER initialize's defaults)
+    const auto& output_config = config_manager.getOutputConfig();
     auto& output_manager = OutputManager::getInstance();
-    output_manager.setOutputDirectory("output");
-    output_manager.setOutputFormats(true, true, false); // CSV and JSON
-    output_manager.setOutputInterval(5); // Optimized: Save every 5 ticks (balance speed/detail)
+    output_manager.setOutputDirectory(output_config.output_directory);
+    output_manager.setOutputFormats(output_config.enable_csv, output_config.enable_json, output_config.enable_binary);
+    output_manager.setOutputInterval(output_config.output_interval);
     output_manager.initializeOutput("molab_simulation");
 
-    // Initialize with state file
-    return initialize(config_manager.getInitialStateFile());
+    return true;
 }
 
 void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {

@@ -135,7 +135,7 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     instance->burn_rate = 0.0;                // Se calcula dinámicamente
 
     // Control del motor
-    instance->engine_on = false;              // Motor apagado inicialmente
+    instance->engine_on = true;               // Motor encendido por defecto
     instance->throttle_setting = 1.0;         // Acelerador completo
     instance->burn_time = 0.0;
     instance->ignition_delay = 0.0;           // Sin retraso
@@ -298,8 +298,8 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     double vel_y = state->velocity()->y();
     double vel_z = state->velocity()->z();
 
-    // Calcular altitud
-    const double EARTH_RADIUS = 6371000.0;
+    // Calcular altitud (WGS84 consistent with core)
+    const double EARTH_RADIUS = 6378137.0;
     double altitude = sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z) - EARTH_RADIUS;
     if (altitude < 0) altitude = 0;
 
@@ -396,6 +396,15 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     force_output->x = static_cast<float>(force_x);
     force_output->y = static_cast<float>(force_y);
     force_output->z = static_cast<float>(force_z);
+
+    // Report current total mass (dry mass estimate + remaining fuel)
+    // The core integrator uses this for F=ma and gravity calculations
+    if (data->output_mass) {
+        // Estimate dry mass as initial_fuel_mass * 1.5 (typical mass ratio)
+        // This is overridden if vehicle_mass is set in physics config
+        double dry_mass_estimate = instance->initial_fuel_mass * 1.5;
+        *data->output_mass = dry_mass_estimate + instance->current_fuel_mass;
+    }
 
     // Torque (para thrust vectoring)
     if (torque_output) {

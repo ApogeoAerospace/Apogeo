@@ -26,10 +26,24 @@ struct SimulationConfig {
 
 struct PhysicsConfig {
     bool enable_gravity;
+    double gravity_magnitude;      // m/s² (default: 9.81)
     bool enable_atmospheric_drag;
     bool enable_wind_effects;
     double integration_tolerance;
     std::string integrator_type; // "euler", "runge_kutta_4", "verlet"
+
+    // Vehicle properties (used by core integrator for F=ma and drag)
+    double vehicle_mass;           // kg dry mass (default: 1000)
+    double drag_coefficient;       // Cd (default: 0.3)
+    double reference_area;         // m² (default: 1.0)
+};
+
+struct OutputConfig {
+    std::string output_directory;
+    int output_interval;
+    bool enable_csv;
+    bool enable_json;
+    bool enable_binary;
 };
 
 class ConfigManager {
@@ -46,9 +60,10 @@ public:
     const SimulationConfig& getSimulationConfig() const { return simulation_config_; }
     const PhysicsConfig& getPhysicsConfig() const { return physics_config_; }
     const std::vector<PluginConfig>& getPluginConfigs() const { return plugin_configs_; }
+    const OutputConfig& getOutputConfig() const { return output_config_; }
 
     std::string getInitialStateFile() const { return initial_state_file_; }
-    std::string getOutputDirectory() const { return output_directory_; }
+    std::string getOutputDirectory() const { return output_config_.output_directory; }
 
     // Setters
     void setSimulationConfig(const SimulationConfig& config) { simulation_config_ = config; }
@@ -68,12 +83,13 @@ private:
     bool parseSimulationConfig(const nlohmann::json& json);
     bool parsePhysicsConfig(const nlohmann::json& json);
     bool parsePluginConfigs(const nlohmann::json& json);
+    bool parseOutputConfig(const nlohmann::json& json);
 
     SimulationConfig simulation_config_;
     PhysicsConfig physics_config_;
+    OutputConfig output_config_;
     std::vector<PluginConfig> plugin_configs_;
     std::string initial_state_file_;
-    std::string output_directory_;
 };
 
 } // namespace MoLab

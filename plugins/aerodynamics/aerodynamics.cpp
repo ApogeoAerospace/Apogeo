@@ -196,9 +196,9 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     double velocity_magnitude = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z);
     if (velocity_magnitude < 0.1) {
         // Velocidad muy baja, no hay efectos aerodinámicos significativos
-        data->force_out->x = 0.0;
-        data->force_out->y = 0.0;
-        data->force_out->z = 0.0;
+        force_output->x = 0.0;
+        force_output->y = 0.0;
+        force_output->z = 0.0;
         return 0;
     }
 

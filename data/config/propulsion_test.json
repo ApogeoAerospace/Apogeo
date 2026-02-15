@@ -1,24 +1,28 @@
 {
   "simulation": {
     "time_step": 0.01,
-    "duration": 30.0,
-    "max_iterations": 3000,
+    "duration": 60.0,
+    "max_iterations": 6000,
     "enable_logging": true,
     "log_file": "logs/propulsion_test.log",
     "log_level": "INFO"
   },
   "physics": {
     "enable_gravity": true,
-    "enable_atmospheric_drag": false,
+    "gravity_magnitude": 9.81,
+    "enable_atmospheric_drag": true,
     "enable_wind_effects": false,
     "integration_tolerance": 1e-6,
-    "integrator_type": "runge_kutta_4"
+    "integrator_type": "runge_kutta_4",
+    "vehicle_mass": 1000.0,
+    "drag_coefficient": 0.3,
+    "reference_area": 1.0
   },
   "plugins": [
     {
       "name": "propulsion",
       "type": 1,
-      "library_path": "build/plugins/libpropulsion.dylib",
+      "library_path": "build/bin/libpropulsion.dll",
       "enabled": true,
       "parameters": {
         "engine_type": 0,
@@ -35,5 +39,11 @@
     }
   ],
   "initial_state_file": "data/initial_state.json",
-  "output_directory": "output/"
+  "output": {
+    "output_directory": "output/",
+    "output_interval": 5,
+    "enable_csv": true,
+    "enable_json": true,
+    "enable_binary": false
+  }
 }

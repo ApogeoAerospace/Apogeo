@@ -386,16 +386,19 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     }
 
     // Este plugin no genera fuerzas directamente, pero modifica las propiedades del vehículo
-    if (data->force_out) {
-        data->force_out->x = 0.0;
-        data->force_out->y = 0.0;
-        data->force_out->z = 0.0;
+    PluginVector3* force_output = data->output_force ? data->output_force : data->force_out;
+    PluginVector3* torque_output = data->output_torque ? data->output_torque : data->torque_out;
+
+    if (force_output) {
+        force_output->x = 0.0;
+        force_output->y = 0.0;
+        force_output->z = 0.0;
     }
 
-    if (data->torque_out) {
-        data->torque_out->x = 0.0;
-        data->torque_out->y = 0.0;
-        data->torque_out->z = 0.0;
+    if (torque_output) {
+        torque_output->x = 0.0;
+        torque_output->y = 0.0;
+        torque_output->z = 0.0;
     }
 
     return 0; // Éxito

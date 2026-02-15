@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "PluginManager.h"
 #include "Logger.h"
 #include "ConfigManager.h"
@@ -97,6 +99,13 @@ bool PluginManager::load_plugins_from_config() {
     const auto& plugin_configs = config.getPluginConfigs();
 
     LOG_INFO("Loading " + std::to_string(plugin_configs.size()) + " plugins from configuration", "PluginManager");
+
+    // Apply integrator type from physics config
+    const auto& physics_config = config.getPhysicsConfig();
+    if (physics_integrator_) {
+        physics_integrator_->setIntegratorType(physics_config.integrator_type);
+        LOG_INFO("Integrator type set to: " + physics_config.integrator_type, "PluginManager");
+    }
 
     bool all_loaded = true;
     for (const auto& plugin_config : plugin_configs) {
@@ -199,6 +208,7 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
     std::vector<std::future<void>> futures;
     std::vector<PluginVector3> forces;
     std::vector<PluginVector3> torques;
+    std::vector<double> masses;
 
     // Get parallel plugins
     auto parallel_plugins = get_plugins_by_type(PluginType::PARALLEL_PHYSICS_CALCULATOR);
@@ -208,17 +218,19 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
         std::lock_guard<std::mutex> lock(force_mutex_);
         accumulated_force_ = {0.0f, 0.0f, 0.0f};
         accumulated_torque_ = {0.0f, 0.0f, 0.0f};
+        accumulated_mass_ = 0.0;
         return;
     }
 
     forces.resize(parallel_plugins.size());
     torques.resize(parallel_plugins.size());
+    masses.resize(parallel_plugins.size(), 0.0);
 
     // Execute plugins in parallel
     for (size_t i = 0; i < parallel_plugins.size(); ++i) {
         auto& plugin = *parallel_plugins[i];
 
-        futures.emplace_back(std::async(std::launch::async, [&plugin, &state_buffer, &forces, &torques, i]() {
+        futures.emplace_back(std::async(std::launch::async, [&plugin, &state_buffer, &forces, &torques, &masses, i]() {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             PluginTickData tick_data = {};
@@ -226,6 +238,7 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
             tick_data.buffer_size = state_buffer.size();
             tick_data.output_force = &forces[i];
             tick_data.output_torque = &torques[i];
+            tick_data.output_mass = &masses[i];
 
             int32_t result = plugin.tick_func(plugin.handle, &tick_data);
 
@@ -252,6 +265,7 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
     // Sum up forces and torques
     PluginVector3 total_force = {0.0f, 0.0f, 0.0f};
     PluginVector3 total_torque = {0.0f, 0.0f, 0.0f};
+    double reported_mass = 0.0;
 
     for (const auto& force : forces) {
         total_force.x += force.x;
@@ -265,17 +279,24 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer)
         total_torque.z += torque.z;
     }
 
+    // Use last non-zero mass reported by any plugin
+    for (const auto& m : masses) {
+        if (m > 0.0) reported_mass = m;
+    }
+
     // Store total forces for physics integration
     {
         std::lock_guard<std::mutex> lock(force_mutex_);
         accumulated_force_ = total_force;
         accumulated_torque_ = total_torque;
+        accumulated_mass_ = reported_mass;
     }
 
     LOG_DEBUG("Total forces calculated: F=(" + std::to_string(total_force.x) + ", " +
               std::to_string(total_force.y) + ", " + std::to_string(total_force.z) +
               ") T=(" + std::to_string(total_torque.x) + ", " +
-              std::to_string(total_torque.y) + ", " + std::to_string(total_torque.z) + ")", "PluginManager");
+              std::to_string(total_torque.y) + ", " + std::to_string(total_torque.z) +
+              ") Mass=" + std::to_string(reported_mass), "PluginManager");
 }
 
 void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time) {
@@ -292,39 +313,92 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
 
-    // Get accumulated forces from plugins
+    // Get physics configuration
+    const auto& physics_config = ConfigManager::getInstance().getPhysicsConfig();
+
+    // --- Coordinate system: convert geocentric Z to altitude above sea level ---
+    const double EARTH_RADIUS = 6378137.0; // m (WGS84)
+    double pos_z = physics_state.position.z;
+    double distance_from_center = std::sqrt(
+        physics_state.position.x * physics_state.position.x +
+        physics_state.position.y * physics_state.position.y +
+        pos_z * pos_z);
+    bool is_geocentric = (distance_from_center > 1000000.0 || std::abs(pos_z) > 1000000.0);
+    double altitude_asl = is_geocentric ? (distance_from_center - EARTH_RADIUS) : pos_z;
+    if (altitude_asl < 0) altitude_asl = 0;
+
+    // --- Mass: use plugin-reported mass if available, else config vehicle_mass ---
     PluginVector3 plugin_force;
     PluginVector3 plugin_torque;
+    double plugin_mass;
     {
         std::lock_guard<std::mutex> lock(force_mutex_);
         plugin_force = accumulated_force_;
         plugin_torque = accumulated_torque_;
+        plugin_mass = accumulated_mass_;
     }
 
-    // Convert plugin forces to Vector3
+    double current_mass = (plugin_mass > 0.0) ? plugin_mass : physics_config.vehicle_mass;
+    if (current_mass < 1.0) current_mass = 1.0; // safety floor
+    physics_state.mass = current_mass;
+
+    // Convert plugin forces to Vector3 (includes thrust from propulsion plugin)
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Add environmental forces (gravity)
-    total_force = total_force + Vector3(0.0, 0.0, -9.81 * physics_state.mass);
+    // --- GRAVITY (core fundamental physics) ---
+    if (physics_config.enable_gravity) {
+        double g = physics_config.gravity_magnitude;
+        total_force = total_force + Vector3(0.0, 0.0, -g * current_mass);
+    }
 
-    // Integrate physics
+    // --- ATMOSPHERIC DRAG (core fundamental physics, altitude ASL) ---
+    if (physics_config.enable_atmospheric_drag) {
+        double air_density = AtmosphericEffects::calculateAirDensity(altitude_asl);
+        Vector3 drag = AtmosphericEffects::calculateDrag(
+            physics_state.velocity, air_density,
+            physics_config.drag_coefficient, physics_config.reference_area);
+        total_force = total_force + drag;
+    }
+
+    // Integrate physics using configured integrator type
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
 
-    // Create new FlatBuffer preserving original fields
+    // --- Atmospheric conditions for new position (using altitude ASL) ---
+    double new_distance = std::sqrt(
+        new_state.position.x * new_state.position.x +
+        new_state.position.y * new_state.position.y +
+        new_state.position.z * new_state.position.z);
+    double new_alt_asl = is_geocentric ? (new_distance - EARTH_RADIUS) : new_state.position.z;
+    if (new_alt_asl < 0) new_alt_asl = 0;
+
+    float new_atm_density = static_cast<float>(AtmosphericEffects::calculateAirDensity(new_alt_asl));
+
+    // ISA temperature model
+    float new_atm_temperature = static_cast<float>(
+        (new_alt_asl <= 11000.0) ? 288.15 - 0.0065 * new_alt_asl : 216.65);
+
+    // ISA pressure model
+    float new_atm_pressure;
+    if (new_alt_asl <= 11000.0) {
+        double T0 = 288.15, P0 = 101325.0, L = 0.0065, R = 287.05, g_std = 9.80665;
+        double T = T0 - L * new_alt_asl;
+        new_atm_pressure = static_cast<float>(P0 * pow(T / T0, g_std / (R * L)));
+    } else {
+        double P11 = 22632.1, T11 = 216.65, R = 287.05, g_std = 9.80665;
+        new_atm_pressure = static_cast<float>(P11 * exp(-g_std * (new_alt_asl - 11000.0) / (R * T11)));
+    }
+
+    // Create new FlatBuffer with updated values
     flatbuffers::FlatBufferBuilder builder;
 
-    // Create Vec3 structs with updated values
     auto position = state_vector::Vec3(new_state.position.x, new_state.position.y, new_state.position.z);
     auto velocity = state_vector::Vec3(new_state.velocity.x, new_state.velocity.y, new_state.velocity.z);
     auto orientation = state_vector::Quaternion(new_state.orientation.x, new_state.orientation.y, new_state.orientation.z, 1.0f);
 
-    // Preserve environmental fields from original state
-    auto gravity = state_vector::Vec3(
-        current_state->gravity() ? current_state->gravity()->x() : 0.0f,
-        current_state->gravity() ? current_state->gravity()->y() : 0.0f,
-        current_state->gravity() ? current_state->gravity()->z() : -9.81f
-    );
+    float gravity_z = physics_config.enable_gravity ?
+        static_cast<float>(-physics_config.gravity_magnitude) : 0.0f;
+    auto gravity = state_vector::Vec3(0.0f, 0.0f, gravity_z);
 
     auto wind_speed = state_vector::Vec3(
         current_state->wind_speed() ? current_state->wind_speed()->x() : 0.0f,
@@ -332,18 +406,10 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->wind_speed() ? current_state->wind_speed()->z() : 0.0f
     );
 
-    // Create GeneralState with updated time
     auto general_state = state_vector::CreateGeneralState(builder,
-        &position,
-        &velocity,
-        &orientation,
-        current_state->atm_density(),
-        current_state->atm_pressure(),
-        current_state->atm_temperature(),
-        &gravity,
-        static_cast<float>(new_state.time),  // Updated time
-        current_state->UTC(),
-        &wind_speed
+        &position, &velocity, &orientation,
+        new_atm_density, new_atm_pressure, new_atm_temperature,
+        &gravity, static_cast<float>(new_state.time), current_state->UTC(), &wind_speed
     );
 
     builder.Finish(general_state);
@@ -353,13 +419,13 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     uint32_t new_size = builder.GetSize();
     state_buffer.assign(new_buffer, new_buffer + new_size);
 
-    LOG_DEBUG("Physics integrated with real forces. Time: " + std::to_string(new_state.time) +
-              ", Position: (" + std::to_string(new_state.position.x) + ", " +
-              std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) +
-              "), Total Force: (" + std::to_string(total_force.x) + ", " +
-              std::to_string(total_force.y) + ", " + std::to_string(total_force.z) +
-              "), Plugin Force: (" + std::to_string(plugin_force.x) + ", " +
-              std::to_string(plugin_force.y) + ", " + std::to_string(plugin_force.z) + ")", "PluginManager");
+    LOG_DEBUG("Physics integrated. Time: " + std::to_string(new_state.time) +
+              ", Alt ASL: " + std::to_string(new_alt_asl) +
+              ", Mass: " + std::to_string(current_mass) +
+              ", Plugin F=(" + std::to_string(plugin_force.x) + "," + std::to_string(plugin_force.y) + "," + std::to_string(plugin_force.z) +
+              "), Atm: [rho=" + std::to_string(new_atm_density) +
+              ", P=" + std::to_string(new_atm_pressure) +
+              ", T=" + std::to_string(new_atm_temperature) + "]", "PluginManager");
 }
 
 std::vector<LoadedPlugin*> PluginManager::get_plugins_by_type(PluginType type) {

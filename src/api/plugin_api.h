@@ -49,6 +49,11 @@ extern "C" {
         PluginVector3* output_force;
         PluginVector3* output_torque;
 
+        // Masa actual del vehículo (kg). El plugin de propulsión la actualiza
+        // para reflejar el consumo de combustible. Si es NULL, se ignora.
+        // Si el valor es <= 0 después del tick, el host usa la masa por defecto.
+        double* output_mass;
+
         // Campos de compatibilidad (deprecated, usar output_force/output_torque)
         PluginVector3* force_out;
         PluginVector3* torque_out;

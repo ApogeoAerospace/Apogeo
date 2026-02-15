@@ -1,0 +1,57 @@
+﻿{
+    "output":  {
+                   "enable_csv":  true,
+                   "output_interval":  5,
+                   "output_directory":  "output",
+                   "enable_json":  false,
+                   "enable_binary":  false
+               },
+    "simulation":  {
+                       "log_file":  "logs/test.log",
+                       "log_level":  "INFO",
+                       "duration":  10,
+                       "enable_logging":  true,
+                       "max_iterations":  1000,
+                       "time_step":  0.1
+                   },
+    "physics":  {
+                    "enable_gravity":  true,
+                    "enable_atmospheric_drag":  true,
+                    "drag_coefficient":  0.3,
+                    "vehicle_mass":  1000,
+                    "reference_area":  1,
+                    "integration_tolerance":  1E-06,
+                    "integrator_type":  "runge_kutta_4",
+                    "gravity_magnitude":  9.81
+                },
+    "plugins":  [
+                    {
+                        "library_path":  "F:\\MoLab\\build\\bin\\libaerodynamics.dll",
+                        "parameters":  {
+                                           "reference_area":  0.785,
+                                           "drag_coefficient":  0.3,
+                                           "enable_drag":  true
+                                       },
+                        "name":  "aerodynamics",
+                        "type":  1,
+                        "enabled":  true
+                    },
+                    {
+                        "library_path":  "F:\\MoLab\\build\\bin\\libpropulsion.dll",
+                        "parameters":  {
+                                           "throttle_setting":  1,
+                                           "initial_fuel_mass":  500,
+                                           "engine_on":  true,
+                                           "specific_impulse_sl":  250,
+                                           "enable_fuel_consumption":  true,
+                                           "specific_impulse_vac":  280,
+                                           "sea_level_thrust":  50000,
+                                           "vacuum_thrust":  55000
+                                       },
+                        "name":  "propulsion",
+                        "type":  1,
+                        "enabled":  true
+                    }
+                ],
+    "initial_state_file":  "data\\initial_state.json"
+}

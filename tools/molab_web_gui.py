@@ -19,6 +19,10 @@ import time
 import platform
 
 class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
+    # Class-level simulation status (shared across all request instances)
+    _sim_lock = threading.Lock()
+    _sim_status = {"state": "idle"}  # idle | running | completed | failed
+
     def __init__(self, *args, **kwargs):
         self.project_root = Path(__file__).parent.parent
         self.build_dir = self.project_root / "build"
@@ -48,6 +52,11 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_result_data(filename)
         elif parsed_path.startswith("/api/results"):
             self.serve_results()
+        elif parsed_path == "/api/plots":
+            self.serve_plots_list()
+        elif parsed_path.startswith("/api/plots/"):
+            filename = parsed_path.split("/")[-1]
+            self.serve_plot_file(filename)
         else:
             self.send_error(404)
     
@@ -161,7 +170,8 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             background: white; border-radius: 8px; padding: 20px; margin-top: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .chart-canvas { width: 100%; height: 400px; }
+        .chart-wrapper { position: relative; width: 100%; height: 400px; }
+        .chart-canvas { width: 100% !important; height: 100% !important; }
         .stats-container {
             display: flex;
             flex-direction: column;
@@ -563,7 +573,79 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         </select>
                     </div>
                     <div class="form-group">
-                        <label><input type="checkbox" id="enable-drag"> Atmospheric Drag</label>
+                        <label><input type="checkbox" id="enable-drag" checked> Atmospheric Drag</label>
+                    </div>
+                </div>
+                <h3 style="margin-top:20px;">🛰️ Vehicle</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="vehicle-mass">Dry Mass (kg)</label>
+                        <input type="number" id="vehicle-mass" min="1" max="1000000" step="10" value="1000">
+                    </div>
+                    <div class="form-group">
+                        <label for="drag-coefficient">Drag Coefficient (Cd)</label>
+                        <input type="number" id="drag-coefficient" min="0" max="5" step="0.01" value="0.3">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reference-area">Reference Area (m²)</label>
+                        <input type="number" id="reference-area" min="0.01" max="1000" step="0.1" value="1.0">
+                    </div>
+                </div>
+                <h3 style="margin-top:20px;">🚀 Propulsion Plugin</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><input type="checkbox" id="enable-propulsion" checked> Enable Propulsion</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="engine-type">Engine Type</label>
+                        <select id="engine-type">
+                            <option value="0" selected>Solid Rocket</option>
+                            <option value="1">Liquid Rocket</option>
+                            <option value="2">Hybrid Rocket</option>
+                            <option value="3">Ion Thruster</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sea-level-thrust">Sea-Level Thrust (N)</label>
+                        <input type="number" id="sea-level-thrust" min="0" max="10000000" step="1000" value="50000">
+                    </div>
+                    <div class="form-group">
+                        <label for="vacuum-thrust">Vacuum Thrust (N)</label>
+                        <input type="number" id="vacuum-thrust" min="0" max="10000000" step="1000" value="55000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="isp-sea-level">Isp Sea-Level (s)</label>
+                        <input type="number" id="isp-sea-level" min="10" max="5000" step="5" value="250">
+                    </div>
+                    <div class="form-group">
+                        <label for="isp-vacuum">Isp Vacuum (s)</label>
+                        <input type="number" id="isp-vacuum" min="10" max="5000" step="5" value="280">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fuel-mass">Fuel Mass (kg)</label>
+                        <input type="number" id="fuel-mass" min="0" max="1000000" step="10" value="500">
+                    </div>
+                    <div class="form-group">
+                        <label for="throttle-setting">Throttle (0–1)</label>
+                        <input type="number" id="throttle-setting" min="0" max="1" step="0.05" value="1.0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="thrust-vector-angle">Thrust Vector Angle (rad)</label>
+                        <input type="number" id="thrust-vector-angle" min="-1.57" max="1.57" step="0.01" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="nozzle-exit-area">Nozzle Exit Area (m²)</label>
+                        <input type="number" id="nozzle-exit-area" min="0.001" max="100" step="0.01" value="0.1">
                     </div>
                 </div>
             </div>
@@ -614,6 +696,11 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     <p>Click "Refresh Results" to load available simulation results.</p>
                 </div>
                 
+                <div id="plots-gallery" style="display: none; margin-top: 20px;">
+                    <h3 style="margin-bottom: 10px;">📊 Generated Plots</h3>
+                    <div id="plots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
+                </div>
+                
                 <div id="chart-container" class="chart-container" style="display: none;">
                     <div id="summary-stats" class="stats-container"></div>
                     
@@ -623,45 +710,45 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         <button class="chart-tab" onclick="showChart('velocity')">🚀 Velocity</button>
                         <button class="chart-tab" onclick="showChart('altitude')">🏔️ Altitude</button>
                         <button class="chart-tab" onclick="showChart('speed')">⚡ Speed</button>
-                        <button class="chart-tab" onclick="showChart('earth')">🌍 Earth View</button>
-                        <button class="chart-tab" onclick="showChart('physics')">🔬 Physics Analysis</button>
+                        <button class="chart-tab" onclick="showChart('earth')">🌡️ Atmosphere</button>
+                        <button class="chart-tab" onclick="showChart('physics')">⚛️ Physics</button>
                         <button class="chart-tab" onclick="showChart('comparison')" id="comparison-tab" style="display: none;">📊 Comparison</button>
                     </div>
                     
                     <!-- Chart Containers -->
                     <div id="trajectory-chart-container" class="chart-panel active">
                         <h4>🛸 3D Trajectory Analysis</h4>
-                        <canvas id="trajectory-chart" class="chart-canvas"></canvas>
+                        <div class="chart-wrapper"><canvas id="trajectory-chart"></canvas></div>
                     </div>
                     
                     <div id="velocity-chart-container" class="chart-panel">
                         <h4>🚀 Velocity Components</h4>
-                        <canvas id="velocity-chart" class="chart-canvas"></canvas>
+                        <div class="chart-wrapper"><canvas id="velocity-chart"></canvas></div>
                     </div>
                     
                     <div id="altitude-chart-container" class="chart-panel">
                         <h4>🏔️ Altitude Profile</h4>
-                        <canvas id="altitude-chart" class="chart-canvas"></canvas>
+                        <div class="chart-wrapper"><canvas id="altitude-chart"></canvas></div>
                     </div>
                     
                     <div id="speed-chart-container" class="chart-panel">
                         <h4>⚡ Speed Analysis</h4>
-                        <canvas id="speed-chart" class="chart-canvas"></canvas>
+                        <div class="chart-wrapper"><canvas id="speed-chart"></canvas></div>
                     </div>
                     
                     <div id="earth-chart-container" class="chart-panel">
-                        <h4>🌍 Earth View</h4>
-                        <canvas id="earth-chart" class="chart-canvas"></canvas>
+                        <h4>🌡️ Atmospheric Conditions</h4>
+                        <div class="chart-wrapper"><canvas id="earth-chart"></canvas></div>
                     </div>
                     
                     <div id="physics-chart-container" class="chart-panel">
-                        <h4>🔬 Physics Analysis</h4>
-                        <canvas id="physics-chart" class="chart-canvas"></canvas>
+                        <h4>⚛️ Gravity, Energy & Pressure</h4>
+                        <div class="chart-wrapper"><canvas id="physics-chart"></canvas></div>
                     </div>
                     
                     <div id="comparison-chart-container" class="chart-panel">
                         <h4>📊 Multi-Simulation Comparison</h4>
-                        <canvas id="comparison-chart" class="chart-canvas"></canvas>
+                        <div class="chart-wrapper"><canvas id="comparison-chart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -914,9 +1001,43 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     "gravity_magnitude": parseFloat(document.getElementById('gravity-magnitude').value),
                     "enable_atmospheric_drag": document.getElementById('enable-drag').checked,
                     "integration_tolerance": 1e-6,
-                    "integrator_type": document.getElementById('integrator-type').value
+                    "integrator_type": document.getElementById('integrator-type').value,
+                    "vehicle_mass": parseFloat(document.getElementById('vehicle-mass').value),
+                    "drag_coefficient": parseFloat(document.getElementById('drag-coefficient').value),
+                    "reference_area": parseFloat(document.getElementById('reference-area').value)
                 },
-                "plugins": availablePlugins.filter(p => p.enabled),
+                "plugins": (function() {
+                    const plugins = availablePlugins.filter(p => p.enabled);
+                    // Inject propulsion plugin from form controls
+                    const enableProp = document.getElementById('enable-propulsion').checked;
+                    if (enableProp) {
+                        // Remove any existing propulsion plugin entry
+                        const filtered = plugins.filter(p => p.name !== 'propulsion');
+                        filtered.push({
+                            "name": "propulsion",
+                            "type": 1,
+                            "library_path": "build/bin/libpropulsion.dll",
+                            "enabled": true,
+                            "parameters": {
+                                "engine_type": parseInt(document.getElementById('engine-type').value),
+                                "sea_level_thrust": parseFloat(document.getElementById('sea-level-thrust').value),
+                                "vacuum_thrust": parseFloat(document.getElementById('vacuum-thrust').value),
+                                "specific_impulse_sl": parseFloat(document.getElementById('isp-sea-level').value),
+                                "specific_impulse_vac": parseFloat(document.getElementById('isp-vacuum').value),
+                                "initial_fuel_mass": parseFloat(document.getElementById('fuel-mass').value),
+                                "throttle_setting": parseFloat(document.getElementById('throttle-setting').value),
+                                "thrust_vector_angle": parseFloat(document.getElementById('thrust-vector-angle').value),
+                                "nozzle_exit_area": parseFloat(document.getElementById('nozzle-exit-area').value),
+                                "engine_on": true,
+                                "enable_altitude_compensation": true,
+                                "enable_fuel_consumption": true,
+                                "enable_thrust_vectoring": parseFloat(document.getElementById('thrust-vector-angle').value) !== 0
+                            }
+                        });
+                        return filtered;
+                    }
+                    return plugins.filter(p => p.name !== 'propulsion');
+                })(),
                 "output": {
                     "enable_csv": document.getElementById('enable-csv').checked,
                     "enable_json": document.getElementById('enable-json').checked,
@@ -973,77 +1094,111 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         }
         
         async function monitorSimulationProgress(config) {
-            const duration = config.simulation.duration;
-            const timeStep = config.simulation.time_step;
-            const totalTicks = Math.ceil(duration / timeStep);
-            
+            const totalTicks = Math.ceil(config.simulation.duration / config.simulation.time_step);
             document.getElementById('total-ticks').textContent = totalTicks;
+            document.getElementById('current-tick').textContent = '...';
+            document.getElementById('current-position').textContent = 'Computing...';
+            document.getElementById('current-velocity').textContent = 'Computing...';
             
-            let currentTick = 0;
-            const startTime = Date.now();
+            const statusDiv = document.getElementById('status');
+            let dots = 0;
             
             const monitorInterval = setInterval(async () => {
                 try {
-                    // Simulate progress based on time elapsed
-                    const elapsedTime = (Date.now() - startTime) / 1000;
-                    const estimatedTick = Math.min(Math.floor(elapsedTime / timeStep), totalTicks);
+                    const resp = await fetch('/api/status');
+                    const status = await resp.json();
+                    const sim = status.simulation || {};
                     
-                    if (estimatedTick > currentTick) {
-                        currentTick = estimatedTick;
-                        const progress = (currentTick / totalTicks) * 100;
-                        
-                        updateProgress(progress, `Running simulation... Tick ${currentTick}/${totalTicks}`);
-                        document.getElementById('current-tick').textContent = currentTick;
-                        
-                        // Simulate position and velocity updates (this would come from real data in production)
-                        const simulatedPosition = {
-                            x: (100 * currentTick * timeStep).toFixed(1),
-                            y: 0,
-                            z: (5000 + 50 * currentTick * timeStep - 4.9 * Math.pow(currentTick * timeStep, 2)).toFixed(1)
-                        };
-                        
-                        const simulatedVelocity = {
-                            x: 100,
-                            y: 0,
-                            z: (50 - 9.81 * currentTick * timeStep).toFixed(1)
-                        };
-                        
-                        document.getElementById('current-position').textContent = 
-                            `X: ${simulatedPosition.x}, Y: ${simulatedPosition.y}, Z: ${simulatedPosition.z}`;
-                        document.getElementById('current-velocity').textContent = 
-                            `X: ${simulatedVelocity.x}, Y: ${simulatedVelocity.y}, Z: ${simulatedVelocity.z}`;
-                    }
+                    if (sim.state === 'running') {
+                        dots = (dots + 1) % 4;
+                        const dotStr = '.'.repeat(dots);
+                        const msg = sim.message || 'Running';
+                        updateProgress(50, msg + dotStr);
+                        statusDiv.className = 'status info';
+                        statusDiv.innerHTML = '🚀 ' + msg + dotStr;
                     
-                    // Check if simulation is complete
-                    if (currentTick >= totalTicks) {
+                    } else if (sim.state === 'completed') {
                         clearInterval(monitorInterval);
-                        await completeSimulation();
-                    }
+                        window.currentSimulationInterval = null;
+                        updateProgress(100, 'Simulation completed!');
+                        statusDiv.className = 'status success';
+                        statusDiv.innerHTML = '✅ Loading results...';
+                        
+                        await loadResults();
+                        await loadPlots();
+                        showTab('results');
+                        statusDiv.innerHTML = '✅ Simulation completed successfully!';
+                        resetSimulationUI();
                     
+                    } else if (sim.state === 'failed') {
+                        clearInterval(monitorInterval);
+                        window.currentSimulationInterval = null;
+                        const err = sim.message || 'Unknown error';
+                        updateProgress(0, 'Failed: ' + err);
+                        statusDiv.className = 'status error';
+                        statusDiv.innerHTML = '❌ ' + err;
+                        resetSimulationUI();
+                    }
                 } catch (error) {
-                    console.error('Error monitoring simulation:', error);
-                    clearInterval(monitorInterval);
-                    resetSimulationUI();
+                    console.error('Error polling status:', error);
                 }
-            }, 100); // Update every 100ms
+            }, 500);
             
-            // Store interval for potential cancellation
             window.currentSimulationInterval = monitorInterval;
         }
         
-        async function completeSimulation() {
-            const statusDiv = document.getElementById('status');
-            updateProgress(100, 'Simulation completed!');
-            
-            statusDiv.className = 'status success';
-            statusDiv.innerHTML = '✅ Simulation completed successfully!';
-            
-            // Auto-load results
-            setTimeout(async () => {
-                await loadResults();
-                showTab('results');
-                resetSimulationUI();
-            }, 2000);
+        async function loadPlots() {
+            try {
+                const response = await fetch('/api/plots');
+                const plots = await response.json();
+                
+                const gallery = document.getElementById('plots-gallery');
+                const grid = document.getElementById('plots-grid');
+                
+                if (!plots || plots.length === 0) {
+                    gallery.style.display = 'none';
+                    return;
+                }
+                
+                const plotLabels = {
+                    'trajectory_3d.png': '3D Trajectory',
+                    'altitude_vs_time.png': 'Altitude vs Time',
+                    'speed_vs_time.png': 'Speed vs Time',
+                    'velocity_components.png': 'Velocity Components',
+                    'atmospheric_conditions.png': 'Atmospheric Conditions',
+                    'trajectory_2d_profile.png': '2D Flight Profile'
+                };
+                
+                grid.innerHTML = '';
+                
+                const cacheBust = Date.now();
+                plots.forEach(plot => {
+                    const label = plotLabels[plot.filename] || plot.filename;
+                    const url = plot.url + '?t=' + cacheBust;
+                    grid.innerHTML += `
+                        <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                            <a href="${url}" target="_blank" style="display: block;">
+                                <img src="${url}" alt="${label}" 
+                                     style="width: 100%; height: 200px; object-fit: contain; background: #fff; padding: 8px;" 
+                                     loading="lazy">
+                            </a>
+                            <div style="padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 500; font-size: 0.9em;">${label}</span>
+                                <a href="${plot.url}" download="${plot.filename}" 
+                                   class="btn btn-primary" 
+                                   style="padding: 4px 12px; font-size: 0.8em; text-decoration: none;">
+                                   ⬇️ Download
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                gallery.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading plots:', error);
+            }
         }
         
         function updateProgress(percentage, message) {
@@ -1665,104 +1820,117 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             }
         }
         
+        // Helper: map column names to indices dynamically
+        function colIdx(data, name) {
+            const idx = data.headers.indexOf(name);
+            return idx >= 0 ? idx : -1;
+        }
+        function colVal(row, data, name) {
+            const i = colIdx(data, name);
+            return i >= 0 ? row[i] : 0;
+        }
+        // Format large numbers for axis ticks
+        function fmtNum(v) {
+            if (Math.abs(v) >= 1e6) return (v/1e6).toFixed(2) + 'M';
+            if (Math.abs(v) >= 1e3) return (v/1e3).toFixed(1) + 'k';
+            return v.toFixed(2);
+        }
+        const chartColors = {
+            blue:    {border: '#3b82f6', bg: 'rgba(59,130,246,0.15)'},
+            red:     {border: '#ef4444', bg: 'rgba(239,68,68,0.15)'},
+            green:   {border: '#22c55e', bg: 'rgba(34,197,94,0.15)'},
+            orange:  {border: '#f97316', bg: 'rgba(249,115,22,0.15)'},
+            purple:  {border: '#a855f7', bg: 'rgba(168,85,247,0.15)'},
+            cyan:    {border: '#06b6d4', bg: 'rgba(6,182,212,0.15)'},
+            pink:    {border: '#ec4899', bg: 'rgba(236,72,153,0.15)'},
+            amber:   {border: '#f59e0b', bg: 'rgba(245,158,11,0.15)'},
+        };
+        const defaultTooltip = {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${fmtNum(ctx.parsed.y)}`
+            }
+        };
+        const defaultFont = { size: 13, weight: 'bold' };
+
         function createChart(data) {
-            // Create all specialized charts
             createTrajectoryChart(data);
             createVelocityChart(data);
             createAltitudeChart(data);
             createSpeedChart(data);
-            
-            // Create new charts if elements exist
-            if (document.getElementById('earth-chart')) {
-                createEarthChart(data);
-            }
-            if (document.getElementById('physics-chart')) {
-                createPhysicsChart(data);
-            }
+            if (document.getElementById('earth-chart')) createEarthChart(data);
+            if (document.getElementById('physics-chart')) createPhysicsChart(data);
         }
         
         function createTrajectoryChart(data) {
             const ctx = document.getElementById('trajectory-chart').getContext('2d');
-            
-            if (window.trajectoryChart) {
-                window.trajectoryChart.destroy();
-            }
-            
-            // Prepare 3D trajectory data
+            if (window.trajectoryChart) window.trajectoryChart.destroy();
+
+            const t = colIdx(data, 'simulation_time');
+            const pz = colIdx(data, 'position_z');
+            const px = colIdx(data, 'position_x');
+            const py = colIdx(data, 'position_y');
+            if (t < 0 || pz < 0) return;
+
             const datasets = [];
-            
-            // Position X vs Time
-            if (data.headers.length > 3) {
-                datasets.push({
-                    label: '📍 Position X (m)',
-                    data: data.rows.map(row => ({x: row[1], y: row[3]})), // simulation_time vs position_x
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 2
-                });
+
+            // Altitude (Position Z) — main series
+            datasets.push({
+                label: 'Altitude / Position Z (m)',
+                data: data.rows.map(row => ({x: row[t], y: row[pz]})),
+                borderColor: chartColors.blue.border,
+                backgroundColor: chartColors.blue.bg,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: chartColors.blue.border,
+                borderWidth: 2,
+                yAxisID: 'y'
+            });
+
+            // Downrange distance sqrt(X²+Y²) if meaningful
+            if (px >= 0 && py >= 0) {
+                const hasMovement = data.rows.some(r => Math.abs(r[px]) > 1 || Math.abs(r[py]) > 1);
+                if (hasMovement) {
+                    datasets.push({
+                        label: 'Downrange (m)',
+                        data: data.rows.map(row => ({x: row[t], y: Math.sqrt(row[px]**2 + row[py]**2)})),
+                        borderColor: chartColors.orange.border,
+                        backgroundColor: chartColors.orange.bg,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        borderWidth: 2,
+                        borderDash: [6, 3],
+                        yAxisID: 'y1'
+                    });
+                }
             }
-            
-            // Position Y vs Time
-            if (data.headers.length > 4) {
-                datasets.push({
-                    label: '📍 Position Y (m)',
-                    data: data.rows.map(row => ({x: row[1], y: row[4]})), // simulation_time vs position_y
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 2
-                });
-            }
-            
-            // Position Z vs Time
-            if (data.headers.length > 5) {
-                datasets.push({
-                    label: '📍 Position Z (m)',
-                    data: data.rows.map(row => ({x: row[1], y: row[5]})), // simulation_time vs position_z
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 2
-                });
-            }
-            
+
+            const hasY1 = datasets.length > 1;
             window.trajectoryChart = new Chart(ctx, {
                 type: 'line',
-                data: { datasets: datasets },
+                data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '🛸 3D Trajectory - Position Components vs Time'
-                        },
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
+                        title: { display: true, text: 'Trajectory — Altitude & Downrange vs Time', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: defaultTooltip
                     },
                     scales: {
-                        x: {
-                            type: 'linear',
-                            display: true,
-                            title: {
-                                display: true,
-                                text: '⏱️ Time (seconds)'
-                            }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            title: {
-                                display: true,
-                                text: '📍 Position (meters)'
-                            }
-                        }
+                        x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                              ticks: { callback: v => v.toFixed(2) + 's' } },
+                        y: { type: 'linear', position: 'left',
+                             title: { display: true, text: 'Altitude (m)', font: { size: 12 } },
+                             ticks: { callback: v => fmtNum(v) } },
+                        ...(hasY1 ? { y1: { type: 'linear', position: 'right',
+                             title: { display: true, text: 'Downrange (m)', font: { size: 12 } },
+                             ticks: { callback: v => fmtNum(v) },
+                             grid: { drawOnChartArea: false } } } : {})
                     }
                 }
             });
@@ -1770,86 +1938,70 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         
         function createVelocityChart(data) {
             const ctx = document.getElementById('velocity-chart').getContext('2d');
-            
-            if (window.velocityChart) {
-                window.velocityChart.destroy();
-            }
-            
+            if (window.velocityChart) window.velocityChart.destroy();
+
+            const t  = colIdx(data, 'simulation_time');
+            const vx = colIdx(data, 'velocity_x');
+            const vy = colIdx(data, 'velocity_y');
+            const vz = colIdx(data, 'velocity_z');
+            if (t < 0 || vz < 0) return;
+
             const datasets = [];
-            
-            // Velocity components
-            if (data.headers.length > 6) {
+
+            // Only show components that have meaningful values
+            const hasVx = vx >= 0 && data.rows.some(r => Math.abs(r[vx]) > 0.1);
+            const hasVy = vy >= 0 && data.rows.some(r => Math.abs(r[vy]) > 0.1);
+
+            if (hasVx) {
                 datasets.push({
-                    label: '🚀 Velocity X (m/s)',
-                    data: data.rows.map(row => ({x: row[1], y: row[6]})),
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                    fill: false,
-                    tension: 0.4
+                    label: 'Vx (m/s)', data: data.rows.map(r => ({x: r[t], y: r[vx]})),
+                    borderColor: chartColors.red.border, backgroundColor: chartColors.red.bg,
+                    fill: false, tension: 0.3, pointRadius: 2, borderWidth: 1.5
                 });
             }
-            
-            if (data.headers.length > 7) {
+            if (hasVy) {
                 datasets.push({
-                    label: '🚀 Velocity Y (m/s)',
-                    data: data.rows.map(row => ({x: row[1], y: row[7]})),
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    backgroundColor: 'rgba(153, 102, 255, 0.1)',
-                    fill: false,
-                    tension: 0.4
+                    label: 'Vy (m/s)', data: data.rows.map(r => ({x: r[t], y: r[vy]})),
+                    borderColor: chartColors.green.border, backgroundColor: chartColors.green.bg,
+                    fill: false, tension: 0.3, pointRadius: 2, borderWidth: 1.5
                 });
             }
-            
-            if (data.headers.length > 8) {
+
+            // Vz always shown
+            datasets.push({
+                label: 'Vz — Vertical (m/s)', data: data.rows.map(r => ({x: r[t], y: r[vz]})),
+                borderColor: chartColors.blue.border, backgroundColor: chartColors.blue.bg,
+                fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2
+            });
+
+            // Total speed
+            if (vx >= 0 && vy >= 0) {
                 datasets.push({
-                    label: '🚀 Velocity Z (m/s)',
-                    data: data.rows.map(row => ({x: row[1], y: row[8]})),
-                    borderColor: 'rgba(255, 205, 86, 1)',
-                    backgroundColor: 'rgba(255, 205, 86, 0.1)',
-                    fill: false,
-                    tension: 0.4
+                    label: 'Total Speed (m/s)',
+                    data: data.rows.map(r => {
+                        const sx = r[vx]||0, sy = r[vy]||0, sz = r[vz]||0;
+                        return {x: r[t], y: Math.sqrt(sx*sx + sy*sy + sz*sz)};
+                    }),
+                    borderColor: chartColors.red.border, backgroundColor: 'transparent',
+                    fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2.5, borderDash: [8, 4]
                 });
             }
-            
-            // Total velocity magnitude
-            if (data.headers.length > 8) {
-                const totalVelocity = data.rows.map(row => {
-                    const vx = row[6] || 0;
-                    const vy = row[7] || 0;
-                    const vz = row[8] || 0;
-                    return {x: row[1], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
-                });
-                
-                datasets.push({
-                    label: '⚡ Total Speed (m/s)',
-                    data: totalVelocity,
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 3
-                });
-            }
-            
+
             window.velocityChart = new Chart(ctx, {
-                type: 'line',
-                data: { datasets: datasets },
+                type: 'line', data: { datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '🚀 Velocity Analysis - Components and Total Speed'
-                        }
+                        title: { display: true, text: 'Velocity Components vs Time', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: defaultTooltip
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: '⏱️ Time (seconds)' }
-                        },
-                        y: {
-                            title: { display: true, text: '🚀 Velocity (m/s)' }
-                        }
+                        x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                              ticks: { callback: v => v.toFixed(2) + 's' } },
+                        y: { title: { display: true, text: 'Velocity (m/s)', font: { size: 12 } },
+                             ticks: { callback: v => fmtNum(v) } }
                     }
                 }
             });
@@ -1857,68 +2009,46 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         
         function createAltitudeChart(data) {
             const ctx = document.getElementById('altitude-chart').getContext('2d');
-            
-            if (window.altitudeChart) {
-                window.altitudeChart.destroy();
-            }
-            
-            const datasets = [];
-            
-            // Altitude (Position Z)
-            if (data.headers.length > 5) {
+            if (window.altitudeChart) window.altitudeChart.destroy();
+
+            const t  = colIdx(data, 'simulation_time');
+            const pz = colIdx(data, 'position_z');
+            const vz = colIdx(data, 'velocity_z');
+            if (t < 0 || pz < 0) return;
+
+            const datasets = [{
+                label: 'Altitude (m)', yAxisID: 'y',
+                data: data.rows.map(r => ({x: r[t], y: r[pz]})),
+                borderColor: chartColors.green.border, backgroundColor: chartColors.green.bg,
+                fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2
+            }];
+
+            if (vz >= 0) {
                 datasets.push({
-                    label: '🏔️ Altitude (m)',
-                    data: data.rows.map(row => ({x: row[1], y: row[5]})),
-                    borderColor: 'rgba(40, 167, 69, 1)',
-                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 3
+                    label: 'Vertical Velocity (m/s)', yAxisID: 'y1',
+                    data: data.rows.map(r => ({x: r[t], y: r[vz]})),
+                    borderColor: chartColors.cyan.border, backgroundColor: 'transparent',
+                    fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2, borderDash: [6, 3]
                 });
             }
-            
-            // Vertical velocity
-            if (data.headers.length > 8) {
-                datasets.push({
-                    label: '📈 Vertical Velocity (m/s)',
-                    data: data.rows.map(row => ({x: row[1], y: row[8]})),
-                    borderColor: 'rgba(23, 162, 184, 1)',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                });
-            }
-            
+
             window.altitudeChart = new Chart(ctx, {
-                type: 'line',
-                data: { datasets: datasets },
+                type: 'line', data: { datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '🏔️ Altitude Profile and Vertical Velocity'
-                        }
+                        title: { display: true, text: 'Altitude Profile & Vertical Velocity', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: defaultTooltip
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: '⏱️ Time (seconds)' }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: '🏔️ Altitude (meters)' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: { display: true, text: '📈 Vertical Velocity (m/s)' },
-                            grid: { drawOnChartArea: false }
-                        }
+                        x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                              ticks: { callback: v => v.toFixed(2) + 's' } },
+                        y: { position: 'left', title: { display: true, text: 'Altitude (m)', font: { size: 12 } },
+                             ticks: { callback: v => fmtNum(v) } },
+                        y1: { position: 'right', title: { display: true, text: 'Vertical Vel. (m/s)', font: { size: 12 } },
+                              ticks: { callback: v => fmtNum(v) }, grid: { drawOnChartArea: false } }
                     }
                 }
             });
@@ -1926,81 +2056,63 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         
         function createSpeedChart(data) {
             const ctx = document.getElementById('speed-chart').getContext('2d');
-            
-            if (window.speedChart) {
-                window.speedChart.destroy();
-            }
-            
+            if (window.speedChart) window.speedChart.destroy();
+
+            const t  = colIdx(data, 'simulation_time');
+            const vxi = colIdx(data, 'velocity_x');
+            const vyi = colIdx(data, 'velocity_y');
+            const vzi = colIdx(data, 'velocity_z');
+            if (t < 0 || vzi < 0) return;
+
             const datasets = [];
-            
-            // Calculate speed metrics
-            if (data.headers.length > 8) {
-                const totalSpeed = data.rows.map(row => {
-                    const vx = row[6] || 0;
-                    const vy = row[7] || 0;
-                    const vz = row[8] || 0;
-                    return {x: row[1], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
-                });
-                
-                const horizontalSpeed = data.rows.map(row => {
-                    const vx = row[6] || 0;
-                    const vy = row[7] || 0;
-                    return {x: row[1], y: Math.sqrt(vx*vx + vy*vy)};
-                });
-                
-                const verticalSpeed = data.rows.map(row => {
-                    const vz = row[8] || 0;
-                    return {x: row[1], y: Math.abs(vz)};
-                });
-                
-                datasets.push({
-                    label: '⚡ Total Speed (m/s)',
-                    data: totalSpeed,
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    borderWidth: 3
-                });
-                
-                datasets.push({
-                    label: '🌍 Horizontal Speed (m/s)',
-                    data: horizontalSpeed,
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    fill: false,
-                    tension: 0.4
-                });
-                
-                datasets.push({
-                    label: '📈 Vertical Speed (m/s)',
-                    data: verticalSpeed,
-                    borderColor: 'rgba(255, 193, 7, 1)',
-                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                    fill: false,
-                    tension: 0.4
-                });
+
+            // Total speed — always shown, prominent
+            datasets.push({
+                label: 'Total Speed (m/s)',
+                data: data.rows.map(r => {
+                    const sx = vxi >= 0 ? r[vxi] : 0, sy = vyi >= 0 ? r[vyi] : 0, sz = r[vzi];
+                    return {x: r[t], y: Math.sqrt(sx*sx + sy*sy + sz*sz)};
+                }),
+                borderColor: chartColors.red.border, backgroundColor: chartColors.red.bg,
+                fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2.5
+            });
+
+            // Vertical speed (absolute)
+            datasets.push({
+                label: '|Vertical Speed| (m/s)',
+                data: data.rows.map(r => ({x: r[t], y: Math.abs(r[vzi])})),
+                borderColor: chartColors.amber.border, backgroundColor: 'transparent',
+                fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2, borderDash: [6, 3]
+            });
+
+            // Horizontal only if meaningful
+            if (vxi >= 0 && vyi >= 0) {
+                const hasHoriz = data.rows.some(r => Math.abs(r[vxi]) > 0.1 || Math.abs(r[vyi]) > 0.1);
+                if (hasHoriz) {
+                    datasets.push({
+                        label: 'Horizontal Speed (m/s)',
+                        data: data.rows.map(r => ({x: r[t], y: Math.sqrt(r[vxi]**2 + r[vyi]**2)})),
+                        borderColor: chartColors.purple.border, backgroundColor: 'transparent',
+                        fill: false, tension: 0.3, pointRadius: 2, borderWidth: 1.5
+                    });
+                }
             }
-            
+
             window.speedChart = new Chart(ctx, {
-                type: 'line',
-                data: { datasets: datasets },
+                type: 'line', data: { datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '⚡ Speed Analysis - Total, Horizontal, and Vertical Components'
-                        }
+                        title: { display: true, text: 'Speed Analysis', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: defaultTooltip
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: '⏱️ Time (seconds)' }
-                        },
-                        y: {
-                            title: { display: true, text: '⚡ Speed (m/s)' }
-                        }
+                        x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                              ticks: { callback: v => v.toFixed(2) + 's' } },
+                        y: { title: { display: true, text: 'Speed (m/s)', font: { size: 12 } },
+                             ticks: { callback: v => fmtNum(v) }, beginAtZero: true }
                     }
                 }
             });
@@ -2008,90 +2120,147 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         
         function createEarthChart(data) {
             const ctx = document.getElementById('earth-chart').getContext('2d');
-            
-            if (window.earthChart) {
-                window.earthChart.destroy();
-            }
-            
+            if (window.earthChart) window.earthChart.destroy();
+
+            const t    = colIdx(data, 'simulation_time');
+            const rho  = colIdx(data, 'atm_density');
+            const pres = colIdx(data, 'atm_pressure');
+            const temp = colIdx(data, 'atm_temperature');
+            if (t < 0) return;
+
             const datasets = [];
-            
-            // Earth view
-            if (data.headers.length > 5) {
+
+            if (rho >= 0) {
                 datasets.push({
-                    label: '🌍 Earth View',
-                    data: data.rows.map(row => ({x: row[3], y: row[4]})), // position_x vs position_y
-                    borderColor: 'rgba(40, 167, 69, 1)',
-                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 3
+                    label: 'Air Density (kg/m³)', yAxisID: 'y',
+                    data: data.rows.map(r => ({x: r[t], y: r[rho]})),
+                    borderColor: chartColors.purple.border, backgroundColor: chartColors.purple.bg,
+                    fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2
                 });
             }
-            
+            if (temp >= 0) {
+                datasets.push({
+                    label: 'Temperature (K)', yAxisID: 'y1',
+                    data: data.rows.map(r => ({x: r[t], y: r[temp]})),
+                    borderColor: chartColors.red.border, backgroundColor: 'transparent',
+                    fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2, borderDash: [6, 3]
+                });
+            }
+
+            const scales = {
+                x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                      ticks: { callback: v => v.toFixed(2) + 's' } }
+            };
+            if (rho >= 0) {
+                scales.y = { position: 'left',
+                    title: { display: true, text: 'Density (kg/m³)', font: { size: 12 } },
+                    ticks: { callback: v => v.toFixed(4) } };
+            }
+            if (temp >= 0) {
+                scales.y1 = { position: 'right',
+                    title: { display: true, text: 'Temperature (K)', font: { size: 12 } },
+                    ticks: { callback: v => v.toFixed(1) + ' K' },
+                    grid: { drawOnChartArea: false } };
+            }
+
             window.earthChart = new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets: datasets },
+                type: 'line', data: { datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '🌍 Earth View'
+                        title: { display: true, text: 'Atmospheric Conditions vs Time', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: {
+                            mode: 'index', intersect: false,
+                            callbacks: {
+                                label: ctx => {
+                                    const v = ctx.parsed.y;
+                                    if (ctx.dataset.label.includes('Density')) return `Density: ${v.toFixed(4)} kg/m³`;
+                                    if (ctx.dataset.label.includes('Temp')) return `Temp: ${v.toFixed(1)} K (${(v - 273.15).toFixed(1)} °C)`;
+                                    return `${ctx.dataset.label}: ${fmtNum(v)}`;
+                                }
+                            }
                         }
                     },
-                    scales: {
-                        x: {
-                            title: { display: true, text: '📍 Position X (m)' }
-                        },
-                        y: {
-                            title: { display: true, text: '📍 Position Y (m)' }
-                        }
-                    }
+                    scales
                 }
             });
         }
         
         function createPhysicsChart(data) {
             const ctx = document.getElementById('physics-chart').getContext('2d');
-            
-            if (window.physicsChart) {
-                window.physicsChart.destroy();
-            }
-            
+            if (window.physicsChart) window.physicsChart.destroy();
+
+            const t   = colIdx(data, 'simulation_time');
+            const gx  = colIdx(data, 'gravity_x');
+            const gy  = colIdx(data, 'gravity_y');
+            const gz  = colIdx(data, 'gravity_z');
+            const vxi = colIdx(data, 'velocity_x');
+            const vyi = colIdx(data, 'velocity_y');
+            const vzi = colIdx(data, 'velocity_z');
+            const pres = colIdx(data, 'atm_pressure');
+            if (t < 0) return;
+
             const datasets = [];
-            
-            // Physics analysis
-            if (data.headers.length > 8) {
+
+            // Gravity magnitude
+            if (gz >= 0) {
                 datasets.push({
-                    label: '🔬 Physics Analysis',
-                    data: data.rows.map(row => ({x: row[6], y: row[8]})), // velocity_x vs velocity_z
-                    borderColor: 'rgba(23, 162, 184, 1)',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    fill: false,
-                    tension: 0.4
+                    label: 'Gravity (m/s²)', yAxisID: 'y',
+                    data: data.rows.map(r => {
+                        const x = gx >= 0 ? r[gx] : 0, y = gy >= 0 ? r[gy] : 0, z = r[gz];
+                        return {x: r[t], y: Math.sqrt(x*x + y*y + z*z)};
+                    }),
+                    borderColor: chartColors.orange.border, backgroundColor: chartColors.orange.bg,
+                    fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2
                 });
             }
-            
+
+            // Kinetic energy (½mv², m=1000 kg)
+            if (vzi >= 0) {
+                const mass = 1000;
+                datasets.push({
+                    label: 'Kinetic Energy (kJ)', yAxisID: 'y1',
+                    data: data.rows.map(r => {
+                        const sx = vxi >= 0 ? r[vxi] : 0, sy = vyi >= 0 ? r[vyi] : 0, sz = r[vzi];
+                        return {x: r[t], y: 0.5 * mass * (sx*sx + sy*sy + sz*sz) / 1000};
+                    }),
+                    borderColor: chartColors.cyan.border, backgroundColor: 'transparent',
+                    fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2, borderDash: [6, 3]
+                });
+            }
+
+            // Atmospheric pressure if available
+            if (pres >= 0) {
+                datasets.push({
+                    label: 'Pressure (kPa)', yAxisID: 'y1',
+                    data: data.rows.map(r => ({x: r[t], y: r[pres] / 1000})),
+                    borderColor: chartColors.pink.border, backgroundColor: 'transparent',
+                    fill: false, tension: 0.3, pointRadius: 1, borderWidth: 1.5, borderDash: [3, 3]
+                });
+            }
+
             window.physicsChart = new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets: datasets },
+                type: 'line', data: { datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '🔬 Physics Analysis'
-                        }
+                        title: { display: true, text: 'Physics — Gravity, Energy & Pressure', font: defaultFont },
+                        legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                        tooltip: defaultTooltip
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: '🚀 Velocity X (m/s)' }
-                        },
-                        y: {
-                            title: { display: true, text: '📈 Velocity Z (m/s)' }
-                        }
+                        x: { type: 'linear', title: { display: true, text: 'Time (s)', font: { size: 12 } },
+                              ticks: { callback: v => v.toFixed(2) + 's' } },
+                        y: { position: 'left',
+                             title: { display: true, text: 'Gravity (m/s²)', font: { size: 12 } },
+                             ticks: { callback: v => v.toFixed(4) } },
+                        y1: { position: 'right',
+                              title: { display: true, text: 'Energy (kJ) / Pressure (kPa)', font: { size: 12 } },
+                              ticks: { callback: v => fmtNum(v) },
+                              grid: { drawOnChartArea: false } }
                     }
                 }
             });
@@ -2102,6 +2271,21 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             document.querySelectorAll('.chart-tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(chartName + '-chart-container').classList.add('active');
             document.querySelector(`[onclick*="showChart('${chartName}')"]`).classList.add('active');
+            
+            // Trigger resize so Chart.js recalculates within the fixed wrapper
+            const chartMap = {
+                'trajectory': window.trajectoryChart,
+                'velocity': window.velocityChart,
+                'altitude': window.altitudeChart,
+                'speed': window.speedChart,
+                'earth': window.earthChart,
+                'physics': window.physicsChart,
+                'comparison': window.comparisonChart
+            };
+            const chart = chartMap[chartName];
+            if (chart) {
+                setTimeout(() => chart.resize(), 50);
+            }
         }
         
         function toggleComparisonMode() {
@@ -2381,6 +2565,23 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 document.getElementById('gravity-magnitude').value = config.physics.gravity_magnitude || 9.81;
                 document.getElementById('enable-drag').checked = config.physics.enable_atmospheric_drag !== false;
                 document.getElementById('integrator-type').value = config.physics.integrator_type || 'runge_kutta_4';
+                document.getElementById('vehicle-mass').value = config.physics.vehicle_mass || 1000;
+                document.getElementById('drag-coefficient').value = config.physics.drag_coefficient || 0.3;
+                document.getElementById('reference-area').value = config.physics.reference_area || 1.0;
+            }
+            
+            // Apply propulsion plugin parameters
+            if (config.propulsion) {
+                document.getElementById('enable-propulsion').checked = config.propulsion.enabled !== false;
+                document.getElementById('engine-type').value = config.propulsion.engine_type || 0;
+                document.getElementById('sea-level-thrust').value = config.propulsion.sea_level_thrust || 50000;
+                document.getElementById('vacuum-thrust').value = config.propulsion.vacuum_thrust || 55000;
+                document.getElementById('isp-sea-level').value = config.propulsion.specific_impulse_sl || 250;
+                document.getElementById('isp-vacuum').value = config.propulsion.specific_impulse_vac || 280;
+                document.getElementById('fuel-mass').value = config.propulsion.initial_fuel_mass || 500;
+                document.getElementById('throttle-setting').value = config.propulsion.throttle_setting || 1.0;
+                document.getElementById('thrust-vector-angle').value = config.propulsion.thrust_vector_angle || 0;
+                document.getElementById('nozzle-exit-area').value = config.propulsion.nozzle_exit_area || 0.1;
             }
             
             // Apply plugin configurations
@@ -2545,14 +2746,17 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         return sim_path
 
     def serve_status(self):
-        """Serve system status"""
+        """Serve system status including simulation state"""
         simulator_path = self.get_simulator_path()
         simulator_exists = simulator_path.exists()
+        with MoLabWebHandler._sim_lock:
+            sim = dict(MoLabWebHandler._sim_status)
         status = {
             "simulator_built": simulator_exists,
             "simulator_path": str(simulator_path),
             "project_root": str(self.project_root),
-            "timestamp": datetime.datetime.now().isoformat()
+            "timestamp": datetime.datetime.now().isoformat(),
+            "simulation": sim
         }
         self.send_json_response(status)
     
@@ -2673,6 +2877,61 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)})
     
+    def serve_plots_list(self):
+        """List available plot images"""
+        plots = []
+        output_dirs = [
+            self.output_dir,
+            self.project_root / "output"
+        ]
+        
+        for output_dir in output_dirs:
+            plots_dir = output_dir / "plots"
+            if plots_dir.exists():
+                for plot_file in plots_dir.glob("*.png"):
+                    plots.append({
+                        "filename": plot_file.name,
+                        "size": plot_file.stat().st_size,
+                        "modified": plot_file.stat().st_mtime,
+                        "url": f"/api/plots/{plot_file.name}"
+                    })
+        
+        plots.sort(key=lambda x: x['modified'], reverse=True)
+        self.send_json_response(plots)
+    
+    def serve_plot_file(self, filename):
+        """Serve a specific plot PNG file"""
+        import os
+        # Sanitize filename
+        filename = os.path.basename(filename)
+        if not filename.endswith('.png'):
+            self.send_error(400, "Only PNG files supported")
+            return
+        
+        output_dirs = [
+            self.output_dir,
+            self.project_root / "output"
+        ]
+        
+        for output_dir in output_dirs:
+            plot_path = output_dir / "plots" / filename
+            if plot_path.exists():
+                try:
+                    with open(plot_path, 'rb') as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header('Content-type', 'image/png')
+                    self.send_header('Content-Length', str(len(content)))
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+                except Exception as e:
+                    self.send_error(500, str(e))
+                    return
+        
+        self.send_error(404, "Plot not found")
+    
     def handle_run_simulation(self):
         """Handle simulation run request"""
         content_length = int(self.headers['Content-Length'])
@@ -2683,7 +2942,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
             # Create temporary config file
             temp_config = self.config_dir / f"temp_web_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            config["initial_state_file"] = str(self.project_root / "data" / "initial_state" / "realistic_state.json")
+            config["initial_state_file"] = str(self.project_root / "data" / "initial_state.json")
             
             with open(temp_config, 'w') as f:
                 json.dump(config, f, indent=2)
@@ -2696,22 +2955,81 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
             ticks = int(config['simulation']['duration'] / config['simulation']['time_step'])
             
+            project_root = self.project_root
+            output_dir = self.output_dir
+
+            # Mark running BEFORE starting thread (prevents frontend from seeing stale state)
+            with MoLabWebHandler._sim_lock:
+                MoLabWebHandler._sim_status = {"state": "running", "message": "Simulator starting..."}
+
             def run_sim():
+                cls = MoLabWebHandler
                 try:
-                    subprocess.run([
+                    with cls._sim_lock:
+                        cls._sim_status = {"state": "running", "message": "Simulator running..."}
+
+                    result = subprocess.run([
                         str(simulator_path),
                         "--config", str(temp_config),
                         "--ticks", str(ticks)
-                    ], capture_output=True, text=True, timeout=300)
-                    if temp_config.exists():
+                    ], capture_output=True, text=True, timeout=300,
+                    cwd=str(project_root))
+
+                    if result.returncode == 0 and temp_config.exists():
                         temp_config.unlink()
+
+                    if result.returncode != 0:
+                        err = result.stderr[:500] if result.stderr else ""
+                        if not err and result.stdout:
+                            # Simulator logs to stdout; grab last meaningful lines
+                            lines = [l for l in result.stdout.strip().split('\n') if l.strip()]
+                            err = '\n'.join(lines[-5:])[:500]
+                        if not err:
+                            err = f"exit code {result.returncode}"
+                        print(f"[SIM] Simulator failed (rc={result.returncode}):\nSTDOUT: {result.stdout[-1000:] if result.stdout else ''}\nSTDERR: {result.stderr[-500:] if result.stderr else ''}")
+                        with cls._sim_lock:
+                            cls._sim_status = {"state": "failed", "message": f"Simulator error: {err}"}
+                        return
+
+                    # Generate visualization plots
+                    with cls._sim_lock:
+                        cls._sim_status = {"state": "running", "message": "Generating plots..."}
+
+                    try:
+                        visualizer = project_root / "tools" / "visualize_results.py"
+                        if visualizer.exists():
+                            out_dir = project_root / "output"
+                            if not out_dir.exists():
+                                out_dir = output_dir
+                            plots_dir = out_dir / "plots"
+                            viz_result = subprocess.run([
+                                sys.executable, str(visualizer),
+                                "--output-dir", str(out_dir),
+                                "--plots-dir", str(plots_dir),
+                                "--no-show"
+                            ], capture_output=True, text=True, timeout=60,
+                            cwd=str(project_root))
+                            if viz_result.returncode == 0:
+                                print(f"[VIZ] Plots generated in {plots_dir}")
+                            else:
+                                print(f"[VIZ] Error (rc={viz_result.returncode}): {viz_result.stderr}")
+                            if viz_result.stdout:
+                                print(f"[VIZ] {viz_result.stdout}")
+                    except Exception as viz_err:
+                        print(f"[VIZ] Plot generation warning: {viz_err}")
+
+                    with cls._sim_lock:
+                        cls._sim_status = {"state": "completed", "message": "Simulation completed"}
+
                 except Exception as e:
                     print(f"Simulation error: {e}")
-            
+                    with cls._sim_lock:
+                        cls._sim_status = {"state": "failed", "message": str(e)}
+
             sim_thread = threading.Thread(target=run_sim)
             sim_thread.daemon = True
             sim_thread.start()
-            
+
             self.send_json_response({"success": True, "message": "Simulation started"})
             
         except Exception as e:

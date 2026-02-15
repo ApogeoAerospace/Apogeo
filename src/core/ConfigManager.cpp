@@ -31,17 +31,16 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             return false;
         }
 
+        // Parse output config
+        if (!parseOutputConfig(config_json)) {
+            return false;
+        }
+
         // Parse file paths
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
             initial_state_file_ = "data/initial_state.json";
-        }
-
-        if (config_json.contains("output_directory")) {
-            output_directory_ = config_json["output_directory"];
-        } else {
-            output_directory_ = "output/";
         }
 
         if (!validateConfig()) {
@@ -73,10 +72,14 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 
         // Physics config
         config_json["physics"]["enable_gravity"] = physics_config_.enable_gravity;
+        config_json["physics"]["gravity_magnitude"] = physics_config_.gravity_magnitude;
         config_json["physics"]["enable_atmospheric_drag"] = physics_config_.enable_atmospheric_drag;
         config_json["physics"]["enable_wind_effects"] = physics_config_.enable_wind_effects;
         config_json["physics"]["integration_tolerance"] = physics_config_.integration_tolerance;
         config_json["physics"]["integrator_type"] = physics_config_.integrator_type;
+        config_json["physics"]["vehicle_mass"] = physics_config_.vehicle_mass;
+        config_json["physics"]["drag_coefficient"] = physics_config_.drag_coefficient;
+        config_json["physics"]["reference_area"] = physics_config_.reference_area;
 
         // Plugin configs
         for (const auto& plugin : plugin_configs_) {
@@ -89,9 +92,15 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
             config_json["plugins"].push_back(plugin_json);
         }
 
+        // Output config
+        config_json["output"]["output_directory"] = output_config_.output_directory;
+        config_json["output"]["output_interval"] = output_config_.output_interval;
+        config_json["output"]["enable_csv"] = output_config_.enable_csv;
+        config_json["output"]["enable_json"] = output_config_.enable_json;
+        config_json["output"]["enable_binary"] = output_config_.enable_binary;
+
         // File paths
         config_json["initial_state_file"] = initial_state_file_;
-        config_json["output_directory"] = output_directory_;
 
         std::ofstream file(config_file);
         if (!file.is_open()) {
@@ -122,15 +131,25 @@ void ConfigManager::setDefaults() {
 
     // Physics defaults
     physics_config_.enable_gravity = true;
+    physics_config_.gravity_magnitude = 9.81;
     physics_config_.enable_atmospheric_drag = true;
     physics_config_.enable_wind_effects = false;
     physics_config_.integration_tolerance = 1e-6;
     physics_config_.integrator_type = "runge_kutta_4";
+    physics_config_.vehicle_mass = 1000.0;
+    physics_config_.drag_coefficient = 0.3;
+    physics_config_.reference_area = 1.0;
+
+    // Output defaults
+    output_config_.output_directory = "output/";
+    output_config_.output_interval = 5;
+    output_config_.enable_csv = true;
+    output_config_.enable_json = true;
+    output_config_.enable_binary = false;
 
     plugin_configs_.clear();
 
     initial_state_file_ = "data/initial_state.json";
-    output_directory_ = "output/";
 
     LOG_INFO("Using default configuration", "ConfigManager");
 }
@@ -168,17 +187,16 @@ bool ConfigManager::parsePhysicsConfig(const nlohmann::json& json) {
             const auto& physics = json["physics"];
 
             physics_config_.enable_gravity = physics.value("enable_gravity", true);
+            physics_config_.gravity_magnitude = physics.value("gravity_magnitude", 9.81);
             physics_config_.enable_atmospheric_drag = physics.value("enable_atmospheric_drag", true);
             physics_config_.enable_wind_effects = physics.value("enable_wind_effects", false);
             physics_config_.integration_tolerance = physics.value("integration_tolerance", 1e-6);
             physics_config_.integrator_type = physics.value("integrator_type", "runge_kutta_4");
+            physics_config_.vehicle_mass = physics.value("vehicle_mass", 1000.0);
+            physics_config_.drag_coefficient = physics.value("drag_coefficient", 0.3);
+            physics_config_.reference_area = physics.value("reference_area", 1.0);
         } else {
-            // Use defaults
-            physics_config_.enable_gravity = true;
-            physics_config_.enable_atmospheric_drag = true;
-            physics_config_.enable_wind_effects = false;
-            physics_config_.integration_tolerance = 1e-6;
-            physics_config_.integrator_type = "runge_kutta_4";
+            setDefaults(); // Use full defaults
         }
         return true;
     } catch (const std::exception& e) {
@@ -212,6 +230,31 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR("Error parsing plugin configs: " + std::string(e.what()), "ConfigManager");
+        return false;
+    }
+}
+
+bool ConfigManager::parseOutputConfig(const nlohmann::json& json) {
+    try {
+        if (json.contains("output")) {
+            const auto& output = json["output"];
+
+            output_config_.output_directory = output.value("output_directory", "output/");
+            output_config_.output_interval = output.value("output_interval", 5);
+            output_config_.enable_csv = output.value("enable_csv", true);
+            output_config_.enable_json = output.value("enable_json", true);
+            output_config_.enable_binary = output.value("enable_binary", false);
+        } else {
+            // Use defaults
+            output_config_.output_directory = "output/";
+            output_config_.output_interval = 5;
+            output_config_.enable_csv = true;
+            output_config_.enable_json = true;
+            output_config_.enable_binary = false;
+        }
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Error parsing output config: " + std::string(e.what()), "ConfigManager");
         return false;
     }
 }

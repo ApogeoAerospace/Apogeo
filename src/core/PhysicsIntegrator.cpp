@@ -1,4 +1,5 @@
 #include "PhysicsIntegrator.h"
+#include "ConfigManager.h"
 #include "Logger.h"
 #include "state_vector_generated.h"
 #include <cmath>
@@ -208,7 +209,8 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
                                    fb_state->orientation()->z());
     }
 
-    // Default mass if not specified
+    // Default mass (FlatBuffer schema does not include mass field)
+    // TODO: Make mass configurable via PhysicsConfig or initial state JSON
     state.mass = 1000.0; // kg
     state.time = fb_state->Time(); // Note: capital T
 
@@ -224,20 +226,47 @@ void PhysicsIntegrator::toFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
     // Create quaternion from euler angles (simplified)
     auto orientation = state_vector::Quaternion(state.orientation.x, state.orientation.y, state.orientation.z, 1.0f);
 
-    // Create gravity vector (default Earth gravity)
-    auto gravity = state_vector::Vec3(0.0f, 0.0f, -9.81f);
+    // Use configured gravity magnitude from ConfigManager
+    float gravity_z = -9.81f; // default fallback
+    try {
+        const auto& physics_config = ConfigManager::getInstance().getPhysicsConfig();
+        gravity_z = physics_config.enable_gravity ?
+            static_cast<float>(-physics_config.gravity_magnitude) : 0.0f;
+    } catch (...) {}
+    auto gravity = state_vector::Vec3(0.0f, 0.0f, gravity_z);
 
     // Create wind speed vector (no wind by default)
     auto wind_speed = state_vector::Vec3(0.0f, 0.0f, 0.0f);
 
-    // Create the GeneralState (parameters order: time, utc, wind_speed)
+    // Calculate altitude above sea level (handle geocentric coordinates)
+    const double EARTH_RADIUS = 6378137.0; // m (WGS84)
+    double dist = std::sqrt(state.position.x * state.position.x +
+                            state.position.y * state.position.y +
+                            state.position.z * state.position.z);
+    bool geocentric = (dist > 1000000.0 || std::abs(state.position.z) > 1000000.0);
+    double altitude = geocentric ? (dist - EARTH_RADIUS) : state.position.z;
+    if (altitude < 0) altitude = 0.0;
+
+    float atm_density = static_cast<float>(AtmosphericEffects::calculateAirDensity(altitude));
+    float atm_temperature = static_cast<float>(
+        (altitude <= 11000.0) ? 288.15 - 0.0065 * altitude : 216.65);
+    float atm_pressure;
+    if (altitude <= 11000.0) {
+        double T0 = 288.15, P0 = 101325.0, L = 0.0065, R = 287.05, g = 9.80665;
+        atm_pressure = static_cast<float>(P0 * pow((T0 - L * altitude) / T0, g / (R * L)));
+    } else {
+        double P11 = 22632.1, T11 = 216.65, R = 287.05, g = 9.80665;
+        atm_pressure = static_cast<float>(P11 * exp(-g * (altitude - 11000.0) / (R * T11)));
+    }
+
+    // Create the GeneralState with dynamic atmospheric values
     auto general_state = state_vector::CreateGeneralState(builder,
         &position,
         &velocity,
         &orientation,
-        1.225f,  // atm_density (sea level)
-        101325.0f, // atm_pressure (sea level)
-        288.15f,   // atm_temperature (sea level)
+        atm_density,
+        atm_pressure,
+        atm_temperature,
         &gravity,
         static_cast<float>(state.time),  // Time (simulation time)
         0.0f,  // UTC (epoch time, not used in this context)
