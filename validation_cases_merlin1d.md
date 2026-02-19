@@ -10,6 +10,13 @@ Input Conditions
 * Mixture ratio (LOX/RP-1)
 * Ambient pressure (sea-level conditions)
 
+* Input Parameters:
+
+Chamber_Pressure = 9.7 MPa
+Mixture_Ratio_LOX_RP1 = 2.56
+Ambient_Pressure = 101325 Pa
+Gravity_Standard = 9.80665 m/s²
+
 Output Parameter
 * Sea-level thrust
 
@@ -23,6 +30,13 @@ Reference Source
 Input Conditions
 * Nozzle expansion characteristics
 * Near-vacuum ambient pressure
+
+* Input Parameters:
+
+Chamber_Pressure = 9.7 MPa
+Mixture_Ratio_LOX_RP1 = 2.56
+Ambient_Pressure = 0 Pa
+Gravity_Standard = 9.80665 m/s²
 
 Output Parameter
 * Vacuum specific impulse
@@ -39,6 +53,12 @@ Input Conditions
 * Sea-level specific impulse
 * Standard gravitational acceleration
 
+* Input Parameters:
+
+Thrust_Sea_Level = 845000 N
+Specific_Impulse_Sea_Level = 282 s
+Gravity_Standard = 9.80665 m/s²
+
 Output Parameter
 * Propellant mass flow rate
 
@@ -53,5 +73,6 @@ Reference Source
 The expected values used in these validation cases are stored in the reference data file included in the project repository. Depending on the validation scenario, parameters may act as inputs or outputs. This approach allows flexibility in evaluating different aspects of the propulsion model.
 Principio del formulario
 Final del formulario
+
 
 
