@@ -313,6 +313,111 @@ def plot_trajectory_2d(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.
     return fig
 
 
+def plot_aerodynamic_data(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.Figure:
+    """Plot 7 — Aerodynamic data (Mach, dynamic pressure, alpha, beta) vs time."""
+    required = {"mach_number", "dynamic_pressure", "angle_of_attack", "sideslip_angle"}
+    if not required.issubset(df.columns):
+        warnings.warn(f"Skipping aerodynamic plot: missing columns {required - set(df.columns)}")
+        return None
+
+    tcol = _time_column(df)
+    fig, axes = plt.subplots(4, 1, figsize=(12, 12), sharex=True)
+
+    axes[0].plot(df[tcol], df["mach_number"], linewidth=1.2, color="#1f77b4")
+    axes[0].set_ylabel("Mach Number")
+    axes[0].set_title(f"{_title_prefix(metadata)}Aerodynamic Data")
+    axes[0].grid(True)
+    axes[0].axhline(y=1.0, color='r', linestyle='--', alpha=0.5, label='Mach 1')
+    axes[0].legend()
+
+    axes[1].plot(df[tcol], df["dynamic_pressure"], linewidth=1.2, color="#ff7f0e")
+    axes[1].set_ylabel("Dynamic Pressure (Pa)")
+    axes[1].grid(True)
+
+    axes[2].plot(df[tcol], np.rad2deg(df["angle_of_attack"]), linewidth=1.2, color="#2ca02c")
+    axes[2].set_ylabel("Angle of Attack α (deg)")
+    axes[2].grid(True)
+
+    axes[3].plot(df[tcol], np.rad2deg(df["sideslip_angle"]), linewidth=1.2, color="#d62728")
+    axes[3].set_ylabel("Sideslip Angle β (deg)")
+    axes[3].set_xlabel("Time (s)")
+    axes[3].grid(True)
+
+    fig.tight_layout()
+    _save(fig, plots_dir, "aerodynamic_data.png")
+    return fig
+
+
+def plot_angular_velocity(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.Figure:
+    """Plot 8 — Angular velocity components (P, Q, R) vs time."""
+    required = {"angular_velocity_x", "angular_velocity_y", "angular_velocity_z"}
+    if not required.issubset(df.columns):
+        warnings.warn(f"Skipping angular velocity plot: missing columns {required - set(df.columns)}")
+        return None
+
+    tcol = _time_column(df)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(df[tcol], np.rad2deg(df["angular_velocity_x"]), linewidth=1.2, color="#d62728", label="P (roll)")
+    ax.plot(df[tcol], np.rad2deg(df["angular_velocity_y"]), linewidth=1.2, color="#2ca02c", label="Q (pitch)")
+    ax.plot(df[tcol], np.rad2deg(df["angular_velocity_z"]), linewidth=1.2, color="#1f77b4", label="R (yaw)")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Angular Velocity (deg/s)")
+    ax.set_title(f"{_title_prefix(metadata)}Angular Velocity Components")
+    ax.legend()
+    ax.grid(True)
+
+    _save(fig, plots_dir, "angular_velocity.png")
+    return fig
+
+
+def plot_mass_vs_time(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.Figure:
+    """Plot 9 — Total mass vs time (fuel consumption)."""
+    if "total_mass" not in df.columns:
+        warnings.warn("Skipping mass plot: 'total_mass' column missing.")
+        return None
+
+    tcol = _time_column(df)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(df[tcol], df["total_mass"], linewidth=1.5, color="#9467bd")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Total Mass (kg)")
+    ax.set_title(f"{_title_prefix(metadata)}Mass Evolution (Fuel Consumption)")
+    ax.grid(True)
+
+    # Add annotations for mass change
+    mass_start = df["total_mass"].iloc[0]
+    mass_end = df["total_mass"].iloc[-1]
+    mass_consumed = mass_start - mass_end
+    ax.text(0.02, 0.98, f"Initial: {mass_start:.1f} kg\nFinal: {mass_end:.1f} kg\nConsumed: {mass_consumed:.1f} kg",
+            transform=ax.transAxes, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+    _save(fig, plots_dir, "mass_vs_time.png")
+    return fig
+
+
+def plot_center_of_gravity(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.Figure:
+    """Plot 10 — Center of gravity components vs time."""
+    required = {"cg_x", "cg_y", "cg_z"}
+    if not required.issubset(df.columns):
+        warnings.warn(f"Skipping CG plot: missing columns {required - set(df.columns)}")
+        return None
+
+    tcol = _time_column(df)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    ax.plot(df[tcol], df["cg_x"], linewidth=1.2, color="#d62728", label="CG X")
+    ax.plot(df[tcol], df["cg_y"], linewidth=1.2, color="#2ca02c", label="CG Y")
+    ax.plot(df[tcol], df["cg_z"], linewidth=1.2, color="#1f77b4", label="CG Z")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Center of Gravity (m)")
+    ax.set_title(f"{_title_prefix(metadata)}Center of Gravity Evolution")
+    ax.legend()
+    ax.grid(True)
+
+    _save(fig, plots_dir, "center_of_gravity.png")
+    return fig
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
@@ -331,6 +436,10 @@ def generate_all_plots(df: pd.DataFrame, metadata: dict, plots_dir: str, no_show
         plot_velocity_components,
         plot_atmospheric,
         plot_trajectory_2d,
+        plot_aerodynamic_data,
+        plot_angular_velocity,
+        plot_mass_vs_time,
+        plot_center_of_gravity,
     ]
 
     generated = 0

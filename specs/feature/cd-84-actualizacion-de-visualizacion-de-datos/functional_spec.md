@@ -24,11 +24,18 @@ El simulador MoLab genera archivos CSV y JSON en el directorio `output/`. El scr
 ### RF-01: Carga automática de datos
 
 - El script debe cargar automáticamente el archivo CSV más reciente del directorio `output/`, o un archivo específico indicado por el usuario.
-- Debe soportar el formato CSV actual con las columnas: `tick`, `simulation_time`, `utc_time`, `position_x/y/z`, `velocity_x/y/z`, `orientation_x/y/z/w`, `atm_density`, `atm_pressure`, `atm_temperature`, `gravity_x/y/z`, `wind_speed_x/y/z`.
+- Debe soportar el formato CSV expandido con las siguientes columnas:
+  - **Tiempo**: `tick`, `simulation_time`, `utc_time`
+  - **Cinemática**: `position_x/y/z`, `velocity_x/y/z`, `orientation_x/y/z/w`, `angular_velocity_x/y/z`
+  - **Masa y Propiedades**: `total_mass`, `cg_x/y/z`
+  - **Datos Aerodinámicos**: `mach_number`, `dynamic_pressure`, `angle_of_attack`, `sideslip_angle`
+  - **Ambiente**: `atm_density`, `atm_pressure`, `atm_temperature`, `gravity_x/y/z`, `wind_velocity_x/y/z`
 
 ### RF-02: Generación de gráficos clave
 
 El script debe generar los siguientes gráficos:
+
+#### Gráficos Básicos (Existentes)
 
 | # | Gráfico                                | Descripción                                                      |
 |---|----------------------------------------|------------------------------------------------------------------|
@@ -38,6 +45,15 @@ El script debe generar los siguientes gráficos:
 | 4 | **Componentes de Velocidad vs Tiempo** | Vx, Vy, Vz superpuestas en un mismo gráfico.                    |
 | 5 | **Condiciones Atmosféricas vs Tiempo** | Panel con 3 subgráficos: densidad, presión y temperatura.        |
 | 6 | **Trayectoria 2D (Downrange vs Altitud)** | Perfil de vuelo clásico: distancia horizontal vs altitud.     |
+
+#### Gráficos Nuevos (Datos Expandidos)
+
+| # | Gráfico                                | Descripción                                                      |
+|---|----------------------------------------|------------------------------------------------------------------|
+| 7 | **Datos Aerodinámicos vs Tiempo**      | Panel con 4 subgráficos: Mach, presión dinámica, α (alpha), β (beta). |
+| 8 | **Velocidad Angular vs Tiempo**        | Componentes P, Q, R (tasas de rotación) superpuestas.           |
+| 9 | **Masa vs Tiempo**                     | Evolución de la masa total (consumo de combustible).             |
+| 10 | **Centro de Gravedad vs Tiempo**      | Trayectoria del CG en 3D o componentes X, Y, Z.                  |
 
 ### RF-03: Exportación de gráficos
 
@@ -70,11 +86,13 @@ El script debe generar los siguientes gráficos:
 ## 6. Criterios de Aceptación
 
 1. Existe un script `tools/visualize_results.py` en el repositorio que genera gráficos a partir de los CSV de simulación.
-2. El script genera los 6 gráficos definidos en RF-02.
+2. El script genera los 10 gráficos definidos en RF-02 (6 básicos + 4 nuevos).
 3. Los gráficos se guardan como PNG en `output/plots/`.
 4. Al ejecutar una simulación desde la web, los gráficos se generan automáticamente al finalizar.
 5. La interfaz web muestra los gráficos con opción de descarga.
 6. El script se puede ejecutar de forma independiente desde la línea de comandos.
+7. El script maneja correctamente archivos CSV con el formato antiguo (sin campos nuevos) y el nuevo formato expandido.
+8. Los gráficos nuevos solo se generan si los datos correspondientes están disponibles en el CSV.
 
 ## 7. Entregables
 
@@ -83,8 +101,37 @@ El script debe generar los siguientes gráficos:
 | 1 | Script de visualización                 | `tools/visualize_results.py` |
 | 2 | Integración en la interfaz web          | `tools/molab_web_gui.py`     |
 
-## 8. Fuera de Alcance
+## 8. Cambios en el Buffer de Datos
+
+### Campos Nuevos Agregados
+
+El buffer de datos principal (`GeneralState`) se expandió significativamente para incluir:
+
+**Estado Dinámico:**
+- `angular_velocity` (P, Q, R) - Tasas de rotación del vehículo
+- `total_mass` - Masa total instantánea (incluyendo combustible)
+- `cg_location` - Ubicación del centro de gravedad
+- `inertia_tensor` - Tensor de inercia (no exportado a CSV por complejidad)
+- `propellant_masses` - Masa de combustible por tanque (no exportado a CSV)
+
+**Datos Aerodinámicos:**
+- `mach_number` - Número de Mach
+- `dynamic_pressure` - Presión dinámica (q)
+- `angle_of_attack` - Ángulo de ataque (α)
+- `sideslip_angle` - Ángulo de deslizamiento lateral (β)
+
+### Impacto en Visualización
+
+Estos nuevos campos permiten análisis aeroespaciales más avanzados:
+- Análisis de régimen de vuelo (subsónico, transónico, supersónico)
+- Evaluación de cargas aerodinámicas (q × área)
+- Monitoreo de estabilidad rotacional
+- Tracking de consumo de combustible en tiempo real
+- Análisis de movimiento del centro de gravedad
+
+## 9. Fuera de Alcance
 
 - Gráficos interactivos (Plotly, Bokeh, etc.).
-- Modificaciones al formato de salida CSV/JSON del simulador.
 - Análisis estadístico avanzado (regresiones, FFT, etc.).
+- Visualización del tensor de inercia completo.
+- Gráficos de masas de combustible por tanque individual.

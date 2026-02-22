@@ -9,6 +9,7 @@
  * - Efectos de presión atmosférica en la tobera
  */
 
+#include <iostream>
 #include "../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 #include <cmath>
@@ -288,7 +289,9 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
 
     // Obtener estado actual del FlatBuffer
     auto state = state_vector::GetGeneralState(data->state_buffer);
-    if (!state) return -3;
+    if (!state) {
+        return -3;
+    }
 
     // Extraer datos del estado
     double pos_x = state->position()->x();
@@ -397,14 +400,9 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     force_output->y = static_cast<float>(force_y);
     force_output->z = static_cast<float>(force_z);
 
-    // Report current total mass (dry mass estimate + remaining fuel)
-    // The core integrator uses this for F=ma and gravity calculations
-    if (data->output_mass) {
-        // Estimate dry mass as initial_fuel_mass * 1.5 (typical mass ratio)
-        // This is overridden if vehicle_mass is set in physics config
-        double dry_mass_estimate = instance->initial_fuel_mass * 1.5;
-        *data->output_mass = dry_mass_estimate + instance->current_fuel_mass;
-    }
+    // NOTA: La masa ya no se actualiza aquí porque FlatBuffers es inmutable
+    // El PluginManager maneja la actualización de masa en apply_physics_integration()
+    // basándose en el consumo de combustible calculado
 
     // Torque (para thrust vectoring)
     if (torque_output) {

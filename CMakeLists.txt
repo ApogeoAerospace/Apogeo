@@ -118,27 +118,26 @@ endforeach()
 
 # ACTIVAR PLUGINS TEMPORALES (DESARROLLO)
 
-# set(TEMPORARY_PLUGINS
-#     aerodynamics
-#     structures
-#     propulsion
-#     environment
-#     programming
-#)
+set(TEMPORARY_PLUGINS
+    aerodynamics
+    structures
+    propulsion
+    environment
+)
 
-# foreach(_temp_plugin IN LISTS TEMPORARY_PLUGINS)
-#     add_library(${_temp_plugin} SHARED
-#         plugins/temp/${_temp_plugin}/${_temp_plugin}.cpp
-#     )
-#     add_dependencies(${_temp_plugin} generate_flatbuffers)
-#     target_include_directories(${_temp_plugin} PRIVATE
-#         "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
-#         "${GENERATED_DIR}"
-#     )
-#     target_link_libraries(${_temp_plugin} PRIVATE flatbuffers::flatbuffers)
-#     list(APPEND PLUGIN_NAMES ${_temp_plugin})
+foreach(_temp_plugin IN LISTS TEMPORARY_PLUGINS)
+    add_library(${_temp_plugin} SHARED
+        plugins/temp/${_temp_plugin}/${_temp_plugin}.cpp
+    )
+    add_dependencies(${_temp_plugin} generate_flatbuffers)
+    target_include_directories(${_temp_plugin} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
+        "${GENERATED_DIR}"
+    )
+    target_link_libraries(${_temp_plugin} PRIVATE flatbuffers::flatbuffers)
+    list(APPEND PLUGIN_NAMES ${_temp_plugin})
 
-# endforeach()
+endforeach()
 
 message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
 

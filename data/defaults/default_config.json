@@ -10,7 +10,7 @@
         {
             "name": "example_plugin",
             "type": 0,
-            "library_path": "build/lib/libexample_plugin.dylib",
+            "library_path": "build/lib/libexample_plugin",
             "enabled": true,
             "parameters": {
                 "step_size": 1.0,

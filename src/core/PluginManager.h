@@ -191,7 +191,6 @@ private:
     // Acumuladores de fuerzas/torques (plugins paralelos)
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};
-    double accumulated_mass_{0.0};  // 0 = no plugin reported mass
     mutable std::mutex force_mutex_;
 };
 
