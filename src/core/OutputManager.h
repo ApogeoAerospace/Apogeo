@@ -18,23 +18,23 @@ namespace MoLab {
 struct SimulationDataPoint {
     double time;           // Tiempo de simulación (relativo)
     double utc_time;       // Tiempo UTC (absoluto)
-    
+
     // Cinemática
     double position_x, position_y, position_z;
     double velocity_x, velocity_y, velocity_z;
     double orientation_x, orientation_y, orientation_z, orientation_w;
     double angular_velocity_x, angular_velocity_y, angular_velocity_z;
-    
+
     // Masa y propiedades
     double total_mass;
     double cg_x, cg_y, cg_z;
-    
+
     // Datos aerodinámicos
     double mach_number;
     double dynamic_pressure;
     double angle_of_attack;
     double sideslip_angle;
-    
+
     // Ambiente
     double atm_density, atm_pressure, atm_temperature;
     double gravity_x, gravity_y, gravity_z;

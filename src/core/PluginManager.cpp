@@ -28,7 +28,7 @@ static std::string normalize_plugin_path(const std::string& path) {
         path.find(".so") != std::string::npos) {
         return path;
     }
-    
+
 #ifdef _WIN32
     return path + ".dll";
 #elif __APPLE__
@@ -126,7 +126,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
-    
+
     std::string normalized_path = normalize_plugin_path(path);
     plugin.path = normalized_path;
     plugin.handle = nullptr;
