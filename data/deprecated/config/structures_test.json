@@ -18,7 +18,7 @@
     {
       "name": "structures",
       "type": 0,
-      "library_path": "build/plugins/libstructures.dylib",
+      "library_path": "build/lib/libstructures",
       "enabled": true,
       "parameters": {
         "total_mass": 1000.0,

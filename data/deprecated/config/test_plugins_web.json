@@ -1,4 +1,4 @@
-﻿{
+{
     "output":  {
                    "enable_csv":  true,
                    "output_interval":  5,
@@ -26,7 +26,7 @@
                 },
     "plugins":  [
                     {
-                        "library_path":  "F:\\MoLab\\build\\bin\\libaerodynamics.dll",
+                        "library_path":  "build/lib/libaerodynamics",
                         "parameters":  {
                                            "reference_area":  0.785,
                                            "drag_coefficient":  0.3,
@@ -37,7 +37,7 @@
                         "enabled":  true
                     },
                     {
-                        "library_path":  "F:\\MoLab\\build\\bin\\libpropulsion.dll",
+                        "library_path":  "build/lib/libpropulsion",
                         "parameters":  {
                                            "throttle_setting":  1,
                                            "initial_fuel_mass":  500,

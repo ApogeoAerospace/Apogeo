@@ -22,7 +22,7 @@
     {
       "name": "propulsion",
       "type": 1,
-      "library_path": "build/bin/libpropulsion.dll",
+      "library_path": "build/lib/libpropulsion",
       "enabled": true,
       "parameters": {
         "engine_type": 0,

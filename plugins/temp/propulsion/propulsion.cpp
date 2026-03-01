@@ -9,7 +9,6 @@
  * - Efectos de presión atmosférica en la tobera
  */
 
-#include <iostream>
 #include "../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 #include <cmath>
@@ -136,7 +135,7 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     instance->burn_rate = 0.0;                // Se calcula dinámicamente
 
     // Control del motor
-    instance->engine_on = true;               // Motor encendido por defecto
+    instance->engine_on = false;              // Motor apagado inicialmente
     instance->throttle_setting = 1.0;         // Acelerador completo
     instance->burn_time = 0.0;
     instance->ignition_delay = 0.0;           // Sin retraso
@@ -289,9 +288,7 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
 
     // Obtener estado actual del FlatBuffer
     auto state = state_vector::GetGeneralState(data->state_buffer);
-    if (!state) {
-        return -3;
-    }
+    if (!state) return -3;
 
     // Extraer datos del estado
     double pos_x = state->position()->x();
@@ -399,10 +396,6 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     force_output->x = static_cast<float>(force_x);
     force_output->y = static_cast<float>(force_y);
     force_output->z = static_cast<float>(force_z);
-
-    // NOTA: La masa ya no se actualiza aquí porque FlatBuffers es inmutable
-    // El PluginManager maneja la actualización de masa en apply_physics_integration()
-    // basándose en el consumo de combustible calculado
 
     // Torque (para thrust vectoring)
     if (torque_output) {
