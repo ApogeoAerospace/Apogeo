@@ -1018,7 +1018,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         filtered.push({
                             "name": "propulsion",
                             "type": 1,
-                            "library_path": "build/lib/libpropulsion.dylib",
+                            "library_path": "build/lib/propulsion",
                             "enabled": true,
                             "parameters": {
                                 "engine_type": parseInt(document.getElementById('engine-type').value),
