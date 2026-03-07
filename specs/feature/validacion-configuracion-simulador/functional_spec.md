@@ -223,7 +223,7 @@ MoLab utiliza un archivo JSON modular con las siguientes secciones:
     {
       "name": "example_plugin",  // string
       "type": 0,                 // int [0,1]
-      "library_path": "build/lib/libexample_plugin", // sin extensión
+      "library_path": "build/lib/example_plugin", // sin lib prefix ni extensión
       "enabled": true,           // boolean
       "parameters": {}           // object (específico por plugin)
     }

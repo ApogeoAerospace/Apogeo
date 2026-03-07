@@ -29,12 +29,36 @@ static std::string normalize_plugin_path(const std::string& path) {
         return path;
     }
 
+    // Split into directory and basename
+    std::string dir;
+    std::string basename;
+    auto sep = path.rfind('/');
 #ifdef _WIN32
-    return path + ".dll";
+    auto sep2 = path.rfind('\\');
+    if (sep2 != std::string::npos && (sep == std::string::npos || sep2 > sep)) {
+        sep = sep2;
+    }
+#endif
+    if (sep != std::string::npos) {
+        dir = path.substr(0, sep + 1);
+        basename = path.substr(sep + 1);
+    } else {
+        dir = "";
+        basename = path;
+    }
+
+#ifdef _WIN32
+    return dir + basename + ".dll";
 #elif __APPLE__
-    return path + ".dylib";
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".dylib";
 #else
-    return path + ".so";
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".so";
 #endif
 }
 
