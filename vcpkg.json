@@ -1,6 +1,7 @@
 {
   "name": "molab",
   "version-string": "0.1.0",
+  "builtin-baseline": "5bf0c55239da398b8c6f450818c9e28d36bf9966",
   "dependencies": [
     {
       "name": "flatbuffers",
@@ -8,7 +9,7 @@
     },
     "flatbuffers",
     "nlohmann-json",
-    "gtest"
-  ],
-  "builtin-baseline": "5bf0c55239da398b8c6f450818c9e28d36bf9966"
+    "gtest",
+    "boost-odeint"
+  ]
 }
