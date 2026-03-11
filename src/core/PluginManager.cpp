@@ -369,8 +369,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
     // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
-    if (total_force.x == 0.0 && total_force.y == 0.0 && total_force.z == 0.0 &&
-        total_torque.x == 0.0 && total_torque.y == 0.0 && total_torque.z == 0.0) {
+    if (total_force.isZero() && total_torque.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
         if (mutable_state) {
@@ -386,14 +385,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     flatbuffers::FlatBufferBuilder builder;
 
     // Cinemática actualizada
-    auto position = state_vector::Vec3(new_state.position.x, new_state.position.y, new_state.position.z);
-    auto velocity = state_vector::Vec3(new_state.velocity.x, new_state.velocity.y, new_state.velocity.z);
-    auto orientation = state_vector::Quaternion(new_state.orientation.x, new_state.orientation.y, new_state.orientation.z, 1.0f);
-    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x, new_state.angular_velocity.y, new_state.angular_velocity.z);
-
-    // Entorno: usar punteros del estado actual (si existen)
-    const state_vector::Vec3* gravity_ptr = current_state->gravity();
-    const state_vector::Vec3* wind_ptr = current_state->wind_velocity();
+    auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
+    auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
+    auto orientation = state_vector::Quaternion(
+        static_cast<float>(new_state.orientation.x()),
+        static_cast<float>(new_state.orientation.y()),
+        static_cast<float>(new_state.orientation.z()),
+        static_cast<float>(new_state.orientation.w()));
+    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
 
     // Propiedades de masa y CG
     float total_mass = current_state->total_mass();
@@ -474,9 +473,6 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     gs_builder.add_atm_pressure(atm_pressure);
     gs_builder.add_atm_temperature(atm_temperature);
 
-    if (wind_ptr) gs_builder.add_wind_velocity(wind_ptr);
-    if (gravity_ptr) gs_builder.add_gravity(gravity_ptr);
-
     if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
     if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);
 
@@ -490,8 +486,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     LOG_DEBUG(
         "Physics integrated; sim_time=" + std::to_string(new_state.time) +
-        " pos=(" + std::to_string(new_state.position.x) + ", " +
-        std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) + ")",
+        " pos=(" + std::to_string(new_state.position.x()) + ", " +
+        std::to_string(new_state.position.y()) + ", " + std::to_string(new_state.position.z()) + ")",
         "PluginManager"
     );
 }
