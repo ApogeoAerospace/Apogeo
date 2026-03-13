@@ -8,7 +8,7 @@ set -e
 echo "🌐 Starting MoLab Web Interface..."
 
 # Change to project root
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 # Check if Python 3 is available
 if ! command -v python3 &> /dev/null; then
