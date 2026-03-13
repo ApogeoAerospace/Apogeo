@@ -18,7 +18,7 @@
             }
         }
     ],
-    "initial_state_file": "data/default_state.json",
+    "initial_state_file": "data/defaults/default_state.json",
     "output_directory": "output/",
     "logging": {
         "console_output": true,
