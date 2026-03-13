@@ -22,7 +22,7 @@ void print_usage(const char* program_name) {
 void print_version() {
     std::cout << "MoLab Aerospace Simulator v1.0.0\n";
     std::cout << "Built with C++17, FlatBuffers, and nlohmann_json\n";
-    std::cout << "Copyright (c) 2024 MoLab Team\n";
+    std::cout << "Copyright (c) 2026 MoLab Team\n";
 }
 
 int main(int argc, char* argv[]) {
