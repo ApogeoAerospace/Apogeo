@@ -18,7 +18,7 @@
     {
       "name": "test_force",
       "type": 1,
-      "library_path": "n/Documents/MoLab/build/plugins/libtest_force.dylib",
+      "library_path": "build/lib/libtest_force",
       "enabled": true,
       "description": "Force generation plugin for physics testing"
     }

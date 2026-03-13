@@ -298,8 +298,8 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     double vel_y = state->velocity()->y();
     double vel_z = state->velocity()->z();
 
-    // Calcular altitud
-    const double EARTH_RADIUS = 6371000.0;
+    // Calcular altitud (WGS84 consistent with core)
+    const double EARTH_RADIUS = 6378137.0;
     double altitude = sqrt(pos_x*pos_x + pos_y*pos_y + pos_z*pos_z) - EARTH_RADIUS;
     if (altitude < 0) altitude = 0;
 

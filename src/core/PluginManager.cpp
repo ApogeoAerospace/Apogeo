@@ -22,6 +22,46 @@
 
 namespace MoLab {
 
+static std::string normalize_plugin_path(const std::string& path) {
+    if (path.find(".dll") != std::string::npos ||
+        path.find(".dylib") != std::string::npos ||
+        path.find(".so") != std::string::npos) {
+        return path;
+    }
+
+    // Split into directory and basename
+    std::string dir;
+    std::string basename;
+    auto sep = path.rfind('/');
+#ifdef _WIN32
+    auto sep2 = path.rfind('\\');
+    if (sep2 != std::string::npos && (sep == std::string::npos || sep2 > sep)) {
+        sep = sep2;
+    }
+#endif
+    if (sep != std::string::npos) {
+        dir = path.substr(0, sep + 1);
+        basename = path.substr(sep + 1);
+    } else {
+        dir = "";
+        basename = path;
+    }
+
+#ifdef _WIN32
+    return dir + basename + ".dll";
+#elif __APPLE__
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".dylib";
+#else
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".so";
+#endif
+}
+
 // Scheduler simple para ejecutar tareas de plugins en paralelo.
 class PluginTaskScheduler {
 public:
@@ -110,15 +150,17 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
-    plugin.path = path;
+
+    std::string normalized_path = normalize_plugin_path(path);
+    plugin.path = normalized_path;
     plugin.handle = nullptr;
 
-    LOG_INFO("Loading plugin: " + path, "PluginManager");
+    LOG_INFO("Loading plugin: " + normalized_path, "PluginManager");
 
 #ifdef _WIN32
-    plugin.lib_handle = LoadLibrary(path.c_str());
+    plugin.lib_handle = LoadLibrary(normalized_path.c_str());
     if (!plugin.lib_handle) {
-        LOG_ERROR("Failed to load plugin library: " + path, "PluginManager");
+        LOG_ERROR("Failed to load plugin library: " + normalized_path, "PluginManager");
         return false;
     }
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(GetProcAddress(plugin.lib_handle, "plugin_create_instance"));
@@ -126,9 +168,9 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
 #else
-    plugin.lib_handle = dlopen(path.c_str(), RTLD_LAZY);
+    plugin.lib_handle = dlopen(normalized_path.c_str(), RTLD_LAZY);
     if (!plugin.lib_handle) {
-        LOG_ERROR("Failed to load plugin library: " + path + " - " + std::string(dlerror()), "PluginManager");
+        LOG_ERROR("Failed to load plugin library: " + normalized_path + " - " + std::string(dlerror()), "PluginManager");
         return false;
     }
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(dlsym(plugin.lib_handle, "plugin_create_instance"));
@@ -138,7 +180,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 #endif
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
-        LOG_ERROR("Failed to find required plugin API functions in: " + path, "PluginManager");
+        LOG_ERROR("Failed to find required plugin API functions in: " + normalized_path, "PluginManager");
 #ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
@@ -150,7 +192,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     // Crear instancia del plugin
     plugin.handle = plugin.create_func();
     if (plugin.handle == nullptr) {
-        LOG_ERROR("Failed to create plugin instance: " + path, "PluginManager");
+        LOG_ERROR("Failed to create plugin instance: " + normalized_path, "PluginManager");
 #ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
@@ -160,7 +202,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     }
 
     loaded_plugins_.emplace_back(std::move(plugin));
-    LOG_INFO("Plugin loaded successfully: " + path, "PluginManager");
+    LOG_INFO("Plugin loaded successfully: " + normalized_path, "PluginManager");
     return true;
 }
 
@@ -410,7 +452,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Datos aerodinámicos
+    // Datos aerodinámicos - Los plugins actualizan estos valores en el buffer
+    // PluginManager solo los copia del estado actual
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();

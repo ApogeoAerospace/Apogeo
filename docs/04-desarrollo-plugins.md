@@ -419,7 +419,7 @@ public:
     {
       "name": "mi_plugin",
       "type": 1,
-      "library_path": "build/lib/libmi_plugin.dylib",
+      "library_path": "build/lib/mi_plugin",
       "parameters": {
         "mi_parametro1": 2.5,
         "mi_parametro2": 1.0,
@@ -517,7 +517,7 @@ TEST_F(MiPluginTest, CalculoFuerzas) {
     {
       "name": "mi_plugin",
       "type": 1,
-      "library_path": "build/lib/libmi_plugin.dylib",
+      "library_path": "build/lib/mi_plugin",
       "parameters": {
         "mi_parametro1": 0.1,
         "habilitado": true
@@ -693,7 +693,7 @@ Plugin que implementa [funcionalidad específica].
 {
   "name": "mi_plugin",
   "type": 1,
-  "library_path": "build/lib/libmi_plugin.dylib",
+  "library_path": "build/lib/mi_plugin",
   "parameters": {
     "mi_parametro1": 2.0,
     "habilitado": true
