@@ -98,7 +98,7 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
 
     std::string content = read_file_strip_bom(path);
     if (content.empty()) {
-        LOG_ERROR(std::string("No se puede abrir o leer el archivo de estado inicial: ") + path.string(), "InitialStateLoader");
+        LOG_ERROR(std::string("Unable to open or read initial state file: ") + path.string(), "InitialStateLoader");
         return false;
     }
 
@@ -106,10 +106,10 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     try {
         data = json::parse(content);
     } catch (json::parse_error& e) {
-        LOG_ERROR(std::string("Error al parsear JSON en el archivo de estado inicial: ") + e.what(), "InitialStateLoader");
+        LOG_ERROR(std::string("Error parsing JSON in initial state file: ") + e.what(), "InitialStateLoader");
         return false;
     } catch (std::exception& e) {
-        LOG_ERROR(std::string("Error inesperado al parsear JSON: ") + e.what(), "InitialStateLoader");
+        LOG_ERROR(std::string("Unexpected error while parsing JSON: ") + e.what(), "InitialStateLoader");
         return false;
     }
 
@@ -232,6 +232,6 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    LOG_INFO(std::string("Estado inicial cargado correctamente desde: ") + path.string(), "InitialStateLoader");
+    LOG_INFO(std::string("Initial state loaded successfully from: ") + path.string(), "InitialStateLoader");
     return true;
 }
