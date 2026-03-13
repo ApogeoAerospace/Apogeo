@@ -64,3 +64,4 @@ vcpkg_installed/
 /vcpkg_installed/vcpkg/compiler-file-hash-cache.json
 /vcpkg_installed/vcpkg/manifest-info.json
 /vcpkg_installed/vcpkg/status
+docs/generated/
