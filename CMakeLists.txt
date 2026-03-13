@@ -42,9 +42,6 @@ add_custom_target(
 )
 
 # --- Eigen (header-only, via FetchContent) ---
-# Se descarga Eigen sin procesar su CMakeLists.txt para evitar que
-# registre ~900 tests internos con CTest. Como Eigen es header-only,
-# basta con crear un target INTERFACE que apunte a sus headers.
 FetchContent_Declare(
     Eigen
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
@@ -140,6 +137,7 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
     # Enlaza las librerías necesarias
     target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
+    list(APPEND PLUGIN_NAMES ${_plugin_name})
 
 endforeach()
 
