@@ -1,0 +1,5 @@
+limit_name,value,unit
+max_g_load,4.5,g
+max_dynamic_pressure,50000,Pa
+warning_g_load,3.8,g
+warning_dynamic_pressure,42000,Pa

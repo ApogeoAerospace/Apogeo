@@ -2,18 +2,19 @@
 
 # Plugin library
 add_library(structures SHARED
-    structures_plugin.cpp
+    structures.cpp
 )
 
 # Include directories
 target_include_directories(structures PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/api
     ${CMAKE_BINARY_DIR}/generated
 )
 
 # Link FlatBuffers
 target_link_libraries(structures PRIVATE
     flatbuffers::flatbuffers
+    nlohmann_json::nlohmann_json
 )
 
 # Compiler settings

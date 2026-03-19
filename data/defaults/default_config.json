@@ -16,6 +16,15 @@
                 "step_size": 1.0,
                 "debug_output": false
             }
+        },
+        {
+            "name": "structures",
+            "type": 1,
+            "library_path": "structures",
+            "enabled": true,
+            "parameters": {
+                "debug_output": true
+            }
         }
     ],
     "initial_state_file": "data/default_state.json",
