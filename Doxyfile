@@ -32,6 +32,7 @@ FILE_PATTERNS          = *.cpp \
                          *.h \
                          *.hpp \
                          *.c \
+                         *.fbs \
                          *.md
 
 # Procesar subdirectorios recursivamente
@@ -49,6 +50,12 @@ EXCLUDE_PATTERNS       = */build/* \
 
 # Usar README.md como página principal
 USE_MDFILE_AS_MAINPAGE = README.md
+
+# Mapear extensiones no estándar para parseo de Doxygen
+EXTENSION_MAPPING      = fbs=C++
+
+# Layout personalizado para nombres de pestañas en español
+LAYOUT_FILE            = docs/doxygen_layout.xml
 
 #---------------------------------------------------------------------------
 # Opciones de Build
@@ -97,9 +104,6 @@ GENERATE_HTML          = YES
 
 # Directorio de salida HTML
 HTML_OUTPUT            = html
-
-# Usar HTML5
-HTML_TIMESTAMP         = YES
 
 # Barra lateral de navegación
 GENERATE_TREEVIEW      = YES
