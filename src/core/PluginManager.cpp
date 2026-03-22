@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include <deque>
 #include <functional>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,6 +61,43 @@ static std::string normalize_plugin_path(const std::string& path) {
     }
     return dir + basename + ".so";
 #endif
+}
+
+static std::vector<std::string> build_plugin_candidates(const std::string& normalized_path) {
+    namespace fs = std::filesystem;
+
+    std::vector<std::string> candidates;
+    auto append_unique = [&candidates](const fs::path& candidate) {
+        std::string normalized = candidate.lexically_normal().string();
+        if (normalized.empty()) {
+            return;
+        }
+
+        if (std::find(candidates.begin(), candidates.end(), normalized) == candidates.end()) {
+            candidates.push_back(normalized);
+        }
+    };
+
+    fs::path plugin_path(normalized_path);
+    append_unique(plugin_path);
+
+    if (plugin_path.is_relative()) {
+        std::error_code ec;
+        const fs::path cwd = fs::current_path(ec);
+        if (!ec) {
+            append_unique(cwd / plugin_path);
+
+            const fs::path filename = plugin_path.filename();
+            if (!filename.empty()) {
+                append_unique(cwd / filename);
+                append_unique(cwd / "lib" / filename);
+                append_unique(cwd.parent_path() / "lib" / filename);
+                append_unique(cwd.parent_path() / "bin" / filename);
+            }
+        }
+    }
+
+    return candidates;
 }
 
 // Scheduler simple para ejecutar tareas de plugins en paralelo.
@@ -157,8 +195,18 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 
     LOG_INFO("Loading plugin: " + normalized_path, "PluginManager");
 
+    const auto candidates = build_plugin_candidates(normalized_path);
+
 #ifdef _WIN32
-    plugin.lib_handle = LoadLibrary(normalized_path.c_str());
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = LoadLibraryA(candidate.c_str());
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + normalized_path, "PluginManager");
         return false;
@@ -168,7 +216,15 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
 #else
-    plugin.lib_handle = dlopen(normalized_path.c_str(), RTLD_LAZY);
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = dlopen(candidate.c_str(), RTLD_LAZY);
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + normalized_path + " - " + std::string(dlerror()), "PluginManager");
         return false;
@@ -202,7 +258,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     }
 
     loaded_plugins_.emplace_back(std::move(plugin));
-    LOG_INFO("Plugin loaded successfully: " + normalized_path, "PluginManager");
+    LOG_INFO("Plugin loaded successfully: " + loaded_plugins_.back().path, "PluginManager");
     return true;
 }
 
