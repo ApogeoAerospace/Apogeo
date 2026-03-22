@@ -3,6 +3,11 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+/**
+ * @file test_config_manager.cpp
+ * @brief Pruebas unitarias para `ConfigManager`.
+ */
+
 using json = nlohmann::json;
 using namespace MoLab;
 

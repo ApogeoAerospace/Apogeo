@@ -5,6 +5,16 @@
 #include "../core/Logger.h"
 #include "../core/ConfigManager.h"
 
+/**
+ * @file main.cpp
+ * @brief Punto de entrada de la aplicación MoLab.
+ */
+
+/**
+ * @brief Imprime la ayuda de uso en consola.
+ *
+ * @param program_name Nombre del ejecutable invocado.
+ */
 void print_usage(const char* program_name) {
     std::cout << "Usage: " << program_name << " [options]\n";
     std::cout << "Options:\n";
@@ -19,12 +29,22 @@ void print_usage(const char* program_name) {
     std::cout << "  " << program_name << " --state data/default_state.json --ticks 100\n";
 }
 
+/**
+ * @brief Imprime la versión actual del simulador.
+ */
 void print_version() {
     std::cout << "MoLab Aerospace Simulator v1.0.0\n";
     std::cout << "Built with C++17, FlatBuffers, and nlohmann_json\n";
     std::cout << "Copyright (c) 2026 MoLab Team\n";
 }
 
+/**
+ * @brief Ejecuta la inicialización y el ciclo principal del simulador.
+ *
+ * @param argc Número de argumentos de línea de comandos.
+ * @param argv Valores de los argumentos de línea de comandos.
+ * @return `0` si la ejecución finaliza correctamente, `1` en caso de error.
+ */
 int main(int argc, char* argv[]) {
     // Parse command line arguments
     std::string config_file = "data/default_config.json";

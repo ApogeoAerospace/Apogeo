@@ -8,6 +8,11 @@
 #include <sstream>
 #include "Logger.h"
 
+/**
+ * @file InitialStateLoader.cpp
+ * @brief Implementación de la carga de estado inicial desde JSON a FlatBuffers.
+ */
+
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 

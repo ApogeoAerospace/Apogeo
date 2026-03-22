@@ -5,6 +5,11 @@
 #include <sstream>
 #include <thread>
 
+/**
+ * @file test_logger.cpp
+ * @brief Pruebas unitarias para `Logger`.
+ */
+
 using namespace MoLab;
 namespace fs = std::filesystem;
 

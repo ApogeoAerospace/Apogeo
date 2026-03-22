@@ -9,6 +9,11 @@
 #include <atomic>
 #include <future>
 
+/**
+ * @file PluginManager.h
+ * @brief Gestión de carga, ejecución y ciclo de vida de plugins dinámicos.
+ */
+
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
@@ -16,7 +21,10 @@
 #include <dlfcn.h>
 #endif
 
-// Define el rol de cada plugin para la orquestación.
+/**
+ * @enum PluginType
+ * @brief Rol funcional de un plugin dentro del ciclo de simulación.
+ */
 enum class PluginType {
     SEQUENTIAL_STATE_MODIFIER = 0,
     PARALLEL_PHYSICS_CALCULATOR = 1
@@ -31,7 +39,8 @@ namespace MoLab {
 namespace MoLab {
 
 /**
- * @brief Estructura que representa un plugin cargado con información extendida.
+ * @struct LoadedPlugin
+ * @brief Representa un plugin cargado con metadatos, funciones y métricas.
  */
 struct LoadedPlugin {
     PluginHandle handle = nullptr;
@@ -118,11 +127,19 @@ struct LoadedPlugin {
 };
 
 /**
- * @brief PluginManager gestiona el ciclo de vida y la ejecución de los plugins con thread safety.
+ * @class PluginManager
+ * @brief Gestiona el ciclo de vida y ejecución de plugins con seguridad de hilos.
  */
 class PluginManager {
 public:
+    /**
+     * @brief Construye el gestor e inicializa subsistemas auxiliares.
+     */
     PluginManager();
+
+    /**
+     * @brief Destruye el gestor y libera recursos asociados.
+     */
     ~PluginManager();
 
     // Prevenir copia y asignación
@@ -130,17 +147,23 @@ public:
     PluginManager& operator=(const PluginManager&) = delete;
 
     /**
-     * @brief Carga un plugin y lo clasifica según su tipo.
+     * @brief Carga un plugin dinámico y lo clasifica por tipo.
+     * @param path Ruta de la librería del plugin.
+     * @param type Tipo de plugin a registrar.
+     * @return `true` si el plugin se carga correctamente.
      */
     bool load_plugin(const std::string& path, PluginType type);
 
     /**
-     * @brief Carga plugins desde configuración
+     * @brief Carga plugins definidos en la configuración global.
+     * @return `true` si todos los plugins habilitados se cargaron correctamente.
      */
     bool load_plugins_from_config();
 
     /**
-     * @brief Ejecuta un ciclo de simulación mejorado con integración física
+     * @brief Ejecuta un ciclo completo de plugins e integración física.
+     * @param state_buffer Buffer de estado serializado.
+     * @param delta_time Paso temporal del tick.
      */
     void run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time);
 
@@ -149,11 +172,22 @@ public:
      */
     void shutdown();
 
-    // Métodos de información y estadísticas
+    /**
+     * @brief Obtiene la cantidad de plugins cargados.
+     * @return Número de plugins registrados.
+     */
     size_t get_plugin_count() const;
+
+    /**
+     * @brief Obtiene nombres de plugins cargados.
+     * @return Lista de nombres o rutas de plugins.
+     */
     std::vector<std::string> get_loaded_plugin_names() const;
 
-    // Métricas de rendimiento
+    /**
+     * @struct PluginMetrics
+     * @brief Métricas de ejecución acumuladas por plugin.
+     */
     struct PluginMetrics {
         std::string name;
         uint64_t execution_count;
@@ -162,6 +196,10 @@ public:
         double last_execution_time;
     };
 
+    /**
+     * @brief Obtiene métricas de rendimiento de plugins cargados.
+     * @return Vector de métricas por plugin.
+     */
     std::vector<PluginMetrics> get_plugin_metrics() const;
 
 private:

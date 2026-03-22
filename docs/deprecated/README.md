@@ -1,10 +1,10 @@
-# Documentación Legacy
+# Documentación histórica
 
-Esta carpeta contiene documentación heredada que fue retirada del conjunto activo.
+Este directorio contiene documentación retirada del conjunto vigente.
 
-Estos archivos se conservan únicamente por trazabilidad histórica y pueden no coincidir con la implementación actual.
+El contenido se mantiene únicamente para trazabilidad y puede no reflejar el estado actual del código.
 
-Para documentación vigente (`Current`), usa:
+## Referencias activas
 
-- `docs/current/` para comportamiento implementado.
-- `docs/roadmap/` para trabajo planificado.
+- Documentación vigente: `docs/current/`
+- Planes de trabajo: `docs/roadmap/`

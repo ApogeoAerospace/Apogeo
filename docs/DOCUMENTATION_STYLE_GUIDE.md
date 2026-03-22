@@ -35,7 +35,7 @@ Desde la raíz del proyecto:
 doxygen Doxyfile
 ```
 
-La documentación se generará en `docs/html/index.html`.
+La documentación se generará en `docs/generated/html/index.html`.
 
 ---
 

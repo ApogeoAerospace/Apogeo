@@ -1,11 +1,13 @@
-# Diagramas (redirección)
+# Diagramas
 
-Los documentos de diagramas en estado `Legacy` fueron movidos a:
+Esta ruta se conserva para compatibilidad de enlaces.
 
-- [Diagramas Legacy](../deprecated/diagramas/)
-
-Para documentación vigente, consulta:
+## Documentación vigente
 
 - [Arquitectura actual](../current/architecture.md)
 - [Brechas conocidas](../current/known-gaps.md)
 - [Resumen de roadmap](../roadmap/roadmap-overview.md)
+
+## Documentación histórica
+
+- [Diagramas en `deprecated`](../deprecated/diagramas/)

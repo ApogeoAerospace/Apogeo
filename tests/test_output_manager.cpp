@@ -7,6 +7,11 @@
 #include <thread>
 #include <chrono>
 
+/**
+ * @file test_output_manager.cpp
+ * @brief Pruebas unitarias para `OutputManager`.
+ */
+
 using namespace MoLab;
 namespace fs = std::filesystem;
 

@@ -9,6 +9,11 @@
 #include <sstream>
 #include <chrono>
 
+/**
+ * @file OutputManager.cpp
+ * @brief Implementación de exportación y escritura asíncrona de resultados.
+ */
+
 using namespace MoLab;
 
 OutputManager& OutputManager::getInstance() {

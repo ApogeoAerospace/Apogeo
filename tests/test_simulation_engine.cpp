@@ -5,6 +5,11 @@
 #include <nlohmann/json.hpp>
 #include <filesystem>
 
+/**
+ * @file test_simulation_engine.cpp
+ * @brief Pruebas unitarias para `SimulationEngine`.
+ */
+
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 

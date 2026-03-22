@@ -3,6 +3,11 @@
 #include <sstream>
 #include <iomanip>
 
+/**
+ * @file TimeManager.cpp
+ * @brief Implementación del gestor temporal de simulación y UTC.
+ */
+
 namespace MoLab {
 
 TimeManager& TimeManager::getInstance() {

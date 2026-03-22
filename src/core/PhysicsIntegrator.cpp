@@ -2,6 +2,11 @@
 #include "Logger.h"
 #include "state_vector_generated.h"
 
+/**
+ * @file PhysicsIntegrator.cpp
+ * @brief Implementación de integración numérica del estado físico.
+ */
+
 namespace odeint = boost::numeric::odeint;
 
 namespace MoLab {

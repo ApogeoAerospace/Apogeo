@@ -12,6 +12,11 @@
 #include "state_vector_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
+/**
+ * @file SimulationEngine.cpp
+ * @brief Implementación del motor principal de simulación.
+ */
+
 using namespace MoLab;
 
 SimulationEngine::SimulationEngine()
