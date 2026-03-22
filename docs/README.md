@@ -1,24 +1,48 @@
 # Documentación de MoLab
 
-Este directorio contiene la documentación completa del Sistema de Simulación Aeroespacial MoLab.
+Este directorio contiene la documentación del proyecto MoLab.
 
-## Estructura de la Documentación
+## Estructura
 
-- **[Visión General del Proyecto](./01-vision-general.md)** - Descripción de alto nivel del proyecto y objetivos
-- **[Arquitectura](./02-arquitectura.md)** - Arquitectura del sistema y patrones de diseño
-- **[Referencia de API](03-referencia.md)** - API de plugins e interfaces principales
-- **[Desarrollo de Plugins](./04-desarrollo-plugins.md)** - Guía para desarrollar plugins
-- **[Guía de Instalación](./05-instalacion.md)** - Instrucciones de configuración y compilación
-- **[Plugins](./plugins/)** - Documentación detallada de cada plugin
-- **[Diagramas](./diagramas/)** - Diagramas de arquitectura y secuencia
-- **[Ejemplos](./ejemplos/)** - Ejemplos de configuración y plantillas
+La documentación está dividida en tres rutas explícitas:
 
-## Inicio Rápido
+1. **Current** (`docs/current/`)  
+   Lo que ya está implementado en la base de código.
 
-1. Lee la [Guía de Instalación](./05-instalacion.md) para configurar MoLab
-3. Explora la [Documentación de Plugins](./plugins/) para los módulos de simulación disponibles
-4. Revisa los [Ejemplos](./ejemplos/) para plantillas de configuración
+2. **Hoja de Ruta / Planes de Implementación** (`docs/roadmap/`)  
+   Funcionalidades y módulos planificados pero no implementados completamente.
+
+3. **Legacy** (`docs/deprecated/`)  
+   Documentos heredados conservados para trazabilidad histórica.
+
+## Inicio rápido (implementación actual)
+
+- [`Compilación y ejecución (actual)`](./current/build-run.md)
+- [`Arquitectura actual`](./current/architecture.md)
+- [`Contrato de configuración actual`](./current/config.md)
+- [`API de plugins`](./current/plugin-api.md)
+- [`Brechas conocidas`](./current/known-gaps.md)
+- [`Guía de estilo Doxygen`](./current/doxygen-style.md)
+- [`Referencia completa de configuración`](./current/config-reference-full.md)
+
+## Hoja de ruta
+
+- [`Resumen de roadmap`](./roadmap/roadmap-overview.md)
+- [`Plan de integración del núcleo`](./roadmap/core-integration-plan.md)
+- [`Plan del plugin de aerodinámica`](./roadmap/plugin-aerodynamics-plan.md)
+- [`Plan del plugin de propulsión`](./roadmap/plugin-propulsion-plan.md)
+- [`Plan del plugin de estructuras`](./roadmap/plugin-structures-plan.md)
+- [`Plan del plugin de ambiente`](./roadmap/plugin-environment-plan.md)
+
+## Política de estado de documentación
+
+Cada documento debe etiquetar explícitamente su contenido como:
+
+- **Current**
+- **Legacy**
+
+Para planes futuros, usar `docs/roadmap/` (estado `Current`, tipo plan).
 
 ## Contribución
 
-Consulta el archivo principal [CONTRIBUTING.md](../CONTRIBUTING.md) para las pautas de contribución.
+Consulta [`CONTRIBUTING.md`](./CONTRIBUTING.md) para lineamientos de contribución.
