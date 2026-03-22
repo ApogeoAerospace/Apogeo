@@ -12,6 +12,7 @@
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+using MoLab::SimulationEngine;
 
 class SimulationEngineTest : public ::testing::Test {
 protected:

@@ -17,7 +17,7 @@
  * @brief Implementación del motor principal de simulación.
  */
 
-using namespace MoLab;
+namespace MoLab {
 
 SimulationEngine::SimulationEngine()
     : plugin_manager_(std::make_unique<MoLab::PluginManager>()),
@@ -344,3 +344,5 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
         }
     }
 }
+
+} // namespace MoLab

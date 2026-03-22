@@ -2,6 +2,7 @@
 #define INITIAL_STATE_GENERATOR_H
 
 #include "flatbuffers/flatbuffers.h"
+#include <string>
 
 /**
  * @file InitialStateLoader.h
@@ -9,7 +10,7 @@
  */
 
 // Utilidades para crear el estado inicial de simulación desde JSON.
-namespace InitialStateLoader {
+namespace MoLab::InitialStateLoader {
     /**
      * @brief Construye un `GeneralState` a partir de un archivo JSON.
      *
@@ -18,6 +19,6 @@ namespace InitialStateLoader {
      * @return `true` si el estado fue creado correctamente.
      */
     bool create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath);
-}
+} // namespace MoLab::InitialStateLoader
 
 #endif // INITIAL_STATE_GENERATOR_H

@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 
     try {
         // Initialize simulation engine
-        SimulationEngine engine;
+        MoLab::SimulationEngine engine;
 
         // Initialize with configuration
         bool init_success = engine.initialize_with_config(config_file);

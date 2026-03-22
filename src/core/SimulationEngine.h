@@ -25,6 +25,8 @@ namespace state_vector {
  * @class SimulationEngine
  * @brief Motor principal que orquesta estado, plugins, tiempo y salida.
  */
+namespace MoLab {
+
 class SimulationEngine {
 public:
     /**
@@ -115,7 +117,7 @@ public:
 
 private:
     // Gestor de plugins
-    std::unique_ptr<MoLab::PluginManager> plugin_manager_;
+    std::unique_ptr<PluginManager> plugin_manager_;
 
     // Buffer de estado actual (thread-safe)
     std::vector<uint8_t> current_state_buffer_;
@@ -134,5 +136,7 @@ private:
      */
     bool validate_simulation_state(const state_vector::GeneralState* state) const;
 };
+
+} // namespace MoLab
 
 #endif // SIMULATION_ENGINE_H
