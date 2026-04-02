@@ -88,7 +88,10 @@ target_link_libraries(core PUBLIC
     flatbuffers::flatbuffers
     nlohmann_json::nlohmann_json
     Eigen3::Eigen
-    Boost::boost
+)
+
+target_include_directories(core PUBLIC
+    ${Boost_INCLUDE_DIRS}
 )
 
 add_dependencies(core generate_flatbuffers)
