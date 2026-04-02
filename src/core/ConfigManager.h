@@ -5,10 +5,18 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
+/**
+ * @file ConfigManager.h
+ * @brief Declaración del gestor central de configuración de MoLab.
+ */
+
 // Espacio de nombres principal del núcleo MoLab.
 namespace MoLab {
 
-// Configuración de un plugin cargable desde archivo de configuración.
+/**
+ * @struct PluginConfig
+ * @brief Modelo de configuración de un plugin cargable.
+ */
 struct PluginConfig {
     std::string name;
     int type;
@@ -17,7 +25,10 @@ struct PluginConfig {
     nlohmann::json parameters;
 };
 
-// Configuración general de la simulación.
+/**
+ * @struct SimulationConfig
+ * @brief Modelo de configuración general de simulación.
+ */
 struct SimulationConfig {
     double simulation_duration;
     int max_iterations;
@@ -26,33 +37,81 @@ struct SimulationConfig {
     std::string log_level;
 };
 
-// Gestor centralizado de configuración (singleton).
-// Carga, valida y expone valores de simulación y plugins.
+/**
+ * @class ConfigManager
+ * @brief Gestor centralizado de configuración en formato JSON.
+ *
+ * Implementa un patrón singleton para cargar, validar y exponer
+ * parámetros de simulación, plugins y rutas auxiliares.
+ */
 class ConfigManager {
 public:
-    // Acceso global a la instancia.
+    /**
+     * @brief Obtiene la instancia global del gestor.
+     *
+     * @return Referencia única a `ConfigManager`.
+     */
     static ConfigManager& getInstance() {
         static ConfigManager instance;
         return instance;
     }
 
-    // Carga configuración desde archivo (JSON).
+    /**
+     * @brief Carga configuración desde archivo JSON.
+     *
+     * @param config_file Ruta del archivo de configuración.
+     * @return `true` si la carga y validación fueron exitosas.
+     */
     bool loadConfig(const std::string& config_file);
-    // Guarda configuración actual a archivo (JSON).
+
+    /**
+     * @brief Guarda la configuración actual en archivo JSON.
+     *
+     * @param config_file Ruta de destino.
+     * @return `true` si la escritura fue exitosa.
+     */
     bool saveConfig(const std::string& config_file) const;
 
-    // Getters
+    /**
+     * @brief Obtiene la configuración de simulación actual.
+     * @return Referencia constante a la configuración de simulación.
+     */
     const SimulationConfig& getSimulationConfig() const { return simulation_config_; }
+
+    /**
+     * @brief Obtiene la configuración de plugins cargada.
+     * @return Lista de configuraciones de plugin.
+     */
     const std::vector<PluginConfig>& getPluginConfigs() const { return plugin_configs_; }
 
+    /**
+     * @brief Obtiene la ruta del archivo de estado inicial.
+     * @return Ruta configurada del estado inicial.
+     */
     std::string getInitialStateFile() const { return initial_state_file_; }
+
+    /**
+     * @brief Obtiene el directorio de salida configurado.
+     * @return Ruta del directorio de salida.
+     */
     std::string getOutputDirectory() const { return output_directory_; }
 
-    // Setters
+    /**
+     * @brief Reemplaza la configuración de simulación actual.
+     * @param config Nueva configuración de simulación.
+     */
     void setSimulationConfig(const SimulationConfig& config) { simulation_config_ = config; }
+
+    /**
+     * @brief Agrega una configuración de plugin a la colección activa.
+     * @param config Configuración del plugin a añadir.
+     */
     void addPluginConfig(const PluginConfig& config) { plugin_configs_.push_back(config); }
 
-    // Validation
+    /**
+     * @brief Valida la coherencia de la configuración actual.
+     * @return `true` si los parámetros son válidos.
+     */
     bool validateConfig() const;
 
 private:
@@ -61,11 +120,23 @@ private:
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
 
-    // Establece valores por defecto cuando no hay configuración válida.
+    /**
+     * @brief Establece valores por defecto para toda la configuración.
+     */
     void setDefaults();
-    // Parseo de sección de simulación.
+
+    /**
+     * @brief Parsea la sección `simulation` del JSON.
+     * @param json Documento JSON de configuración.
+     * @return `true` si la sección se procesó correctamente.
+     */
     bool parseSimulationConfig(const nlohmann::json& json);
-    // Parseo de sección de plugins.
+
+    /**
+     * @brief Parsea la sección `plugins` del JSON.
+     * @param json Documento JSON de configuración.
+     * @return `true` si la sección se procesó correctamente.
+     */
     bool parsePluginConfigs(const nlohmann::json& json);
 
     SimulationConfig simulation_config_;

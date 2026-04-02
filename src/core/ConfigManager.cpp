@@ -3,6 +3,11 @@
 #include <fstream>
 #include <iostream>
 
+/**
+ * @file ConfigManager.cpp
+ * @brief Implementación del gestor de configuración de MoLab.
+ */
+
 namespace MoLab {
 
 bool ConfigManager::loadConfig(const std::string& config_file) {

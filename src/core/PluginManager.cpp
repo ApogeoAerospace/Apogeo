@@ -15,6 +15,12 @@
 #include <condition_variable>
 #include <deque>
 #include <functional>
+#include <filesystem>
+
+/**
+ * @file PluginManager.cpp
+ * @brief Implementación del gestor de carga y ejecución de plugins.
+ */
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,6 +66,43 @@ static std::string normalize_plugin_path(const std::string& path) {
     }
     return dir + basename + ".so";
 #endif
+}
+
+static std::vector<std::string> build_plugin_candidates(const std::string& normalized_path) {
+    namespace fs = std::filesystem;
+
+    std::vector<std::string> candidates;
+    auto append_unique = [&candidates](const fs::path& candidate) {
+        std::string normalized = candidate.lexically_normal().string();
+        if (normalized.empty()) {
+            return;
+        }
+
+        if (std::find(candidates.begin(), candidates.end(), normalized) == candidates.end()) {
+            candidates.push_back(normalized);
+        }
+    };
+
+    fs::path plugin_path(normalized_path);
+    append_unique(plugin_path);
+
+    if (plugin_path.is_relative()) {
+        std::error_code ec;
+        const fs::path cwd = fs::current_path(ec);
+        if (!ec) {
+            append_unique(cwd / plugin_path);
+
+            const fs::path filename = plugin_path.filename();
+            if (!filename.empty()) {
+                append_unique(cwd / filename);
+                append_unique(cwd / "lib" / filename);
+                append_unique(cwd.parent_path() / "lib" / filename);
+                append_unique(cwd.parent_path() / "bin" / filename);
+            }
+        }
+    }
+
+    return candidates;
 }
 
 // Scheduler simple para ejecutar tareas de plugins en paralelo.
@@ -157,8 +200,18 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 
     LOG_INFO("Loading plugin: " + normalized_path, "PluginManager");
 
+    const auto candidates = build_plugin_candidates(normalized_path);
+
 #ifdef _WIN32
-    plugin.lib_handle = LoadLibrary(normalized_path.c_str());
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = LoadLibraryA(candidate.c_str());
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + normalized_path, "PluginManager");
         return false;
@@ -168,7 +221,15 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
 #else
-    plugin.lib_handle = dlopen(normalized_path.c_str(), RTLD_LAZY);
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = dlopen(candidate.c_str(), RTLD_LAZY);
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
         LOG_ERROR("Failed to load plugin library: " + normalized_path + " - " + std::string(dlerror()), "PluginManager");
         return false;
@@ -202,7 +263,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     }
 
     loaded_plugins_.emplace_back(std::move(plugin));
-    LOG_INFO("Plugin loaded successfully: " + normalized_path, "PluginManager");
+    LOG_INFO("Plugin loaded successfully: " + loaded_plugins_.back().path, "PluginManager");
     return true;
 }
 
@@ -411,8 +472,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
     // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
-    if (total_force.x == 0.0 && total_force.y == 0.0 && total_force.z == 0.0 &&
-        total_torque.x == 0.0 && total_torque.y == 0.0 && total_torque.z == 0.0) {
+    if (total_force.isZero() && total_torque.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
         if (mutable_state) {
@@ -428,14 +488,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     flatbuffers::FlatBufferBuilder builder;
 
     // Cinemática actualizada
-    auto position = state_vector::Vec3(new_state.position.x, new_state.position.y, new_state.position.z);
-    auto velocity = state_vector::Vec3(new_state.velocity.x, new_state.velocity.y, new_state.velocity.z);
-    auto orientation = state_vector::Quaternion(new_state.orientation.x, new_state.orientation.y, new_state.orientation.z, 1.0f);
-    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x, new_state.angular_velocity.y, new_state.angular_velocity.z);
-
-    // Entorno: usar punteros del estado actual (si existen)
-    const state_vector::Vec3* gravity_ptr = current_state->gravity();
-    const state_vector::Vec3* wind_ptr = current_state->wind_velocity();
+    auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
+    auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
+    auto orientation = state_vector::Quaternion(
+        static_cast<float>(new_state.orientation.x()),
+        static_cast<float>(new_state.orientation.y()),
+        static_cast<float>(new_state.orientation.z()),
+        static_cast<float>(new_state.orientation.w()));
+    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
 
     // Propiedades de masa y CG
     float total_mass = current_state->total_mass();
@@ -517,9 +577,6 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     gs_builder.add_atm_pressure(atm_pressure);
     gs_builder.add_atm_temperature(atm_temperature);
 
-    if (wind_ptr) gs_builder.add_wind_velocity(wind_ptr);
-    if (gravity_ptr) gs_builder.add_gravity(gravity_ptr);
-
     if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
     if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);
 
@@ -533,8 +590,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     LOG_DEBUG(
         "Physics integrated; sim_time=" + std::to_string(new_state.time) +
-        " pos=(" + std::to_string(new_state.position.x) + ", " +
-        std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) + ")",
+        " pos=(" + std::to_string(new_state.position.x()) + ", " +
+        std::to_string(new_state.position.y()) + ", " + std::to_string(new_state.position.z()) + ")",
         "PluginManager"
     );
 }

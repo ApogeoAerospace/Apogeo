@@ -12,7 +12,12 @@
 #include "state_vector_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
-using namespace MoLab;
+/**
+ * @file SimulationEngine.cpp
+ * @brief Implementación del motor principal de simulación.
+ */
+
+namespace MoLab {
 
 SimulationEngine::SimulationEngine()
     : plugin_manager_(std::make_unique<MoLab::PluginManager>()),
@@ -339,3 +344,5 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
         }
     }
 }
+
+} // namespace MoLab
