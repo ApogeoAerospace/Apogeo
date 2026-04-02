@@ -2,10 +2,19 @@
 #include "Logger.h"
 #include "state_vector_generated.h"
 
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
+=======
+/**
+ * @file PhysicsIntegrator.cpp
+ * @brief Implementación de integración numérica del estado físico.
+ */
+
+>>>>>>> develop
 namespace odeint = boost::numeric::odeint;
 
 namespace MoLab {
 
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
 namespace {
 
 constexpr double kMassEpsilon = 1e-12;
@@ -32,6 +41,8 @@ inline Quaternion4 normalizedOrIdentity(const Quaternion4& q) {
 
 } // namespace
 
+=======
+>>>>>>> develop
 // ---------------------------------------------------------------------------
 // PhysicsState: conversión entre estado estructurado y vector plano
 // ---------------------------------------------------------------------------
@@ -74,12 +85,19 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                               const InertiaTensor3& inertia,
                                               const Vector3& force,
                                               const Vector3& torque) {
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     dydt.fill(0.0);
 
     // Extraer variables dinámicas del vector plano
     const Vector3 vel   = odeVelocity(y);
     const Vector3 omega = odeAngularVelocity(y);
     const Quaternion4 q = normalizedOrIdentity(odeOrientation(y));
+=======
+    // Extraer variables dinámicas del vector plano
+    const Vector3 vel   = odeVelocity(y);
+    const Vector3 omega = odeAngularVelocity(y);
+    const Quaternion4 q = odeOrientation(y);
+>>>>>>> develop
 
     // --- Cinemática lineal: x_dot = v ---
     dydt[0] = vel.x();
@@ -87,7 +105,11 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
     dydt[2] = vel.z();
 
     // --- Segunda ley de Newton: v_dot = F / m ---
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     if (hasValidMass(mass)) {
+=======
+    if (mass > 1e-12) {
+>>>>>>> develop
         double inv_mass = 1.0 / mass;
         dydt[3] = force.x() * inv_mass;
         dydt[4] = force.y() * inv_mass;
@@ -114,6 +136,7 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
     Vector3 i_omega    = inertia * omega;
     Vector3 gyroscopic = omega.cross(i_omega);
     Vector3 net_torque = torque - gyroscopic;
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
 
     Vector3 alpha = Vector3::Zero();
     if (inertia.allFinite() && net_torque.allFinite()) {
@@ -126,6 +149,9 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
         }
     }
 
+=======
+    Vector3 alpha      = inertia.ldlt().solve(net_torque);
+>>>>>>> develop
     dydt[10] = alpha.x();
     dydt[11] = alpha.y();
     dydt[12] = alpha.z();
@@ -139,11 +165,14 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
                                           const Vector3& force,
                                           const Vector3& torque,
                                           double dt) {
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     if (!std::isfinite(dt)) {
         LOG_WARNING("Invalid time step (NaN/Inf), skipping integration step", "PhysicsIntegrator");
         return state;
     }
 
+=======
+>>>>>>> develop
     OdeState y = state.toOdeState();
 
     // Lambda del sistema ODE. Captura por referencia los parámetros constantes
@@ -164,13 +193,21 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             break;
         }
         case IntegratorType::VERLET: {
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
             // Velocity-Verlet para traslación + RK4 para rotación.
+=======
+            // Velocity-Verlet para traslación + Euler para rotación.
+>>>>>>> develop
             // Odeint no ofrece velocity_verlet para sistemas mixtos de
             // primer y segundo orden, por lo que se implementa manualmente.
 
             // --- Traslación: Velocity-Verlet (a = F/m) ---
             Vector3 a_n = Vector3::Zero();
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
             if (hasValidMass(state.mass))
+=======
+            if (state.mass > 1e-12)
+>>>>>>> develop
                 a_n = force / state.mass;
 
             Vector3 v_half  = state.velocity + a_n * (0.5 * dt);
@@ -179,6 +216,7 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             // Aceleración constante durante el paso => a_{n+1} = a_n
             Vector3 new_vel = v_half + a_n * (0.5 * dt);
 
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
             // --- Rotación: RK4 explícito sobre (q, omega) ---
             OdeState y_rot = state.toOdeState();
             odeint::runge_kutta4<OdeState> rot_stepper;
@@ -200,6 +238,27 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             LOG_WARNING("Unknown integrator type, falling back to Runge-Kutta 4", "PhysicsIntegrator");
             odeint::runge_kutta4<OdeState> stepper;
             stepper.do_step(system, y, state.time, dt);
+=======
+            // --- Rotación: Euler explícito ---
+            OdeState dydt{};
+            computeOdeDerivatives(state.toOdeState(), dydt,
+                                  state.mass, state.inertia, force, torque);
+
+            // Aplicar derivadas del cuaternión y velocidad angular
+            odePackVec3(y, 0, new_pos);
+            odePackVec3(y, 3, new_vel);
+            y[6]  = state.orientation.w()      + dydt[6]  * dt;
+            y[7]  = state.orientation.x()      + dydt[7]  * dt;
+            y[8]  = state.orientation.y()      + dydt[8]  * dt;
+            y[9]  = state.orientation.z()      + dydt[9]  * dt;
+            y[10] = state.angular_velocity.x() + dydt[10] * dt;
+            y[11] = state.angular_velocity.y() + dydt[11] * dt;
+            y[12] = state.angular_velocity.z() + dydt[12] * dt;
+            break;
+        }
+        default:
+            LOG_ERROR("Unknown integrator type", "PhysicsIntegrator");
+>>>>>>> develop
             break;
         }
     }
@@ -208,7 +267,11 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
     PhysicsState new_state = state;     // conserva masa e inercia
     new_state.fromOdeState(y);
     new_state.time = state.time + dt;
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     new_state.orientation = normalizedOrIdentity(new_state.orientation);
+=======
+    new_state.orientation.normalize();
+>>>>>>> develop
 
     return new_state;
 }
@@ -242,11 +305,14 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
     // La conversión float->double ocurre aquí; la truncación inversa es
     // responsabilidad de PluginManager al reconstruir el buffer.
 
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     if (fb_state == nullptr) {
         LOG_WARNING("Null FlatBuffer state pointer, returning default PhysicsState", "PhysicsIntegrator");
         return PhysicsState{};
     }
 
+=======
+>>>>>>> develop
     PhysicsState state;
 
     if (fb_state->position()) {
@@ -284,9 +350,14 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
             fb_state->inertia_tensor()->ixz(), fb_state->inertia_tensor()->iyz());
     }
 
+<<<<<<< feature/CD-58-prueba-comunicación-y-validacion
     state.orientation = normalizedOrIdentity(state.orientation);
     state.mass = std::isfinite(fb_state->total_mass()) ? std::max(0.0, static_cast<double>(fb_state->total_mass())) : 0.0;
     state.time = std::isfinite(fb_state->sim_time()) ? static_cast<double>(fb_state->sim_time()) : 0.0;
+=======
+    state.mass = fb_state->total_mass();
+    state.time = fb_state->sim_time();
+>>>>>>> develop
     return state;
 }
 

@@ -8,6 +8,11 @@
 #include <sstream>
 #include "Logger.h"
 
+/**
+ * @file InitialStateLoader.cpp
+ * @brief Implementación de la carga de estado inicial desde JSON a FlatBuffers.
+ */
+
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -88,7 +93,7 @@ static state_vector::Quaternion parse_quat_any(const json& parent, const std::st
     return state_vector::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
+bool MoLab::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
     fs::path path = fs::u8path(filepath);
 
     if (!path.is_absolute()) {

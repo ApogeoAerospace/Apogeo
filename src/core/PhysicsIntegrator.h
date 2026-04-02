@@ -13,9 +13,16 @@
 #include "flatbuffers/flatbuffers.h"
 #include "state_vector_generated.h"
 
+/**
+ * @file PhysicsIntegrator.h
+ * @brief Integración numérica del estado físico de simulación.
+ */
+
 namespace MoLab {
 
-// Tipo de estado plano para odeint: [pos(3), vel(3), quat(4), omega(3)] = 13 elementos.
+/**
+ * @brief Tipo de estado plano para ODE: `pos(3), vel(3), quat(4), omega(3)`.
+ */
 using OdeState = std::array<double, 13>;
 
 // Alias de Eigen para tipos matemáticos internos.
@@ -77,7 +84,10 @@ inline bool isInertiaDiagonal(const InertiaTensor3& I, double tol = 1e-10) {
     return std::abs(I(0, 1)) < tol && std::abs(I(0, 2)) < tol && std::abs(I(1, 2)) < tol;
 }
 
-// Estado físico para integración numérica.
+/**
+ * @struct PhysicsState
+ * @brief Estado físico interno utilizado por el integrador numérico.
+ */
 struct PhysicsState {
     Vector3 position;
     Vector3 velocity;
@@ -96,49 +106,92 @@ struct PhysicsState {
           inertia(InertiaTensor3::Identity()),
           time(0.0) {}
 
-    // Empaquetar variables dinámicas en vector plano para odeint.
+    /**
+     * @brief Empaqueta el estado en formato plano para `odeint`.
+     * @return Estado plano equivalente.
+     */
     OdeState toOdeState() const;
 
-    // Desempaquetar vector plano de odeint a las variables dinámicas.
+    /**
+     * @brief Carga variables dinámicas desde un estado plano.
+     * @param y Estado plano fuente.
+     */
     void fromOdeState(const OdeState& y);
 };
 
-// Integrador físico delegando a Boost.Odeint (Euler/RK4/Velocity-Verlet).
+/**
+ * @class PhysicsIntegrator
+ * @brief Integrador físico basado en Boost.Odeint.
+ */
 class PhysicsIntegrator {
 public:
+    /**
+     * @enum IntegratorType
+     * @brief Algoritmos de integración disponibles.
+     */
     enum class IntegratorType {
         EULER,
         RUNGE_KUTTA_4,
         VERLET
     };
 
+    /**
+     * @brief Construye un integrador con un método inicial.
+     * @param type Tipo de integrador a usar.
+     */
     PhysicsIntegrator(IntegratorType type = IntegratorType::RUNGE_KUTTA_4);
     ~PhysicsIntegrator() = default;
 
-    // Función principal de integración
+    /**
+     * @brief Integra el estado físico durante un paso temporal.
+     * @param current_state Estado actual.
+     * @param total_force Fuerza total aplicada.
+     * @param total_torque Torque total aplicado.
+     * @param dt Paso de integración en segundos.
+     * @return Nuevo estado integrado.
+     */
     PhysicsState integrate(const PhysicsState& current_state,
                           const Vector3& total_force,
                           const Vector3& total_torque,
                           double dt);
 
-    // Configurar tipo de integrador
+    /**
+     * @brief Cambia el integrador activo por enumeración.
+     * @param type Tipo de integrador.
+     */
     void setIntegratorType(IntegratorType type) { integrator_type_ = type; }
+
+    /**
+     * @brief Cambia el integrador activo por nombre.
+     * @param type_name Nombre del método (`euler`, `runge_kutta_4`, `verlet`).
+     */
     void setIntegratorType(const std::string& type_name);
 
-    // Obtener tipo de integrador actual
+    /**
+     * @brief Obtiene el tipo de integrador activo.
+     * @return Tipo de integrador actual.
+     */
     IntegratorType getIntegratorType() const { return integrator_type_; }
+
+    /**
+     * @brief Obtiene el nombre del integrador activo.
+     * @return Nombre del método de integración.
+     */
     std::string getIntegratorTypeName() const;
 
-    // Conversión desde FlatBuffer
+    /**
+     * @brief Convierte un estado FlatBuffers a estado físico interno.
+     * @param fb_state Estado serializado.
+     * @return Estado físico para integración.
+     */
     static PhysicsState fromFlatBuffer(const state_vector::GeneralState* fb_state);
 
 private:
     IntegratorType integrator_type_;
 
-    // Calcula las derivadas del OdeState directamente, evitando reconstrucción
-    // completa de PhysicsState en cada evaluación del sistema ODE.
-    // Los parámetros constantes (masa, inercia, fuerza, torque) se pasan
-    // por referencia para evitar copias innecesarias.
+    /**
+     * @brief Calcula derivadas del sistema ODE para integración.
+     */
     static void computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                       double mass,
                                       const InertiaTensor3& inertia,

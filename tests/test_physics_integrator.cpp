@@ -4,6 +4,11 @@
 #include "state_vector_generated.h"
 #include <cmath>
 
+/**
+ * @file test_physics_integrator.cpp
+ * @brief Pruebas unitarias para `PhysicsIntegrator`.
+ */
+
 using namespace MoLab;
 
 // ---------------------------------------------------------------------------

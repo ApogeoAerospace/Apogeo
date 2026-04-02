@@ -17,6 +17,11 @@
 #include <functional>
 #include <filesystem>
 
+/**
+ * @file PluginManager.cpp
+ * @brief Implementación del gestor de carga y ejecución de plugins.
+ */
+
 #ifdef _WIN32
 #include <windows.h>
 #endif

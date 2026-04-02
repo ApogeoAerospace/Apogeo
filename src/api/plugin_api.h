@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+/**
+ * @file plugin_api.h
+ * @brief Contrato C de interoperabilidad entre el host de MoLab y plugins dinámicos.
+ */
+
 // Definición de la macro PLUGIN_EXPORT para exportar funciones del plugin
 #if defined(_WIN32) // WINDOWS
 
@@ -25,7 +30,9 @@ extern "C" {
     // --- Estructuras de Datos ---
 
     /**
-     * @brief Estructura para un vector de 3 componentes (fuerza, torque).
+     * @brief Estructura para representar un vector tridimensional.
+     *
+     * Se utiliza para fuerzas y torques intercambiados entre el host y el plugin.
      */
     typedef struct {
         float x;
@@ -33,6 +40,12 @@ extern "C" {
         float z;
     } PluginVector3;
 
+    /**
+     * @brief Datos intercambiados durante un tick de simulación.
+     *
+     * Incluye el buffer de estado, el paso de tiempo y punteros opcionales
+     * para devolver fuerza y torque calculados por el plugin.
+     */
     typedef struct {
         // --- ENTRADA/SALIDA ---
         // Puntero al buffer de estado central. Los plugins pueden modificarlo.
@@ -58,27 +71,36 @@ extern "C" {
     // --- Funciones de la API---
 
     /**
-     * Crea una instancia del plugin y devuelve un handle a ella.
+     * @brief Crea una instancia del plugin y devuelve su handle.
+     *
+     * @return Handle válido de plugin o `NULL` si falla la creación.
      */
     PLUGIN_EXPORT PluginHandle plugin_create_instance();
 
     /**
-     * Configura una instancia del plugin con parámetros JSON.
-     * @param handle Handle del plugin a configurar
-     * @param json_params Cadena JSON con los parámetros de configuración
-     * @return 0 si la configuración fue exitosa, código de error negativo en caso contrario
+     * @brief Configura una instancia del plugin con parámetros JSON.
+     *
+     * @param handle Handle del plugin a configurar.
+     * @param json_params Cadena JSON con parámetros de configuración.
+     * @return `0` si la configuración fue exitosa, valor negativo en caso de error.
      */
     PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params);
 
     /**
-     * Ejecuta un tick de la simulación para una instancia del plugin.
+     * @brief Ejecuta un tick de simulación para una instancia del plugin.
+     *
+     * @param handle Handle del plugin a ejecutar.
+     * @param data Datos de entrada/salida del tick.
+     * @return `0` si la ejecución fue correcta, valor distinto de cero en caso de error.
      */
     PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle,
         PluginTickData* data
     );
 
     /**
-     * Destruye una instancia del plugin y libera sus recursos.
+     * @brief Destruye una instancia del plugin y libera sus recursos.
+     *
+     * @param handle Handle del plugin a destruir.
      */
     PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle);
 
