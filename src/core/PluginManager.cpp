@@ -15,12 +15,95 @@
 #include <condition_variable>
 #include <deque>
 #include <functional>
+#include <filesystem>
+
+/**
+ * @file PluginManager.cpp
+ * @brief Implementación del gestor de carga y ejecución de plugins.
+ */
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 namespace MoLab {
+
+static std::string normalize_plugin_path(const std::string& path) {
+    if (path.find(".dll") != std::string::npos ||
+        path.find(".dylib") != std::string::npos ||
+        path.find(".so") != std::string::npos) {
+        return path;
+    }
+
+    // Split into directory and basename
+    std::string dir;
+    std::string basename;
+    auto sep = path.rfind('/');
+#ifdef _WIN32
+    auto sep2 = path.rfind('\\');
+    if (sep2 != std::string::npos && (sep == std::string::npos || sep2 > sep)) {
+        sep = sep2;
+    }
+#endif
+    if (sep != std::string::npos) {
+        dir = path.substr(0, sep + 1);
+        basename = path.substr(sep + 1);
+    } else {
+        dir = "";
+        basename = path;
+    }
+
+#ifdef _WIN32
+    return dir + basename + ".dll";
+#elif __APPLE__
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".dylib";
+#else
+    if (basename.substr(0, 3) != "lib") {
+        basename = "lib" + basename;
+    }
+    return dir + basename + ".so";
+#endif
+}
+
+static std::vector<std::string> build_plugin_candidates(const std::string& normalized_path) {
+    namespace fs = std::filesystem;
+
+    std::vector<std::string> candidates;
+    auto append_unique = [&candidates](const fs::path& candidate) {
+        std::string normalized = candidate.lexically_normal().string();
+        if (normalized.empty()) {
+            return;
+        }
+
+        if (std::find(candidates.begin(), candidates.end(), normalized) == candidates.end()) {
+            candidates.push_back(normalized);
+        }
+    };
+
+    fs::path plugin_path(normalized_path);
+    append_unique(plugin_path);
+
+    if (plugin_path.is_relative()) {
+        std::error_code ec;
+        const fs::path cwd = fs::current_path(ec);
+        if (!ec) {
+            append_unique(cwd / plugin_path);
+
+            const fs::path filename = plugin_path.filename();
+            if (!filename.empty()) {
+                append_unique(cwd / filename);
+                append_unique(cwd / "lib" / filename);
+                append_unique(cwd.parent_path() / "lib" / filename);
+                append_unique(cwd.parent_path() / "bin" / filename);
+            }
+        }
+    }
+
+    return candidates;
+}
 
 // Scheduler simple para ejecutar tareas de plugins en paralelo.
 class PluginTaskScheduler {
@@ -110,15 +193,27 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
-    plugin.path = path;
+
+    std::string normalized_path = normalize_plugin_path(path);
+    plugin.path = normalized_path;
     plugin.handle = nullptr;
 
-    LOG_INFO("Loading plugin: " + path, "PluginManager");
+    LOG_INFO("Loading plugin: " + normalized_path, "PluginManager");
+
+    const auto candidates = build_plugin_candidates(normalized_path);
 
 #ifdef _WIN32
-    plugin.lib_handle = LoadLibrary(path.c_str());
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = LoadLibraryA(candidate.c_str());
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
-        LOG_ERROR("Failed to load plugin library: " + path, "PluginManager");
+        LOG_ERROR("Failed to load plugin library: " + normalized_path, "PluginManager");
         return false;
     }
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(GetProcAddress(plugin.lib_handle, "plugin_create_instance"));
@@ -126,9 +221,17 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
 #else
-    plugin.lib_handle = dlopen(path.c_str(), RTLD_LAZY);
+    for (const auto& candidate : candidates) {
+        LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
+        plugin.lib_handle = dlopen(candidate.c_str(), RTLD_LAZY);
+        if (plugin.lib_handle) {
+            plugin.path = candidate;
+            break;
+        }
+    }
+
     if (!plugin.lib_handle) {
-        LOG_ERROR("Failed to load plugin library: " + path + " - " + std::string(dlerror()), "PluginManager");
+        LOG_ERROR("Failed to load plugin library: " + normalized_path + " - " + std::string(dlerror()), "PluginManager");
         return false;
     }
     plugin.create_func = reinterpret_cast<decltype(plugin.create_func)>(dlsym(plugin.lib_handle, "plugin_create_instance"));
@@ -138,7 +241,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
 #endif
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
-        LOG_ERROR("Failed to find required plugin API functions in: " + path, "PluginManager");
+        LOG_ERROR("Failed to find required plugin API functions in: " + normalized_path, "PluginManager");
 #ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
@@ -150,7 +253,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     // Crear instancia del plugin
     plugin.handle = plugin.create_func();
     if (plugin.handle == nullptr) {
-        LOG_ERROR("Failed to create plugin instance: " + path, "PluginManager");
+        LOG_ERROR("Failed to create plugin instance: " + normalized_path, "PluginManager");
 #ifdef _WIN32
         FreeLibrary(plugin.lib_handle);
 #else
@@ -160,7 +263,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     }
 
     loaded_plugins_.emplace_back(std::move(plugin));
-    LOG_INFO("Plugin loaded successfully: " + path, "PluginManager");
+    LOG_INFO("Plugin loaded successfully: " + loaded_plugins_.back().path, "PluginManager");
     return true;
 }
 
@@ -369,8 +472,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
     // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
-    if (total_force.x == 0.0 && total_force.y == 0.0 && total_force.z == 0.0 &&
-        total_torque.x == 0.0 && total_torque.y == 0.0 && total_torque.z == 0.0) {
+    if (total_force.isZero() && total_torque.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
         if (mutable_state) {
@@ -386,14 +488,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     flatbuffers::FlatBufferBuilder builder;
 
     // Cinemática actualizada
-    auto position = state_vector::Vec3(new_state.position.x, new_state.position.y, new_state.position.z);
-    auto velocity = state_vector::Vec3(new_state.velocity.x, new_state.velocity.y, new_state.velocity.z);
-    auto orientation = state_vector::Quaternion(new_state.orientation.x, new_state.orientation.y, new_state.orientation.z, 1.0f);
-    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x, new_state.angular_velocity.y, new_state.angular_velocity.z);
-
-    // Entorno: usar punteros del estado actual (si existen)
-    const state_vector::Vec3* gravity_ptr = current_state->gravity();
-    const state_vector::Vec3* wind_ptr = current_state->wind_velocity();
+    auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
+    auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
+    auto orientation = state_vector::Quaternion(
+        static_cast<float>(new_state.orientation.x()),
+        static_cast<float>(new_state.orientation.y()),
+        static_cast<float>(new_state.orientation.z()),
+        static_cast<float>(new_state.orientation.w()));
+    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
 
     // Propiedades de masa y CG
     float total_mass = current_state->total_mass();
@@ -410,7 +512,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Datos aerodinámicos
+    // Datos aerodinámicos - Los plugins actualizan estos valores en el buffer
+    // PluginManager solo los copia del estado actual
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();
@@ -474,9 +577,6 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     gs_builder.add_atm_pressure(atm_pressure);
     gs_builder.add_atm_temperature(atm_temperature);
 
-    if (wind_ptr) gs_builder.add_wind_velocity(wind_ptr);
-    if (gravity_ptr) gs_builder.add_gravity(gravity_ptr);
-
     if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
     if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);
 
@@ -490,8 +590,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     LOG_DEBUG(
         "Physics integrated; sim_time=" + std::to_string(new_state.time) +
-        " pos=(" + std::to_string(new_state.position.x) + ", " +
-        std::to_string(new_state.position.y) + ", " + std::to_string(new_state.position.z) + ")",
+        " pos=(" + std::to_string(new_state.position.x()) + ", " +
+        std::to_string(new_state.position.y()) + ", " + std::to_string(new_state.position.z()) + ")",
         "PluginManager"
     );
 }

@@ -10,7 +10,7 @@
         {
             "name": "example_plugin",
             "type": 0,
-            "library_path": "example_plugin",
+            "library_path": "build/lib/example_plugin",
             "enabled": true,
             "parameters": {
                 "step_size": 1.0,

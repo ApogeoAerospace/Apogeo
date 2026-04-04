@@ -5,7 +5,13 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+/**
+ * @file test_initial_state_loader.cpp
+ * @brief Pruebas unitarias para `InitialStateLoader`.
+ */
+
 using json = nlohmann::json;
+namespace InitialStateLoader = MoLab::InitialStateLoader;
 
 class InitialStateLoaderTest : public ::testing::Test {
 protected:

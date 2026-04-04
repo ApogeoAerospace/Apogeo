@@ -3,6 +3,11 @@
 #include <thread>
 #include <chrono>
 
+/**
+ * @file test_time_manager.cpp
+ * @brief Pruebas unitarias para `TimeManager`.
+ */
+
 using namespace MoLab;
 
 class TimeManagerTest : public ::testing::Test {

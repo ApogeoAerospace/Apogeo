@@ -333,7 +333,7 @@ sequenceDiagram
     {
       "name": "aerodynamics",
       "type": 1,
-      "library_path": "build/lib/libaerodynamics.dylib",
+      "library_path": "build/lib/aerodynamics",
       "enabled": true,
       "priority": 1,
       "parameters": {
@@ -348,7 +348,7 @@ sequenceDiagram
     {
       "name": "propulsion",
       "type": 1,
-      "library_path": "build/lib/libpropulsion.dylib",
+      "library_path": "build/lib/propulsion",
       "enabled": true,
       "priority": 2,
       "parameters": {

@@ -9,6 +9,11 @@
 #include <sstream>
 #include <chrono>
 
+/**
+ * @file OutputManager.cpp
+ * @brief Implementación de exportación y escritura asíncrona de resultados.
+ */
+
 using namespace MoLab;
 
 OutputManager& OutputManager::getInstance() {
@@ -343,6 +348,35 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.wind_speed_z = 0.0;
   }
 
+  // Velocidad angular
+  if (state->angular_velocity()) {
+    point.angular_velocity_x = state->angular_velocity()->x();
+    point.angular_velocity_y = state->angular_velocity()->y();
+    point.angular_velocity_z = state->angular_velocity()->z();
+  } else {
+    point.angular_velocity_x = 0.0;
+    point.angular_velocity_y = 0.0;
+    point.angular_velocity_z = 0.0;
+  }
+
+  // Masa y propiedades
+  point.total_mass = state->total_mass();
+  if (state->cg_location()) {
+    point.cg_x = state->cg_location()->x();
+    point.cg_y = state->cg_location()->y();
+    point.cg_z = state->cg_location()->z();
+  } else {
+    point.cg_x = 0.0;
+    point.cg_y = 0.0;
+    point.cg_z = 0.0;
+  }
+
+  // Datos aerodinámicos
+  point.mach_number = state->mach_number();
+  point.dynamic_pressure = state->dynamic_pressure();
+  point.angle_of_attack = state->angle_of_attack();
+  point.sideslip_angle = state->sideslip_angle();
+
   return point;
 }
 
@@ -351,9 +385,13 @@ void OutputManager::writeCSVHeader() {
     return;
   }
 
-  *csv_file_ << "tick,simulation_time,utc_time,position_x,position_y,position_z,"
+  *csv_file_ << "tick,simulation_time,utc_time,"
+             << "position_x,position_y,position_z,"
              << "velocity_x,velocity_y,velocity_z,"
              << "orientation_x,orientation_y,orientation_z,orientation_w,"
+             << "angular_velocity_x,angular_velocity_y,angular_velocity_z,"
+             << "total_mass,cg_x,cg_y,cg_z,"
+             << "mach_number,dynamic_pressure,angle_of_attack,sideslip_angle,"
              << "atm_density,atm_pressure,atm_temperature,"
              << "gravity_x,gravity_y,gravity_z,"
              << "wind_velocity_x,wind_velocity_y,wind_velocity_z\n";
@@ -369,6 +407,9 @@ void OutputManager::writeDataPointCSV(const SimulationDataPoint& point, int tick
              << point.position_x << "," << point.position_y << "," << point.position_z << ","
              << point.velocity_x << "," << point.velocity_y << "," << point.velocity_z << ","
              << point.orientation_x << "," << point.orientation_y << "," << point.orientation_z << "," << point.orientation_w << ","
+             << point.angular_velocity_x << "," << point.angular_velocity_y << "," << point.angular_velocity_z << ","
+             << point.total_mass << "," << point.cg_x << "," << point.cg_y << "," << point.cg_z << ","
+             << point.mach_number << "," << point.dynamic_pressure << "," << point.angle_of_attack << "," << point.sideslip_angle << ","
              << point.atm_density << "," << point.atm_pressure << "," << point.atm_temperature << ","
              << point.gravity_x << "," << point.gravity_y << "," << point.gravity_z << ","
              << point.wind_speed_x << "," << point.wind_speed_y << "," << point.wind_speed_z << "\n";

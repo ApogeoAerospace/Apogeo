@@ -8,6 +8,11 @@
 #include <sstream>
 #include "Logger.h"
 
+/**
+ * @file InitialStateLoader.cpp
+ * @brief Implementación de la carga de estado inicial desde JSON a FlatBuffers.
+ */
+
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
@@ -88,7 +93,7 @@ static state_vector::Quaternion parse_quat_any(const json& parent, const std::st
     return state_vector::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
+bool MoLab::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath) {
     fs::path path = fs::u8path(filepath);
 
     if (!path.is_absolute()) {
@@ -98,7 +103,7 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
 
     std::string content = read_file_strip_bom(path);
     if (content.empty()) {
-        LOG_ERROR(std::string("No se puede abrir o leer el archivo de estado inicial: ") + path.string(), "InitialStateLoader");
+        LOG_ERROR(std::string("Unable to open or read initial state file: ") + path.string(), "InitialStateLoader");
         return false;
     }
 
@@ -106,10 +111,10 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     try {
         data = json::parse(content);
     } catch (json::parse_error& e) {
-        LOG_ERROR(std::string("Error al parsear JSON en el archivo de estado inicial: ") + e.what(), "InitialStateLoader");
+        LOG_ERROR(std::string("Error parsing JSON in initial state file: ") + e.what(), "InitialStateLoader");
         return false;
     } catch (std::exception& e) {
-        LOG_ERROR(std::string("Error inesperado al parsear JSON: ") + e.what(), "InitialStateLoader");
+        LOG_ERROR(std::string("Unexpected error while parsing JSON: ") + e.what(), "InitialStateLoader");
         return false;
     }
 
@@ -232,6 +237,6 @@ bool InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBuilder& 
     auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    LOG_INFO(std::string("Estado inicial cargado correctamente desde: ") + path.string(), "InitialStateLoader");
+    LOG_INFO(std::string("Initial state loaded successfully from: ") + path.string(), "InitialStateLoader");
     return true;
 }
