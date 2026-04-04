@@ -71,6 +71,17 @@ static std::vector<std::string> splitCsvLine(const std::string& line) {
 
 class StructuresModule {
 public:
+    /**
+     * @brief Carga propiedades de masa placeholder para el modulo Structures.
+     *
+     * @details
+     * La fuente objetivo para masa actual, centro de masa e inercia
+     * es el buffer principal de simulacion. Mientras esa integracion no exista,
+     * se permite esta carga desde JSON como placeholder temporal.
+     *
+     * Nota: los actuadores NO se toman desde este JSON. La fuente oficial de
+     * actuadores es la configuracion general recibida en plugin_configure().
+     */
     bool loadMassPropertiesFromJson(const std::string& json_path) {
         std::ifstream file(json_path);
         if (!file.is_open()) {
@@ -101,13 +112,12 @@ public:
             inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
         }
 
-        if (j.contains("actuators") && j["actuators"].is_array()) {
-            setActuatorsFromJsonArray(j["actuators"]);
-        }
-
         return true;
     }
 
+    /**
+     * @brief Define actuadores a partir de la configuracion general del plugin.
+     */
     void setActuatorsFromJsonArray(const nlohmann::json& actuator_array) {
         if (!actuator_array.is_array()) {
             return;
@@ -292,6 +302,8 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
             instance->debug_output = params["debug_output"].get<bool>();
         }
 
+        // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
+        // Actuadores se leen solo desde configuracion general (params["actuators"]).
         instance->module.loadMassPropertiesFromJson(mass_json_path);
         instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
         if (params.contains("actuators")) {
