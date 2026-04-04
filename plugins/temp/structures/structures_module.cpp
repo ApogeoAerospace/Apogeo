@@ -54,6 +54,8 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
 }
 
 void StructuresModule::setActuatorsFromJsonArray(const nlohmann::json& actuator_array) {
+    // Compatibilidad temporal: se conserva el parseo  para no romper
+    // configuraciones existentes, pero Structures no usa estos datos en fisica. (por el momento)
     if (!actuator_array.is_array()) {
         return;
     }
@@ -109,15 +111,8 @@ bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) 
 }
 
 void StructuresModule::mapActuatorsPlaceholder() {
-    actuators_.clear();
-    for (const auto& raw : actuators_raw_) {
-        ActuatorControl control;
-        control.id = raw.value("id", "unknown");
-        control.max_rate_deg_s = raw.value("max_rate_deg_s", 0.0);
-        control.range_deg = raw.value("range_deg", 0.0);
-        control.current_command_deg = 0.0;
-        actuators_.push_back(control);
-    }
+    // La logica de actuadores migra a Programming.
+    // Se mantiene esta funcion para compatibilidad de llamadas existentes.
 }
 
 Vec3d StructuresModule::getCenterOfMass() const {

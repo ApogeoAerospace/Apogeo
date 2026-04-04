@@ -61,7 +61,7 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 }
 
 /**
- * @brief Configura rutas de datos y actuadores desde configuracion general.
+ * @brief Configura rutas de datos estructurales desde configuracion general. (No actuadores)
  */
 PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params) {
     if (!handle || !json_params) {
@@ -90,12 +90,10 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         }
 
         // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
-        // Actuadores se leen solo desde configuracion general (params["actuators"]).
+        // Actuadores: transicion a Programming; Structures ya no depende de
+        // params["actuators"] para su fisica.
         instance->module.loadMassPropertiesFromJson(mass_json_path);
         instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
-        if (params.contains("actuators")) {
-            instance->module.setActuatorsFromJsonArray(params["actuators"]);
-        }
         instance->module.mapActuatorsPlaceholder();
         return 0;
     } catch (...) {

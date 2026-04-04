@@ -58,7 +58,10 @@ public:
     bool loadMassPropertiesFromJson(const std::string& json_path);
 
     /**
-     * @brief Define actuadores a partir de la configuracion general del plugin.
+     * @brief API legacy de transicion para actuadores (compatibilidad temporal).
+     *
+     * @deprecated La autoridad funcional de actuadores migra al plugin
+     * Programming. Structures no aplica logica fisica basada en actuadores.
      */
     void setActuatorsFromJsonArray(const nlohmann::json& actuator_array);
 
@@ -68,7 +71,10 @@ public:
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
 
     /**
-     * @brief Normaliza la configuracion de actuadores a estructura interna.
+     * @brief API de transicion para mapeo de actuadores.
+     *
+     * @deprecated Se mantiene para no romper compatibilidad de configuracion.
+     * No tiene efecto fisico en Structures.
      */
     void mapActuatorsPlaceholder();
 
@@ -93,8 +99,8 @@ private:
     Vec3d center_of_mass_{};
     InertiaTensorData inertia_tensor_{};
     StructuralLimits limits_{};
+    // Compatibilidad temporal: datos crudos no usados en fisica de Structures.
     std::vector<nlohmann::json> actuators_raw_;
-    std::vector<ActuatorControl> actuators_;
 };
 
 } // namespace structures
