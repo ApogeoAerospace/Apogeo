@@ -150,7 +150,7 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
     if(_plugin_name STREQUAL "structures")
         target_include_directories(${_plugin_name} PRIVATE
-            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/temp/structures"
+            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures"
         )
     endif()
 
