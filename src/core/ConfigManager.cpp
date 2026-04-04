@@ -161,34 +161,6 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                     plugin.parameters = plugin_json["parameters"];
                 }
 
-                // Inyectar parametros estructurales globales al plugin structures.
-                if (plugin.name == "structures" && json.contains("vehicle_models")) {
-                    const auto& vehicle_models = json["vehicle_models"];
-
-                    if (vehicle_models.contains("mass_properties") &&
-                        vehicle_models["mass_properties"].contains("source") &&
-                        vehicle_models["mass_properties"]["source"].contains("uri")) {
-                        plugin.parameters["mass_properties_path"] =
-                            vehicle_models["mass_properties"]["source"]["uri"];
-                    }
-
-                    if (vehicle_models.contains("physical_limits")) {
-                        const auto& physical_limits = vehicle_models["physical_limits"];
-
-                        if (physical_limits.contains("structural") &&
-                            physical_limits["structural"].contains("source") &&
-                            physical_limits["structural"]["source"].contains("uri")) {
-                            plugin.parameters["structural_limits_path"] =
-                                physical_limits["structural"]["source"]["uri"];
-                        }
-
-                        if (physical_limits.contains("actuators") &&
-                            physical_limits["actuators"].is_array()) {
-                            plugin.parameters["actuators"] = physical_limits["actuators"];
-                        }
-                    }
-                }
-
                 // Solo agregar si hay nombre y ruta válida
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
