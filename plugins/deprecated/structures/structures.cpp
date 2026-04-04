@@ -1,5 +1,5 @@
 /*
- * DEPRECATED 
+ * DEPRECATED
  *
  * Este archivo conserva la implementacion anterior del modulo Structures.
  * No forma parte de la compilacion activa del proyecto.

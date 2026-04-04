@@ -132,8 +132,8 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
     if(_plugin_name STREQUAL "structures")
         set(_plugin_sources
-            plugins/temp/structures/structures.cpp
-            plugins/temp/structures/structures_module.cpp
+            "plugins/structures/structures.cpp"
+            "plugins/structures/structures_module.cpp"
         )
     endif()
 
