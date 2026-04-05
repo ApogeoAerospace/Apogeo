@@ -41,7 +41,7 @@ add_custom_target(
   DEPENDS ${GENERATED_HEADER}
 )
 
-# --- Eigen (header-only, via FetchContent) ---
+# --- Eigen (solo encabezados, vía FetchContent) ---
 FetchContent_Declare(
     Eigen
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
@@ -54,7 +54,7 @@ if(NOT eigen_POPULATED)
     FetchContent_Populate(Eigen)
 endif()
 
-# Crear target header-only manualmente (sin add_subdirectory).
+# Crear target solo encabezados manualmente (sin add_subdirectory).
 # Esto evita por completo que Eigen registre tests, docs o demos.
 add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
 set_target_properties(Eigen3::Eigen PROPERTIES
@@ -97,7 +97,7 @@ target_include_directories(core PUBLIC
 add_dependencies(core generate_flatbuffers)
 
 # --- Configuración del ejecutable principal ---
-# Main executable
+# Ejecutable principal
 add_executable(simulator src/main.cpp)
 target_link_libraries(simulator core ${CMAKE_DL_LIBS})
 target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -106,23 +106,36 @@ target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/mass"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/limits"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/output"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_state.json # Hardcoded initial state file
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_state.json
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_config.json # Hardcoded config file
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_config.json
             "$<TARGET_FILE_DIR:simulator>/data"
-    COMMENT "Copiando archivos de configuración y creando directorios..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/mass/mass_properties.json
+            "$<TARGET_FILE_DIR:simulator>/data/mass"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/limits/structural_limits.csv
+            "$<TARGET_FILE_DIR:simulator>/data/limits"
+    COMMENT "Copying runtime configuration and data files..."
 )
 
 # --- Plugins ---
 
 set(PLUGIN_NAMES
-    example_plugin
     structures
 )
+
+# Estructura estandarizada de salida para plugins:
+# - Binarios de ejecución del plugin (.dll/.so/.dylib) -> bin/plugins
+# - Librerías de archivo/importación (.lib/.a)         -> lib/plugins
+set(PLUGIN_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+set(PLUGIN_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/plugins")
 
 foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
@@ -130,18 +143,28 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         plugins/${_plugin_name}/${_plugin_name}.cpp
     )
 
+    set(_plugin_private_libs
+        flatbuffers::flatbuffers
+    )
+
     if(_plugin_name STREQUAL "structures")
-        set(_plugin_sources
-            "plugins/structures/structures.cpp"
+        list(APPEND _plugin_sources
             "plugins/structures/structures_module.cpp"
+        )
+        list(APPEND _plugin_private_libs
+            nlohmann_json::nlohmann_json
         )
     endif()
 
-    # Crea la librería compartida
     add_library(${_plugin_name} SHARED ${_plugin_sources})
-
-    # Establece las dependencias y directorios de inclusión
     add_dependencies(${_plugin_name} generate_flatbuffers)
+
+    # Mantener consistente la ruta de binarios de plugins en todas las plataformas/configuraciones
+    set_target_properties(${_plugin_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        LIBRARY_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${PLUGIN_ARCHIVE_OUTPUT_DIRECTORY}"
+    )
 
     target_include_directories(${_plugin_name} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
@@ -154,17 +177,12 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         )
     endif()
 
-    # Enlaza las librerías necesarias
-    target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
-    list(APPEND PLUGIN_NAMES ${_plugin_name})
-
-    if(_plugin_name STREQUAL "structures")
-        target_link_libraries(${_plugin_name} PRIVATE nlohmann_json::nlohmann_json)
-    endif()
+    target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
 
 endforeach()
 
-message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
+message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
+message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")
 
 # --- Opciones de compilación para cobertura y análisis ---
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -181,7 +199,7 @@ if(ENABLE_COVERAGE)
     endif()
 endif()
 
-# --- Tests Unitarios ---
+# --- Tests unitarios ---
 if(ENABLE_TESTING)
     enable_testing()
 
