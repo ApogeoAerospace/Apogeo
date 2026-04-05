@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <nlohmann/json.hpp>
+
 namespace {
 
 static std::vector<std::string> splitCsvLine(const std::string& line) {
@@ -53,18 +55,6 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
     return true;
 }
 
-void StructuresModule::setActuatorsFromJsonArray(const nlohmann::json& actuator_array) {
-    // Compatibilidad temporal: se conserva el parseo  para no romper
-    // configuraciones existentes, pero Structures no usa estos datos en fisica. (por el momento)
-    if (!actuator_array.is_array()) {
-        return;
-    }
-    actuators_raw_.clear();
-    for (const auto& actuator_json : actuator_array) {
-        actuators_raw_.push_back(actuator_json);
-    }
-}
-
 bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) {
     std::ifstream file(csv_path);
     if (!file.is_open()) {
@@ -108,11 +98,6 @@ bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) 
     }
 
     return true;
-}
-
-void StructuresModule::mapActuatorsPlaceholder() {
-    // La logica de actuadores migra a Programming.
-    // Se mantiene esta funcion para compatibilidad de llamadas existentes.
 }
 
 Vec3d StructuresModule::getCenterOfMass() const {

@@ -48,7 +48,6 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 
     instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
     instance->module.loadStructuralLimitsFromCsv(kDefaultStructuralLimitsPath);
-    instance->module.mapActuatorsPlaceholder();
     instance->initialized = true;
 
     std::cout << "[Structures] Instancia creada." << std::endl;
@@ -90,11 +89,8 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         }
 
         // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
-        // Actuadores: transicion a Programming; Structures ya no depende de
-        // params["actuators"] para su fisica.
         instance->module.loadMassPropertiesFromJson(mass_json_path);
         instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
-        instance->module.mapActuatorsPlaceholder();
         return 0;
     } catch (...) {
         return -3;
