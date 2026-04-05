@@ -188,11 +188,11 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     const double px = state->position()->x();
     const double py = state->position()->y();
     const double pz = state->position()->z();
-    double altitude = std::sqrt(px * px + py * py + pz * pz) - kEarthRadiusM;
-    altitude = std::max(0.0, altitude);
+    double altitude = std::sqrt(px * px + py * py + pz * pz) - kEarthRadiusM; // En buffer principal, cálculo placeholder
+    altitude = std::max(0.0, altitude); // En buffer principal, cálculo placeholder
 
-    const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight);
-    const double dynamic_pressure = 0.5 * air_density * speed * speed;
+    const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight); // En buffer principal, cálculo placeholder
+    const double dynamic_pressure = 0.5 * air_density * speed * speed; // En buffer principal, cálculo placeholder
 
     // Lógica temporal de plantilla: este cálculo simplificado debe reemplazarse
     // por el modelo final del módulo Structures.
