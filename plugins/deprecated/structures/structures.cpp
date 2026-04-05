@@ -1,4 +1,16 @@
 /*
+ * DEPRECATED
+ *
+ * Este archivo conserva la implementacion anterior del modulo Structures.
+ * No forma parte de la compilacion activa del proyecto.
+ *
+ * Si faltan headers generados en este workspace, se omite su compilacion
+ * para evitar errores de include en esta copia.
+ */
+
+#if __has_include("../../../../src/api/plugin_api.h") && __has_include("state_vector_generated.h")
+
+/*
  * Structures Plugin - Análisis Estructural y Dinámico
  *
  * Este plugin implementa modelos estructurales reales incluyendo:
@@ -9,7 +21,7 @@
  * - Cambios de masa por consumo de combustible
  */
 
-#include "../../src/api/plugin_api.h"
+#include "../../../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 #include <cmath>
 #include <algorithm>
@@ -447,3 +459,13 @@ PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
  * - Satélites: Momentos de inercia para control de actitud
  * - Aviones: Análisis de cargas estructurales
  */
+
+#else
+
+/*
+ * Archivo deprecated de solo referencia.
+ * Se omite su compilacion porque no se encontraron dependencias locales
+ * (plugin_api.h o state_vector_generated.h).
+ */
+
+#endif

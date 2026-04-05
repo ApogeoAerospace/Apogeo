@@ -121,14 +121,24 @@ add_custom_command(
 
 set(PLUGIN_NAMES
     example_plugin
+    structures
 )
 
 foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
-    # Crea la librería compartida
-    add_library(${_plugin_name} SHARED
+    set(_plugin_sources
         plugins/${_plugin_name}/${_plugin_name}.cpp
     )
+
+    if(_plugin_name STREQUAL "structures")
+        set(_plugin_sources
+            "plugins/structures/structures.cpp"
+            "plugins/structures/structures_module.cpp"
+        )
+    endif()
+
+    # Crea la librería compartida
+    add_library(${_plugin_name} SHARED ${_plugin_sources})
 
     # Establece las dependencias y directorios de inclusión
     add_dependencies(${_plugin_name} generate_flatbuffers)
@@ -138,35 +148,21 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         "${GENERATED_DIR}"
     )
 
+    if(_plugin_name STREQUAL "structures")
+        target_include_directories(${_plugin_name} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures"
+        )
+    endif()
+
     # Enlaza las librerías necesarias
     target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
     list(APPEND PLUGIN_NAMES ${_plugin_name})
 
+    if(_plugin_name STREQUAL "structures")
+        target_link_libraries(${_plugin_name} PRIVATE nlohmann_json::nlohmann_json)
+    endif()
+
 endforeach()
-
-# ACTIVAR PLUGINS TEMPORALES (DESARROLLO)
-
-# set(TEMPORARY_PLUGINS
-#     aerodynamics
-#     structures
-#     propulsion
-#     environment
-#     programming
-#)
-
-# foreach(_temp_plugin IN LISTS TEMPORARY_PLUGINS)
-#     add_library(${_temp_plugin} SHARED
-#         plugins/temp/${_temp_plugin}/${_temp_plugin}.cpp
-#     )
-#     add_dependencies(${_temp_plugin} generate_flatbuffers)
-#     target_include_directories(${_temp_plugin} PRIVATE
-#         "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
-#         "${GENERATED_DIR}"
-#     )
-#     target_link_libraries(${_temp_plugin} PRIVATE flatbuffers::flatbuffers)
-#     list(APPEND PLUGIN_NAMES ${_temp_plugin})
-
-# endforeach()
 
 message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
 

@@ -1,0 +1,29 @@
+{
+  "initial_total_mass_kg": 1500.0,
+  "fuel_mass_kg": 500.0,
+  "center_of_mass_m": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 3.5
+  },
+  "inertia_tensor_kg_m2": {
+    "ixx": 420.0,
+    "iyy": 6100.0,
+    "izz": 6100.0,
+    "ixy": 0.0,
+    "ixz": 0.0,
+    "iyz": 0.0
+  },
+  "actuators": [
+    {
+      "id": "fin_1",
+      "max_rate_deg_s": 20.0,
+      "range_deg": 30.0
+    },
+    {
+      "id": "fin_2",
+      "max_rate_deg_s": 20.0,
+      "range_deg": 30.0
+    }
+  ]
+}
