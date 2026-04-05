@@ -68,6 +68,27 @@ extern "C" {
 
     } PluginTickData;
 
+    typedef enum {
+        PLUGIN_LOG_DEBUG = 0,
+        PLUGIN_LOG_INFO = 1,
+        PLUGIN_LOG_WARNING = 2,
+        PLUGIN_LOG_ERROR = 3,
+        PLUGIN_LOG_CRITICAL = 4
+    } PluginLogLevel;
+
+    typedef void (*PluginLogFn)(
+        int32_t level,
+        const char* component,
+        const char* message,
+        void* user_data
+    );
+
+    typedef struct {
+        uint32_t api_version;
+        PluginLogFn log;
+        void* user_data;
+    } PluginHostServices;
+
     // --- Funciones de la API---
 
     /**
@@ -103,6 +124,13 @@ extern "C" {
      * @param handle Handle del plugin a destruir.
      */
     PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle);
+
+    /**
+     * @brief Registro de servicios del host (opcional).
+     *
+     * El host llama a esto si está presente; los plugins pueden ignorarlo si no lo necesitan.
+     */
+    PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services);
 
 
 #ifdef __cplusplus

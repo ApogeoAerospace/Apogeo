@@ -28,6 +28,56 @@
 
 namespace MoLab {
 
+namespace {
+
+/**
+ * @brief Adaptador de logging para que los plugins usen el logger del host.
+ */
+void plugin_host_log_bridge(int32_t level, const char* component, const char* message, void* user_data) {
+    (void)user_data;
+
+    const std::string component_name = component ? component : "Plugin";
+    const std::string log_message = message ? message : "";
+
+    switch (level) {
+        case PLUGIN_LOG_DEBUG:
+            LOG_DEBUG(log_message, component_name);
+            break;
+        case PLUGIN_LOG_INFO:
+            LOG_INFO(log_message, component_name);
+            break;
+        case PLUGIN_LOG_WARNING:
+            LOG_WARNING(log_message, component_name);
+            break;
+        case PLUGIN_LOG_ERROR:
+            LOG_ERROR(log_message, component_name);
+            break;
+        case PLUGIN_LOG_CRITICAL:
+            LOG_CRITICAL(log_message, component_name);
+            break;
+        default:
+            LOG_INFO(log_message, component_name);
+            break;
+    }
+}
+
+/**
+ * @brief Retorna una instancia estable de servicios del host para plugins.
+ */
+const PluginHostServices* get_stable_host_services() {
+    static PluginHostServices services = [] {
+        PluginHostServices s = {};
+        s.api_version = 1;
+        s.log = &plugin_host_log_bridge;
+        s.user_data = nullptr;
+        return s;
+    }();
+
+    return &services;
+}
+
+} // namespace
+
 static std::string normalize_plugin_path(const std::string& path) {
     if (path.find(".dll") != std::string::npos ||
         path.find(".dylib") != std::string::npos ||
@@ -54,17 +104,20 @@ static std::string normalize_plugin_path(const std::string& path) {
     }
 
 #ifdef _WIN32
-    return dir + basename + ".dll";
+    std::filesystem::path normalized(dir + basename + ".dll");
+    return normalized.lexically_normal().generic_string();
 #elif __APPLE__
     if (basename.substr(0, 3) != "lib") {
         basename = "lib" + basename;
     }
-    return dir + basename + ".dylib";
+    std::filesystem::path normalized(dir + basename + ".dylib");
+    return normalized.lexically_normal().generic_string();
 #else
     if (basename.substr(0, 3) != "lib") {
         basename = "lib" + basename;
     }
-    return dir + basename + ".so";
+    std::filesystem::path normalized(dir + basename + ".so");
+    return normalized.lexically_normal().generic_string();
 #endif
 }
 
@@ -73,7 +126,7 @@ static std::vector<std::string> build_plugin_candidates(const std::string& norma
 
     std::vector<std::string> candidates;
     auto append_unique = [&candidates](const fs::path& candidate) {
-        std::string normalized = candidate.lexically_normal().string();
+        std::string normalized = candidate.lexically_normal().generic_string();
         if (normalized.empty()) {
             return;
         }
@@ -220,6 +273,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(GetProcAddress(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
+    plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(GetProcAddress(plugin.lib_handle, "plugin_set_host_services"));
 #else
     for (const auto& candidate : candidates) {
         LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
@@ -238,6 +292,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(dlsym(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(dlsym(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(dlsym(plugin.lib_handle, "plugin_destroy_instance"));
+    plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(dlsym(plugin.lib_handle, "plugin_set_host_services"));
 #endif
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
@@ -291,6 +346,20 @@ bool PluginManager::load_plugins_from_config() {
 
         if (!loaded_plugins_.empty()) {
             loaded_plugins_.back().name = plugin_config.name;
+        }
+
+        bool enable_host_logger = false;
+        if (plugin_config.parameters.is_object()) {
+            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
+        }
+
+        if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
+            if (enable_host_logger) {
+                loaded_plugins_.back().set_host_services_func(get_stable_host_services());
+                LOG_INFO("Host logger enabled for plugin: " + plugin_config.name, "PluginManager");
+            } else {
+                LOG_INFO("Host logger disabled for plugin: " + plugin_config.name, "PluginManager");
+            }
         }
 
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {

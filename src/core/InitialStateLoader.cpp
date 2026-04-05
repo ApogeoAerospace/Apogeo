@@ -103,7 +103,7 @@ bool MoLab::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBu
 
     std::string content = read_file_strip_bom(path);
     if (content.empty()) {
-        LOG_ERROR(std::string("Unable to open or read initial state file: ") + path.string(), "InitialStateLoader");
+        LOG_ERROR(std::string("Unable to open or read initial state file: ") + path.generic_string(), "InitialStateLoader");
         return false;
     }
 
@@ -237,6 +237,6 @@ bool MoLab::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferBu
     auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    LOG_INFO(std::string("Initial state loaded successfully from: ") + path.string(), "InitialStateLoader");
+    LOG_INFO(std::string("Initial state loaded successfully from: ") + path.generic_string(), "InitialStateLoader");
     return true;
 }

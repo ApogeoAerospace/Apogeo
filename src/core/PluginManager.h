@@ -59,6 +59,7 @@ struct LoadedPlugin {
     int32_t(*configure_func)(PluginHandle, const char*) = nullptr;
     int32_t(*tick_func)(PluginHandle, PluginTickData*) = nullptr;
     void(*destroy_func)(PluginHandle) = nullptr;
+    void(*set_host_services_func)(const PluginHostServices*) = nullptr;
 
 #if defined(_WIN32)
     HMODULE lib_handle = nullptr;
@@ -87,6 +88,7 @@ struct LoadedPlugin {
           configure_func(other.configure_func),
           tick_func(other.tick_func),
           destroy_func(other.destroy_func),
+          set_host_services_func(other.set_host_services_func),
           lib_handle(other.lib_handle) {
 
         // Resetear el objeto origen
@@ -95,6 +97,7 @@ struct LoadedPlugin {
         other.configure_func = nullptr;
         other.tick_func = nullptr;
         other.destroy_func = nullptr;
+        other.set_host_services_func = nullptr;
         other.lib_handle = nullptr;
     }
 
@@ -112,6 +115,7 @@ struct LoadedPlugin {
             configure_func = other.configure_func;
             tick_func = other.tick_func;
             destroy_func = other.destroy_func;
+            set_host_services_func = other.set_host_services_func;
             lib_handle = other.lib_handle;
 
             // Resetear el objeto origen
@@ -120,6 +124,7 @@ struct LoadedPlugin {
             other.configure_func = nullptr;
             other.tick_func = nullptr;
             other.destroy_func = nullptr;
+            other.set_host_services_func = nullptr;
             other.lib_handle = nullptr;
         }
         return *this;
