@@ -15,6 +15,7 @@ Fuente: `data/defaults/default_config.json` + `ConfigManager`.
   - `library_path`
   - `enabled`
   - `parameters`
+    - `enable_host_logger_integration` (opcional, `boolean`, default `false`)
 - `initial_state_file`
 - `output_directory` (se parsea, pero todavía no se aplica completamente en la salida del motor)
 
@@ -32,6 +33,12 @@ Fuente: `data/defaults/default_config.json` + `ConfigManager`.
 - `simulation.max_iterations > 0`
 - nombre/ruta de plugin no vacíos
 - tipo de plugin en `{0,1}`
+
+## Comportamiento actual de logging por plugin
+
+ - El host solo inyecta servicios de logging al plugin cuando `plugins[].parameters.enable_host_logger_integration` es `true`.
+- La inyección es opcional y depende de que el plugin exporte `plugin_set_host_services`.
+- Compatibilidad: también se acepta la clave legacy `use_host_logger`.
 
 ---
 

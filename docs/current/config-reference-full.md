@@ -57,6 +57,10 @@ Cada entrada de `plugins` configura un plugin.
 - `plugins[].parameters` (`object`)  
   Configuración libre del plugin, pasada al API `plugin_configure`.
 
+- `plugins[].parameters.use_host_logger` (`boolean`, opcional, default `false`)  
+  Si es `true`, `PluginManager` intenta inyectar servicios del host para logging mediante
+  `plugin_set_host_services(const PluginHostServices*)`.
+
 Ejemplo de parámetros en el archivo por defecto:
 - `plugins[].parameters.step_size` (`number`)  
   Factor de paso definido por el plugin.
@@ -204,6 +208,7 @@ Ejemplo de parámetros en el archivo por defecto:
 - Las rutas pueden ser relativas al directorio de trabajo del proceso o a la raíz del repositorio, según el launcher/runtime.
 - Las unidades deben tratarse como contrato obligatorio cuando están especificadas (segundos, deg/s, MB, etc.).
 - Las claves en `plugins[].parameters` son propiedad del plugin y pueden variar según implementación.
+- `use_host_logger` es una clave reservada/interpretada por el host para habilitar integración de logging centralizado en plugins.
 
 ---
 

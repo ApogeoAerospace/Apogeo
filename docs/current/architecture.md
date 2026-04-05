@@ -21,6 +21,7 @@
    - `initial_state_file`
    - `output_directory`
 4. `PluginManager::load_plugins_from_config()` carga plugins habilitados.
+   - Si el plugin exporta `plugin_set_host_services` y `use_host_logger=true`, el host inyecta servicios para logging.
 5. El motor inicializa el estado inicial y ejecuta ticks.
 6. Ciclo de tick:
    - sequential plugins (`type=0`)
@@ -37,3 +38,4 @@
 
 - El planificador actual de plugins usa hilos (`PluginTaskScheduler`).
 - `SimulationEngine` todavía tiene parte del comportamiento de salida hardcodeado.
+- `PluginManager` resuelve de forma opcional el símbolo `plugin_set_host_services` durante la carga (`load_plugin`) y aplica la activación por configuración en `load_plugins_from_config`.

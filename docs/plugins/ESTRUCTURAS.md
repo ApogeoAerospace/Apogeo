@@ -111,7 +111,7 @@ Consecuencia:
 
 ## 5.1 Estructuras del modulo Structures
 
-### `plugins/temp/structures/structures_module.h`
+### `plugins/structures/structures_module.h`
 
 Define dominio y contrato interno de Structures:
 - Tipos de datos (`Vec3d`, `InertiaTensorData`, `StructuralLimits`).
@@ -122,7 +122,7 @@ Define dominio y contrato interno de Structures:
 - Declara APIs de actuadores como **legacy/transicion**.
 - Almacena `actuators_raw_` solo para compatibilidad temporal.
 
-### `plugins/temp/structures/structures_module.cpp`
+### `plugins/structures/structures_module.cpp`
 
 Implementacion del dominio Structures:
 - Parse JSON de masa/inercia placeholder.
@@ -131,7 +131,7 @@ Implementacion del dominio Structures:
 - `mapActuatorsPlaceholder`: no-op intencional para mantener compatibilidad de flujo.
 - `computeStructuralForce` y `computeStructuralTorque`: amortiguamiento simple basado en velocidad y velocidad angular.
 
-### `plugins/temp/structures/structures.cpp`
+### `plugins/structures/structures.cpp`
 
 Capa plugin/API (orquestacion):
 - Maneja ciclo de vida exportado (`create/configure/tick/destroy`).
@@ -139,6 +139,8 @@ Capa plugin/API (orquestacion):
 - En `plugin_configure` toma parametros estructurales (`mass_properties_path`, `structural_limits_path`, `debug_output`).
 - Ejecuta logica de tick tipo 1, incluyendo warm-up del primer tick.
 - Reporta warning cuando integridad excede limites y `debug_output == true`.
+- Soporta integracion opcional de logging del host mediante `plugin_set_host_services`.
+- Publica/accede a callback de log del host en forma segura para hilos usando atomicos (`log` y `user_data`).
 
 ## 5.2 Archivos del core relevantes para Structures
 
@@ -157,6 +159,8 @@ Razon:
 Responsabilidad:
 - Carga bibliotecas dinamicas.
 - Ejecuta `plugin_configure` con `parameters` por plugin.
+- Inyecta `PluginHostServices` cuando `parameters.use_host_logger == true`.
+- Usa un objeto de servicios de host con vida estable (estatico) para evitar punteros colgantes en plugins.
 - Orquesta fases tipo 0, tipo 1, integracion.
 - Acumula fuerzas/torques de plugins tipo 1.
 
@@ -179,6 +183,7 @@ Responsabilidad:
 - Define plugins activos, tipo y parametros.
 - Structures esta configurado como tipo 1.
 - Actualmente expone `debug_output` dentro de `plugins[].parameters`.
+- Para logging integrado de host, usa `plugins[].parameters.use_host_logger`.
 - Existen datos de `vehicle_models.physical_limits.actuators`, pero ya no se inyectan automaticamente a Structures desde core.
 
 ### `CMakeLists.txt` (raiz)
@@ -186,15 +191,15 @@ Responsabilidad:
 Cambio importante aplicado:
 - Structures fue integrado al bloque normal de `PLUGIN_NAMES`.
 - Para `structures`, las fuentes son:
-  - `plugins/temp/structures/structures.cpp`
-  - `plugins/temp/structures/structures_module.cpp`
+  - `plugins/structures/structures.cpp`
+  - `plugins/structures/structures_module.cpp`
 - Se agrego include especifico de carpeta Structures y link a `nlohmann_json`.
 
 Impacto que se espera tener:
 - Build consistente con resto de plugins.
 - Menos logica  dispersa.
 
-### `plugins/temp/structures/CMakeLists.txt`
+### `plugins/structures/CMakeLists.txt`
 
 Existe como CMake local historico, pero **la compilacion activa del repo la controla el CMake raiz**.
 Se mantiene como referencia local del plugin, no como fuente principal de verdad del build global.
@@ -212,10 +217,13 @@ Esta secuencia resume lo implementado en esta iteracion del modulo:
    - CSV de limites estructurales.
 4. Se incorporaron logs de trazabilidad para creacion/configuracion/limites.
 5. Se corrigio pico falso de `g` en primer tick con estrategia warm-up.
-6. Se ajusto CMake para integrar Structures en el flujo estandar de plugins (Option A).
+6. Se ajusto CMake para integrar Structures en el flujo estandar de plugins.
 7. Se removio inyeccion especial desde `ConfigManager` para evitar parseo duplicado.
-8. Se dejo copia de implementacion anterior en deprecados.
-9. Se marco manejo de actuadores en Structures como transicional/compatibilidad, migrando autoridad a Programming.
+8. Se habilito integracion opcional de logger de host (`use_host_logger`) mediante `plugin_set_host_services`.
+9. Se corrigio un bug de vida util (puntero colgante) en servicios de host usando almacenamiento estable en `PluginManager`.
+10. Se endurecio `structures.cpp` con acceso atomico lock-free a callback de log y `user_data`.
+11. Se dejo copia de implementacion anterior en deprecados.
+12. Se marco manejo de actuadores en Structures como transicional/compatibilidad, migrando autoridad a Programming.
 
 ## 7. Deprecated 
 
@@ -259,4 +267,4 @@ En resumen, Programming publica estado aplicado de actuacion en el buffer; Struc
 
 
 ---
-Fecha de actualizacion: 2026-04-04.
+Fecha de actualizacion: 2026-04-05.
