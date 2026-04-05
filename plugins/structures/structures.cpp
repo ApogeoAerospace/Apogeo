@@ -7,11 +7,12 @@
  * Salida del plugin por tick: solo fuerza y torque.
  */
 
-#include "../../src/api/plugin_api.h"
+#include "plugin_api.h"
 #include "structures_module.h"
 #include "state_vector_generated.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -26,7 +27,8 @@ constexpr double kSeaLevelDensity = 1.225;
 constexpr double kScaleHeight = 8400.0;
 
 constexpr const char* kDefaultMassPropsPath = "data/mass/mass_properties.json";
-constexpr const char* kDefaultStructuralLimitsPath = "data/limits/structural_limits.csv";
+
+using HostLogFn = void(*)(int32_t, const char*, const char*, void*);
 
 struct StructuresPluginInstance {
     structures::StructuresModule module;
@@ -34,11 +36,44 @@ struct StructuresPluginInstance {
     bool debug_output = false;
     double previous_speed_m_s = 0.0;
     bool speed_initialized = false;
+    bool warned_template_physics = false;
 };
+
+std::atomic<HostLogFn> g_host_log_fn{nullptr};
+std::atomic<void*> g_host_user_data{nullptr};
+
+/**
+ * @brief Emite logs del plugin usando servicios del host cuando están habilitados.
+ */
+void plugin_log(int32_t level, const char* component, const std::string& message) {
+    HostLogFn host_log = g_host_log_fn.load(std::memory_order_acquire);
+    if (host_log != nullptr) {
+        void* user_data = g_host_user_data.load(std::memory_order_relaxed);
+        host_log(level, component, message.c_str(), user_data);
+        return;
+    }
+
+    // Fallback para pruebas aisladas del plugin sin host.
+    std::cout << "[" << (component ? component : "Plugin") << "] " << message << std::endl;
+}
 
 } // namespace
 
 extern "C" {
+
+/**
+ * @brief Recibe servicios opcionales del host (incluye logger compartido).
+ */
+PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
+    if (services != nullptr && services->log != nullptr) {
+        g_host_user_data.store(services->user_data, std::memory_order_relaxed);
+        g_host_log_fn.store(services->log, std::memory_order_release);
+        return;
+    }
+
+    g_host_log_fn.store(nullptr, std::memory_order_release);
+    g_host_user_data.store(nullptr, std::memory_order_relaxed);
+}
 
 /**
  * @brief Crea la instancia del plugin Structures y carga placeholders iniciales.
@@ -46,16 +81,14 @@ extern "C" {
 PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     auto* instance = new StructuresPluginInstance();
 
-    instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
-    instance->module.loadStructuralLimitsFromCsv(kDefaultStructuralLimitsPath);
-    instance->module.mapActuatorsPlaceholder();
-    instance->initialized = true;
+    const bool mass_loaded = instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
+    if (!mass_loaded) {
+        plugin_log(PLUGIN_LOG_ERROR, "Structures", "Failed to open JSON file: " + std::string(kDefaultMassPropsPath));
+        delete instance;
+        return nullptr;
+    }
 
-    std::cout << "[Structures] Instancia creada." << std::endl;
-    std::cout << "[Structures] Masa inicial (kg): " << instance->module.initialMassKg() << std::endl;
-    std::cout << "[Structures] Limite G warning/max: "
-              << instance->module.warningGLoad() << " / "
-              << instance->module.maxGLoad() << std::endl;
+    instance->initialized = true;
 
     return reinterpret_cast<PluginHandle>(instance);
 }
@@ -77,24 +110,30 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         const nlohmann::json params = nlohmann::json::parse(json_params);
 
         std::string mass_json_path = kDefaultMassPropsPath;
-        std::string limits_csv_path = kDefaultStructuralLimitsPath;
 
         if (params.contains("mass_properties_path")) {
             mass_json_path = params["mass_properties_path"].get<std::string>();
-        }
-        if (params.contains("structural_limits_path")) {
-            limits_csv_path = params["structural_limits_path"].get<std::string>();
         }
         if (params.contains("debug_output")) {
             instance->debug_output = params["debug_output"].get<bool>();
         }
 
         // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
-        // Actuadores: transicion a Programming; Structures ya no depende de
-        // params["actuators"] para su fisica.
-        instance->module.loadMassPropertiesFromJson(mass_json_path);
-        instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
-        instance->module.mapActuatorsPlaceholder();
+        const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
+
+        if (!mass_loaded) {
+            plugin_log(PLUGIN_LOG_ERROR, "Structures", "Failed to open JSON file: " + mass_json_path);
+        }
+
+        if (!mass_loaded) {
+            return -4;
+        }
+
+        plugin_log(PLUGIN_LOG_INFO, "Structures", "Instance configured.");
+        plugin_log(PLUGIN_LOG_INFO, "Structures", "Initial mass (kg): " + std::to_string(instance->module.initialMassKg()));
+        plugin_log(PLUGIN_LOG_INFO, "Structures", "G-load warning/max: "
+            + std::to_string(instance->module.warningGLoad()) + " / " + std::to_string(instance->module.maxGLoad()));
+        plugin_log(PLUGIN_LOG_WARNING, "Structures", "Temporary physics model is active in plugin_tick and must be replaced by the final model.");
         return 0;
     } catch (...) {
         return -3;
@@ -155,11 +194,16 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight);
     const double dynamic_pressure = 0.5 * air_density * speed * speed;
 
-    // Tick >= 2: evaluacion de integridad con g y presion dinamica actuales.
+    // Lógica temporal de plantilla: este cálculo simplificado debe reemplazarse
+    // por el modelo final del módulo Structures.
     const bool integrity_ok = instance->module.checkStructuralIntegrity(dynamic_pressure, g_force);
+    if (!instance->warned_template_physics) {
+        plugin_log(PLUGIN_LOG_WARNING, "Structures", "plugin_tick is using temporary template physics logic.");
+        instance->warned_template_physics = true;
+    }
     if (!integrity_ok && instance->debug_output) {
-        std::cout << "[Structures] Warning: limite estructural excedido. q="
-                  << dynamic_pressure << " Pa, g=" << g_force << std::endl;
+        plugin_log(PLUGIN_LOG_WARNING, "Structures", "Structural limit exceeded. q="
+            + std::to_string(dynamic_pressure) + " Pa, g=" + std::to_string(g_force));
     }
 
     *force_output = instance->module.computeStructuralForce(state);

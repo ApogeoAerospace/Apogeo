@@ -1,8 +1,9 @@
 #include "structures_module.h"
-
+#include <nlohmann/json.hpp>
+#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <sstream>
+#include <vector>
 
 namespace {
 
@@ -16,14 +17,54 @@ static std::vector<std::string> splitCsvLine(const std::string& line) {
     return fields;
 }
 
+static std::string resolveExistingPath(const std::string& input_path) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+
+    fs::path original(input_path);
+    if (original.is_absolute() && fs::exists(original, ec)) {
+        return original.string();
+    }
+
+    std::vector<fs::path> candidates;
+    candidates.push_back(original);
+
+    const fs::path cwd = fs::current_path(ec);
+    if (!ec && !cwd.empty()) {
+        candidates.push_back(cwd / original);
+
+        fs::path cursor = cwd;
+        for (int i = 0; i < 6; ++i) {
+            candidates.push_back(cursor / original);
+            if (!cursor.has_parent_path()) {
+                break;
+            }
+            cursor = cursor.parent_path();
+        }
+    }
+
+    for (const auto& candidate : candidates) {
+        if (candidate.empty()) {
+            continue;
+        }
+
+        fs::path normalized = candidate.lexically_normal();
+        if (fs::exists(normalized, ec)) {
+            return normalized.string();
+        }
+    }
+
+    return input_path;
+}
+
 } // namespace
 
 namespace structures {
 
 bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) {
-    std::ifstream file(json_path);
+    const std::string resolved_path = resolveExistingPath(json_path);
+    std::ifstream file(resolved_path);
     if (!file.is_open()) {
-        std::cout << "[Structures] No se pudo abrir JSON: " << json_path << std::endl;
         return false;
     }
 
@@ -53,22 +94,10 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
     return true;
 }
 
-void StructuresModule::setActuatorsFromJsonArray(const nlohmann::json& actuator_array) {
-    // Compatibilidad temporal: se conserva el parseo  para no romper
-    // configuraciones existentes, pero Structures no usa estos datos en fisica. (por el momento)
-    if (!actuator_array.is_array()) {
-        return;
-    }
-    actuators_raw_.clear();
-    for (const auto& actuator_json : actuator_array) {
-        actuators_raw_.push_back(actuator_json);
-    }
-}
-
 bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) {
-    std::ifstream file(csv_path);
+    const std::string resolved_path = resolveExistingPath(csv_path);
+    std::ifstream file(resolved_path);
     if (!file.is_open()) {
-        std::cout << "[Structures] No se pudo abrir CSV: " << csv_path << std::endl;
         return false;
     }
 
@@ -110,11 +139,6 @@ bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) 
     return true;
 }
 
-void StructuresModule::mapActuatorsPlaceholder() {
-    // La logica de actuadores migra a Programming.
-    // Se mantiene esta funcion para compatibilidad de llamadas existentes.
-}
-
 Vec3d StructuresModule::getCenterOfMass() const {
     return center_of_mass_;
 }
@@ -133,6 +157,8 @@ PluginVector3 StructuresModule::computeStructuralForce(const state_vector::Gener
         return out;
     }
 
+    // Modelo temporal de plantilla: amortiguamiento lineal simplificado.
+    // Debe reemplazarse por el modelo estructural definitivo.
     const double c = 5.0;
     out.x = static_cast<float>(-c * state->velocity()->x());
     out.y = static_cast<float>(-c * state->velocity()->y());
@@ -146,6 +172,8 @@ PluginVector3 StructuresModule::computeStructuralTorque(const state_vector::Gene
         return out;
     }
 
+    // Modelo temporal de plantilla: amortiguamiento angular simplificado.
+    // Debe reemplazarse por el modelo estructural definitivo.
     const double c_ang = 3.0;
     out.x = static_cast<float>(-c_ang * state->angular_velocity()->x());
     out.y = static_cast<float>(-c_ang * state->angular_velocity()->y());

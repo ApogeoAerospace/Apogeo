@@ -1,12 +1,9 @@
 #pragma once
 
-#include "../../src/api/plugin_api.h"
+#include "plugin_api.h"
 #include "state_vector_generated.h"
 
-#include <nlohmann/json.hpp>
-
 #include <string>
-#include <vector>
 
 namespace structures {
 
@@ -23,13 +20,6 @@ struct InertiaTensorData {
     double ixy = 0.0;
     double ixz = 0.0;
     double iyz = 0.0;
-};
-
-struct ActuatorControl {
-    std::string id;
-    double max_rate_deg_s = 0.0;
-    double range_deg = 0.0;
-    double current_command_deg = 0.0;
 };
 
 struct StructuralLimits {
@@ -58,25 +48,9 @@ public:
     bool loadMassPropertiesFromJson(const std::string& json_path);
 
     /**
-     * @brief API legacy de transicion para actuadores (compatibilidad temporal).
-     *
-     * @deprecated La autoridad funcional de actuadores migra al plugin
-     * Programming. Structures no aplica logica fisica basada en actuadores.
-     */
-    void setActuatorsFromJsonArray(const nlohmann::json& actuator_array);
-
-    /**
      * @brief Carga limites estructurales desde CSV.
      */
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
-
-    /**
-     * @brief API de transicion para mapeo de actuadores.
-     *
-     * @deprecated Se mantiene para no romper compatibilidad de configuracion.
-     * No tiene efecto fisico en Structures.
-     */
-    void mapActuatorsPlaceholder();
 
     Vec3d getCenterOfMass() const;
     InertiaTensorData getInertiaTensor() const;
@@ -99,8 +73,6 @@ private:
     Vec3d center_of_mass_{};
     InertiaTensorData inertia_tensor_{};
     StructuralLimits limits_{};
-    // Compatibilidad temporal: datos crudos no usados en fisica de Structures.
-    std::vector<nlohmann::json> actuators_raw_;
 };
 
 } // namespace structures
