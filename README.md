@@ -1,10 +1,8 @@
-# MoLab Aerospace Simulator
-# MoLab
+# Apogeo Aerospace Simulator
 
 Modular aerospace simulation engine with plugin architecture, FlatBuffers state exchange, and real-time force/torque integration.
 
-## What MoLab includes
-
+## What Apogeo includes
 - Core simulation runtime in C++17 (`simulator`)
 - Plugin execution pipeline (sequential + parallel plugin roles)
 - Physics integration (`Euler`, `Runge-Kutta 4`, `Verlet`)
