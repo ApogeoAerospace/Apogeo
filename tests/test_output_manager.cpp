@@ -9,7 +9,7 @@
 
 /**
  * @file test_output_manager.cpp
- * @brief Pruebas unitarias para `OutputManager`.
+ * @brief Unit tests for `OutputManager`.
  */
 
 using namespace MoLab;

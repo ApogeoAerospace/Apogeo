@@ -5,7 +5,7 @@
 
 /**
  * @file test_config_manager.cpp
- * @brief Pruebas unitarias para `ConfigManager`.
+ * @brief Unit tests for `ConfigManager`.
  */
 
 using json = nlohmann::json;
@@ -14,7 +14,7 @@ using namespace MoLab;
 class ConfigManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Crear un archivo de configuración temporal para tests
+    // Create a temporary configuration file for tests
         test_config_file = "test_config.json";
         json test_config = {
             {"simulation", {
@@ -35,7 +35,7 @@ protected:
     }
 
     void TearDown() override {
-        // Limpiar archivo temporal
+    // Clean up temporary file
         std::remove(test_config_file.c_str());
     }
 
@@ -65,7 +65,7 @@ TEST_F(ConfigManagerTest, GetMaxIterations) {
 
 TEST_F(ConfigManagerTest, InvalidConfigFileUsesDefaults) {
     auto& config_manager = ConfigManager::getInstance();
-    // loadConfig retorna false si el archivo no existe, pero aplica defaults
+    // loadConfig returns false if file does not exist, but applies defaults
     EXPECT_FALSE(config_manager.loadConfig("non_existent_file.json"));
 
     const auto& sim_config = config_manager.getSimulationConfig();

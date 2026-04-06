@@ -1,48 +1,48 @@
-# Guía de estilo Doxygen (adoptada)
+# Doxygen style guide (adopted)
 
-Usa este estilo para todos los encabezados públicos en `src/core/` y `src/api/`.
+Use this style for all public headers in `src/core/` and `src/api/`.
 
-## Plantilla de clase
+## Class template
 
 ```cpp
 /**
- * @brief Descripción corta de una línea.
+ * @brief One-line short description.
  *
- * Resumen más detallado del comportamiento a nivel de contrato.
+ * More detailed behavior summary at contract level.
  */
 class Example {
 public:
     /**
-     * @brief Ejecuta un paso de simulación.
-     * @param dt Delta de tiempo de simulación en segundos.
-     * @return true si fue exitoso, false en caso contrario.
+     * @brief Executes one simulation step.
+     * @param dt Simulation time delta in seconds.
+     * @return true on success, false otherwise.
      * @note Thread-safe.
      */
     bool step(double dt);
 };
 ```
 
-## Reglas
+## Rules
 
-1. API pública: siempre usar bloques Doxygen.
-2. Usar etiquetas de forma consistente:
+1. Public API: always use Doxygen blocks.
+2. Use tags consistently:
    - `@brief`
    - `@param`
    - `@return`
    - `@note`
    - `@warning`
-3. Incluir unidades en la documentación de parámetros.
-4. Mantener detalles de runtime/algoritmo en `.cpp`, no en comentarios de encabezados.
-5. Idioma estándar para documentación del proyecto: español.
+3. Include units in parameter documentation.
+4. Keep runtime/algorithm details in `.cpp`, not in header comments.
+5. Standard project documentation language: English.
 
-## Referencia oficial
+## Official reference
 
-La guía oficial del proyecto está en:
+The official project guide is:
 
 - [`docs/DOCUMENTATION_STYLE_GUIDE.md`](../DOCUMENTATION_STYLE_GUIDE.md)
 
 ---
 
-Estado de documentación: **Current**
+Documentation status: **Current**
 
-Volver a: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](../README.md)

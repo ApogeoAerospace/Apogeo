@@ -3,24 +3,24 @@
 
 /**
  * @file molab_namespace_docs.h
- * @brief Documentación de alto nivel del namespace principal del proyecto.
+ * @brief High-level documentation for the project's main namespace.
  */
 
 /**
  * @namespace MoLab
- * @brief Namespace principal del núcleo del simulador MoLab.
+ * @brief Main namespace for the MoLab simulator core.
  *
- * Agrupa los componentes principales de simulación, gestión de plugins,
- * configuración, logging, tiempo y salida de resultados.
+ * Groups the main simulation components, plugin management,
+ * configuration, logging, time, and output handling.
  *
- * Componentes destacados:
- * - `SimulationEngine`: orquestación del ciclo de simulación.
- * - `PluginManager`: carga/ejecución de plugins dinámicos.
- * - `PhysicsIntegrator`: integración numérica del estado.
- * - `ConfigManager`: configuración global y por ejecución.
- * - `TimeManager`: manejo de tiempo de simulación y UTC.
- * - `OutputManager`: persistencia y exportación de estados.
- * - `Logger`: sistema de logging del núcleo.
+ * Key components:
+ * - `SimulationEngine`: simulation-cycle orchestration.
+ * - `PluginManager`: dynamic plugin loading/execution.
+ * - `PhysicsIntegrator`: numerical state integration.
+ * - `ConfigManager`: global and per-run configuration.
+ * - `TimeManager`: simulation time and UTC management.
+ * - `OutputManager`: state persistence and export.
+ * - `Logger`: core logging system.
  */
 namespace MoLab {}
 

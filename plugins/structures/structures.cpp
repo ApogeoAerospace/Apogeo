@@ -1,10 +1,10 @@
 /*
- * Structures Plugin - Modulo de propiedades inerciales y limites fisicos.
+ * Structures Plugin - Inertial properties and physical limits module.
  *
- * Este plugin mantiene una estructura similar a los plugins de aerodinamica
- * y propulsion: crea instancia, configura, procesa tick y destruye.
+ * This plugin keeps a similar structure to the aerodynamics and propulsion plugins:
+ * create instance, configure, process tick, and destroy.
  *
- * Salida del plugin por tick: solo fuerza y torque.
+ * Plugin output per tick: force and torque only.
  */
 
 #include "plugin_api.h"
@@ -43,7 +43,7 @@ std::atomic<HostLogFn> g_host_log_fn{nullptr};
 std::atomic<void*> g_host_user_data{nullptr};
 
 /**
- * @brief Emite logs del plugin usando servicios del host cuando están habilitados.
+ * @brief Emits plugin logs through host services when enabled.
  */
 void plugin_log(int32_t level, const char* component, const std::string& message) {
     HostLogFn host_log = g_host_log_fn.load(std::memory_order_acquire);
@@ -53,7 +53,7 @@ void plugin_log(int32_t level, const char* component, const std::string& message
         return;
     }
 
-    // Fallback para pruebas aisladas del plugin sin host.
+    // Fallback for isolated plugin tests without host.
     std::cout << "[" << (component ? component : "Plugin") << "] " << message << std::endl;
 }
 
@@ -62,7 +62,7 @@ void plugin_log(int32_t level, const char* component, const std::string& message
 extern "C" {
 
 /**
- * @brief Recibe servicios opcionales del host (incluye logger compartido).
+ * @brief Receives optional host services (includes shared logger).
  */
 PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
     if (services != nullptr && services->log != nullptr) {
@@ -76,7 +76,7 @@ PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) 
 }
 
 /**
- * @brief Crea la instancia del plugin Structures y carga placeholders iniciales.
+ * @brief Creates Structures plugin instance and loads initial placeholders.
  */
 PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     auto* instance = new StructuresPluginInstance();
@@ -94,7 +94,7 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 }
 
 /**
- * @brief Configura rutas de datos estructurales desde configuracion general. (No actuadores)
+ * @brief Configures structural data paths from general configuration. (No actuators)
  */
 PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params) {
     if (!handle || !json_params) {
@@ -118,7 +118,7 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
             instance->debug_output = params["debug_output"].get<bool>();
         }
 
-        // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
+        // Mass/CoM/inertia are temporarily kept in JSON placeholders.
         const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
 
         if (!mass_loaded) {
@@ -141,7 +141,7 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
 }
 
 /**
- * @brief Ejecuta un tick estructural tipo 1 (solo lectura de estado, salida fuerza/torque).
+ * @brief Executes a type-1 structural tick (read-only state, force/torque output).
  */
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     if (!handle || !data || !data->state_buffer) {
@@ -169,7 +169,7 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     const double vz = state->velocity()->z();
     const double speed = std::sqrt(vx * vx + vy * vy + vz * vz);
 
-    // Primer tick: warm-up de velocidad previa para evitar pico artificial de g.
+    // First tick: warm-up previous speed to avoid artificial g-force spike.
     if (!instance->speed_initialized) {
         instance->previous_speed_m_s = speed;
         instance->speed_initialized = true;
@@ -188,14 +188,14 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     const double px = state->position()->x();
     const double py = state->position()->y();
     const double pz = state->position()->z();
-    double altitude = std::sqrt(px * px + py * py + pz * pz) - kEarthRadiusM; // En buffer principal, cálculo placeholder
-    altitude = std::max(0.0, altitude); // En buffer principal, cálculo placeholder
+    double altitude = std::sqrt(px * px + py * py + pz * pz) - kEarthRadiusM; // Main buffer, placeholder calculation
+    altitude = std::max(0.0, altitude); // Main buffer, placeholder calculation
 
-    const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight); // En buffer principal, cálculo placeholder
-    const double dynamic_pressure = 0.5 * air_density * speed * speed; // En buffer principal, cálculo placeholder
+    const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight); // Main buffer, placeholder calculation
+    const double dynamic_pressure = 0.5 * air_density * speed * speed; // Main buffer, placeholder calculation
 
-    // Lógica temporal de plantilla: este cálculo simplificado debe reemplazarse
-    // por el modelo final del módulo Structures.
+    // Temporary template logic: this simplified calculation must be replaced
+    // by the final Structures module model.
     const bool integrity_ok = instance->module.checkStructuralIntegrity(dynamic_pressure, g_force);
     if (!instance->warned_template_physics) {
         plugin_log(PLUGIN_LOG_WARNING, "Structures", "plugin_tick is using temporary template physics logic.");
@@ -216,7 +216,7 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
 }
 
 /**
- * @brief Libera la instancia del plugin Structures.
+ * @brief Releases Structures plugin instance.
  */
 PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
     if (!handle) {

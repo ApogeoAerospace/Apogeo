@@ -15,9 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Job inicial: Configurar vcpkg una sola vez y cachear
+  # Initial job: configure vcpkg once and cache it
   setup-vcpkg:
-    name: Configurar vcpkg (compartido)
+    name: Configure vcpkg (shared)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -33,10 +33,10 @@ jobs:
       cache-key: ${{ steps.cache-vcpkg.outputs.cache-primary-key }}
     
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Limpiar vcpkg si existe
+      - name: Clean vcpkg if it exists
         run: |
           if [ -d "vcpkg" ]; then
             echo "Removing existing vcpkg directory..."
@@ -54,18 +54,18 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
       
-      - name: Instalar dependencias de sistema (Ubuntu)
+      - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux' && steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build pkg-config
       
-      - name: Instalar dependencias de sistema (macOS)
+      - name: Install system dependencies (macOS)
         if: runner.os == 'macOS' && steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
           brew install cmake ninja pkg-config
       
-      - name: Configurar vcpkg
+      - name: Configure vcpkg
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         run: |
           # Remove vcpkg directory if it exists but is not a git repo
@@ -89,13 +89,13 @@ jobs:
           fi
           ./vcpkg install
       
-      - name: Verificar instalación vcpkg
+      - name: Verify vcpkg installation
         run: |
           if [ -d "vcpkg" ]; then
-            echo "✅ vcpkg configurado correctamente"
+            echo "✅ vcpkg configured correctly"
             ls -la vcpkg/
           else
-            echo "❌ ERROR: vcpkg no encontrado"
+            echo "❌ ERROR: vcpkg not found"
             exit 1
           fi
 
@@ -114,22 +114,22 @@ jobs:
             triplet: x64-osx
 
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Limpiar vcpkg si existe
+      - name: Clean vcpkg if it exists
         run: |
           if [ -d "vcpkg" ]; then
             echo "Removing existing vcpkg directory..."
             rm -rf vcpkg
           fi
 
-      - name: Configurar Python 3.x
+      - name: Configure Python 3.x
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Instalar dependencias de sistema (Ubuntu)
+      - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -140,12 +140,12 @@ jobs:
             python3-tk \
             pkg-config
 
-      - name: Instalar dependencias de sistema (macOS)
+      - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install cmake ninja pkg-config
 
-      - name: Restaurar cache de vcpkg
+      - name: Restore vcpkg cache
         uses: actions/cache@v3
         with:
           path: |
@@ -155,37 +155,37 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
-      - name: Configurar CMake
+      - name: Configure CMake
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
             -G Ninja
 
-      - name: Compilar proyecto
+      - name: Build project
         run: cmake --build build --config Release --parallel
 
-      - name: Verificar binarios generados
+      - name: Verify generated binaries
         run: |
-          echo "✅ Verificando binarios generados..."
+          echo "✅ Verifying generated binaries..."
           ls -lh build/bin/
           ls -lh build/lib/
           file build/bin/simulator
 
-      - name: Validar sintaxis de scripts Python
+      - name: Validate Python script syntax
         id: validate-python
         continue-on-error: true
         run: |
-          echo "Validando scripts Python"
+          echo "Validating Python scripts"
           python3 -m py_compile tools/*.py
           echo "PYTHON_VALIDATION_STATUS=$?" >> $GITHUB_ENV
       
-      - name: Reportar warning de validación Python
+      - name: Report Python validation warning
         if: steps.validate-python.outcome == 'failure'
         run: |
-          echo "::warning::⚠️ Algunos scripts Python tienen errores de sintaxis. Revisar tools/*.py"
+          echo "::warning::⚠️ Some Python scripts have syntax errors. Review tools/*.py"
 
-      - name: Subir artefactos de build
+      - name: Upload build artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -195,72 +195,72 @@ jobs:
             build/lib/
           retention-days: 7
   code-quality:
-    name: Validación de Calidad
+    name: Quality Validation
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verificar formato de archivos
+      - name: Verify file formatting
         run: |
-          echo "Verificando formato de archivos"
-          # Verificar que no haya archivos con espacios en blanco al final
+          echo "Verifying file formatting"
+          # Ensure there are no files with trailing whitespace
           ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
-            echo "⚠️ Se encontraron espacios en blanco al final de líneas"
+            echo "⚠️ Trailing whitespace was found"
             exit 1
           )
 
-      - name: Validar archivos JSON
+      - name: Validate JSON files
         run: |
-          echo "Validando archivos JSON"
+          echo "Validating JSON files"
           find data -name '*.json' -type f -exec sh -c '
-            echo "Validando: {}" && \
+            echo "Validating: {}" && \
             python3 -m json.tool {} > /dev/null
           ' \;
 
-      - name: Instalar FlatBuffers
+      - name: Install FlatBuffers
         run: |
           sudo apt-get update
           sudo apt-get install -y flatbuffers-compiler
           flatc --version
 
-      - name: Validar esquemas FlatBuffers
+      - name: Validate FlatBuffers schemas
         id: validate-flatbuffers
         run: |
-          echo "Validando esquemas FlatBuffers"
+          echo "Validating FlatBuffers schemas"
           if [ -d "src/schemas" ]; then
             VALIDATION_FAILED=0
             find src/schemas -name '*.fbs' -type f | while read -r schema_file; do
-              echo "Validando: $schema_file"
+              echo "Validating: $schema_file"
               if ! flatc --cpp --binary "$schema_file" -o /tmp/flatbuffers_validation 2>&1; then
-                echo "::error::❌ Error validando $schema_file"
+                echo "::error::❌ Error validating $schema_file"
                 VALIDATION_FAILED=1
               else
-                echo "✅ $schema_file válido"
+                echo "✅ $schema_file is valid"
               fi
             done
             
             if [ $VALIDATION_FAILED -eq 1 ]; then
-              echo "❌ ERROR: Algunos esquemas FlatBuffers tienen errores de sintaxis"
+              echo "❌ ERROR: Some FlatBuffers schemas have syntax errors"
               exit 1
             else
-              echo "✅ Todos los esquemas FlatBuffers son válidos"
+              echo "✅ All FlatBuffers schemas are valid"
             fi
           else
-            echo "⚠️ WARNING: No se encontró directorio src/schemas"
+            echo "⚠️ WARNING: src/schemas directory not found"
           fi
 
   unit-tests:
-    name: Tests Unitarios
+    name: Unit Tests
     runs-on: ubuntu-latest
     needs: setup-vcpkg
     
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -269,7 +269,7 @@ jobs:
             ninja-build \
             lcov
 
-      - name: Restaurar cache de vcpkg
+      - name: Restore vcpkg cache
         uses: actions/cache@v3
         with:
           path: |
@@ -279,7 +279,7 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
-      - name: Configurar CMake con tests
+      - name: Configure CMake with tests
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Debug \
@@ -287,40 +287,40 @@ jobs:
             -DENABLE_TESTING=ON \
             -G Ninja
 
-      - name: Compilar proyecto y tests
+      - name: Build project and tests
         run: cmake --build build --config Debug --parallel
 
-      - name: Ejecutar tests unitarios
+      - name: Run unit tests
         run: |
           cd build
           ctest --output-on-failure --verbose
       
-      - name: Validar tasa de éxito de tests
+      - name: Validate test success rate
         id: test-validation
         continue-on-error: true
         run: |
           cd build
-          # Ejecutar ctest y capturar resultados
+          # Run ctest and capture results
           if ! ctest --output-on-failure > test_results.txt 2>&1; then
-            echo "::warning::⚠️ Algunos tests unitarios fallaron"
+            echo "::warning::⚠️ Some unit tests failed"
             TEST_FAILED=true
           else
             TEST_FAILED=false
           fi
           
-          # Extraer estadísticas de tests
+          # Extract test statistics
           if grep -q "tests passed" test_results.txt; then
             PASSED=$(grep -oP '\d+(?= tests passed)' test_results.txt || echo "0")
             FAILED=$(grep -oP '\d+(?= tests failed)' test_results.txt || echo "0")
             TOTAL=$((PASSED + FAILED))
             if [ "$TOTAL" -gt 0 ]; then
               SUCCESS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
-              echo "Tests pasados: $PASSED/$TOTAL ($SUCCESS_RATE%)"
+              echo "Passed tests: $PASSED/$TOTAL ($SUCCESS_RATE%)"
               if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
-                echo "❌ ERROR: Tasa de éxito de tests menor al 95% requerido"
+                echo "❌ ERROR: Test success rate below required 95%"
                 exit 1
               fi
-              echo "✅ Tasa de éxito de tests: $SUCCESS_RATE% (>= 95%)"
+              echo "✅ Test success rate: $SUCCESS_RATE% (>= 95%)"
             fi
           fi
           
@@ -328,7 +328,7 @@ jobs:
             exit 1
           fi
 
-      - name: Subir resultados de tests
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -336,15 +336,15 @@ jobs:
           path: build/Testing/
           retention-days: 7
   code-coverage:
-    name: Cobertura de Código
+    name: Code Coverage
     runs-on: ubuntu-latest
     needs: setup-vcpkg
     
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -354,7 +354,7 @@ jobs:
             lcov \
             gcovr
 
-      - name: Restaurar cache de vcpkg
+      - name: Restore vcpkg cache
         uses: actions/cache@v3
         with:
           path: |
@@ -364,7 +364,7 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
-      - name: Configurar CMake con cobertura
+      - name: Configure CMake with coverage
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Debug \
@@ -373,94 +373,94 @@ jobs:
             -DENABLE_COVERAGE=ON \
             -G Ninja
 
-      - name: Compilar con cobertura
+      - name: Build with coverage
         run: cmake --build build --config Debug --parallel
 
-      - name: Ejecutar tests para cobertura
+      - name: Run tests for coverage
         run: |
           cd build
           ctest --output-on-failure
 
-      - name: Generar reporte de cobertura
+      - name: Generate coverage report
         run: |
           cd build
           lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch,inconsistent
           lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' --output-file coverage_filtered.info --ignore-errors unused
           lcov --list coverage_filtered.info
       
-      - name: Validar cobertura mínima
+      - name: Validate minimum coverage
         run: |
           cd build
-          # Verificar que el archivo de cobertura existe y no está vacío
+          # Verify that the coverage file exists and is not empty
           if [ ! -s coverage_filtered.info ]; then
-            echo "❌ ERROR: Archivo de cobertura vacío o no existe"
+            echo "❌ ERROR: Coverage file is empty or missing"
             exit 1
           fi
           
-          # Extraer porcentaje de cobertura con múltiples patrones
+          # Extract coverage percentage with multiple patterns
           COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep -oP '\d+\.\d+(?=% of)' | head -1)
           
-          # Si el primer patrón falla, intentar patrón alternativo
+          # If the first pattern fails, try an alternative
           if [[ -z "$COVERAGE" ]]; then
             COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+%' | grep -oP '\d+\.\d+' | head -1)
           fi
           
-          # Si aún no hay cobertura, intentar extraer de otra forma
+          # If coverage is still unavailable, try another extraction method
           if [[ -z "$COVERAGE" ]]; then
             COVERAGE=$(lcov --summary coverage_filtered.info 2>&1 | grep -E "lines\.*:" | awk '{print $2}' | grep -oP '\d+\.\d+' | head -1)
           fi
           
-          # Validar que se obtuvo un valor numérico
+          # Validate that a numeric value was obtained
           if [[ -z "$COVERAGE" ]] || ! [[ "$COVERAGE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-            echo "⚠️ WARNING: No se pudo extraer porcentaje de cobertura automáticamente"
-            echo "Mostrando salida completa de lcov:"
+            echo "⚠️ WARNING: Could not automatically extract coverage percentage"
+            echo "Showing full lcov output:"
             lcov --summary coverage_filtered.info
-            echo "❌ ERROR: No se puede validar cobertura mínima sin valor numérico"
+            echo "❌ ERROR: Cannot validate minimum coverage without a numeric value"
             exit 1
           fi
           
-          echo "📊 Cobertura de código: $COVERAGE%"
+          echo "📊 Code coverage: $COVERAGE%"
           
-          # VALIDACIÓN ESTRICTA: Cobertura mínima 44%
+          # STRICT VALIDATION: Minimum coverage 44%
           if (( $(echo "$COVERAGE < 44" | bc -l) )); then
-            echo "❌ ERROR: Cobertura de código insuficiente"
-            echo "   Actual: $COVERAGE%"
-            echo "   Mínimo requerido: 44%"
-            echo "   Déficit: $(echo "44 - $COVERAGE" | bc -l)%"
+            echo "❌ ERROR: Insufficient code coverage"
+            echo "   Current: $COVERAGE%"
+            echo "   Required minimum: 44%"
+            echo "   Deficit: $(echo "44 - $COVERAGE" | bc -l)%"
             echo ""
-            echo "🔧 Acción requerida: Agregar más tests unitarios para alcanzar 44% de cobertura"
+            echo "🔧 Required action: Add more unit tests to reach 44% coverage"
             exit 1
           else
-            echo "✅ Cobertura de código aceptable: $COVERAGE% (>= 44%)"
+            echo "✅ Acceptable code coverage: $COVERAGE% (>= 44%)"
           fi
 
-      - name: Generar reporte HTML
+      - name: Generate HTML report
         run: |
           cd build
           genhtml coverage_filtered.info --output-directory coverage_html
 
-      - name: Subir reporte de cobertura
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: build/coverage_html/
           retention-days: 30
 
-      - name: Mostrar resumen de cobertura
+      - name: Show coverage summary
         run: |
           cd build
           lcov --summary coverage_filtered.info
 
   static-analysis:
-    name: Análisis Estático
+    name: Static Analysis
     runs-on: ubuntu-latest
     needs: setup-vcpkg
     
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Instalar clang-tidy
+      - name: Install clang-tidy
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -470,7 +470,7 @@ jobs:
             cmake \
             ninja-build
 
-      - name: Restaurar cache de vcpkg
+      - name: Restore vcpkg cache
         uses: actions/cache@v3
         with:
           path: |
@@ -480,7 +480,7 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
-      - name: Configurar CMake
+      - name: Configure CMake
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Debug \
@@ -488,66 +488,66 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja
 
-      - name: Generar archivos FlatBuffers
+      - name: Generate FlatBuffers files
         run: |
-          echo "Generando archivos necesarios (FlatBuffers, etc.)"
+          echo "Generating required files (FlatBuffers, etc.)"
           cmake --build build --target generate_flatbuffers || cmake --build build -j2
 
-      - name: Ejecutar clang-tidy
+      - name: Run clang-tidy
         id: clang-tidy
         continue-on-error: true
         run: |
-          echo "Ejecutando análisis estático con clang-tidy"
+          echo "Running static analysis with clang-tidy"
           find core src -name '*.cpp' -not -path '*/vcpkg_installed/*' | \
             xargs clang-tidy -p build --config-file=.clang-tidy 2>&1 | \
             tee clang-tidy-report.txt
           CLANG_TIDY_EXIT=$?
           echo "CLANG_TIDY_EXIT_CODE=$CLANG_TIDY_EXIT" >> $GITHUB_ENV
       
-      - name: Contar advertencias de clang-tidy
+      - name: Count clang-tidy warnings
         run: |
           WARNING_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: warning:" clang-tidy-report.txt || echo "0")
           ERROR_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt || echo "0")
-          echo "📊 Advertencias encontradas: $WARNING_COUNT"
-          echo "📊 Errores encontrados: $ERROR_COUNT"
+          echo "📊 Warnings found: $WARNING_COUNT"
+          echo "📊 Errors found: $ERROR_COUNT"
           
-          # Reportar como warning si hubo problemas en la ejecución
+          # Report as warning if there were execution issues
           if [ "${CLANG_TIDY_EXIT_CODE:-0}" -ne 0 ]; then
-            echo "::warning::⚠️ clang-tidy reportó problemas durante el análisis (exit code: ${CLANG_TIDY_EXIT_CODE})"
+            echo "::warning::⚠️ clang-tidy reported issues during analysis (exit code: ${CLANG_TIDY_EXIT_CODE})"
           fi
           
-          # VALIDACIÓN ESTRICTA: Máximo 10 advertencias permitidas
+          # STRICT VALIDATION: Maximum 10 warnings allowed
           if [ "$WARNING_COUNT" -ge 445 ]; then
-            echo "❌ ERROR: Demasiadas advertencias de clang-tidy"
-            echo "   Actual: $WARNING_COUNT advertencias"
-            echo "   Máximo permitido: 10 advertencias"
-            echo "   Exceso: $((WARNING_COUNT - 10)) advertencias"
+            echo "❌ ERROR: Too many clang-tidy warnings"
+            echo "   Current: $WARNING_COUNT warnings"
+            echo "   Maximum allowed: 10 warnings"
+            echo "   Excess: $((WARNING_COUNT - 10)) warnings"
             echo ""
-            echo "🔧 Acción requerida: Corregir advertencias antes de continuar"
-            echo "   Por favor revisa el reporte de clang-tidy y soluciona las advertencias"
+            echo "🔧 Required action: Fix warnings before continuing"
+            echo "   Please review the clang-tidy report and address warnings"
             exit 1
           elif [ "$WARNING_COUNT" -gt 50 ]; then
-            echo "::warning::⚠️ Muchas advertencias de clang-tidy ($WARNING_COUNT). Se recomienda corregirlas."
+            echo "::warning::⚠️ Many clang-tidy warnings ($WARNING_COUNT). It is recommended to fix them."
           else
-            echo "✅ Advertencias dentro del límite aceptable: $WARNING_COUNT <= 10"
+            echo "✅ Warnings within acceptable limit: $WARNING_COUNT <= 10"
           fi
           
           if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "❌ ERROR: Se encontraron $ERROR_COUNT errores de clang-tidy"
+            echo "❌ ERROR: Found $ERROR_COUNT clang-tidy errors"
           else
-            echo "✅ Sin errores de clang-tidy"
+            echo "✅ No clang-tidy errors"
           fi
 
-      - name: Verificar advertencias críticas
+      - name: Check critical warnings
         run: |
           if grep -E "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt; then
-            echo "Se encontraron errores críticos en el análisis estático"
-            echo "Por favor revisa el reporte de clang-tidy para más detalles"
+            echo "Critical errors were found during static analysis"
+            echo "Please review the clang-tidy report for details"
             exit 1
           fi
-          echo "Análisis estático completado sin errores críticos"
+          echo "Static analysis completed without critical errors"
 
-      - name: Subir reporte de análisis
+      - name: Upload analysis report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -556,39 +556,39 @@ jobs:
           retention-days: 30
 
   quality-summary:
-    name: Resumen de Calidad
+    name: Quality Summary
     runs-on: ubuntu-latest
     needs: [build-and-test, unit-tests, code-coverage, static-analysis, code-quality]
     if: always()
     
     steps:
-      - name: Generar resumen de calidad
+      - name: Generate quality summary
         run: |
-          echo "# Resumen de Calidad del Pipeline CI" >> $GITHUB_STEP_SUMMARY
+          echo "# CI Pipeline Quality Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Estado de Jobs" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build & Test | ${{ needs.build-and-test.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests Unitarios | ${{ needs.unit-tests.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cobertura de Código | ${{ needs.code-coverage.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Análisis Estático | ${{ needs.static-analysis.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Calidad de Código | ${{ needs.code-quality.result == 'success' && '✅ Exitoso' || '❌ Fallido' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Test | ${{ needs.build-and-test.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Coverage | ${{ needs.code-coverage.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Métricas de Calidad" >> $GITHUB_STEP_SUMMARY
+          echo "## Quality Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests Unitarios**: Tasa de éxito >= 95% requerida" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cobertura de Código**: >= 44% requerida" >> $GITHUB_STEP_SUMMARY
-          echo "- **Análisis Estático**: 0 errores críticos requeridos, <= 10 advertencias" >> $GITHUB_STEP_SUMMARY
-          echo "- **Esquemas FlatBuffers**: Validación sintáctica completa" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests**: required success rate >= 95%" >> $GITHUB_STEP_SUMMARY
+          echo "- **Code Coverage**: required >= 44%" >> $GITHUB_STEP_SUMMARY
+          echo "- **Static Analysis**: 0 critical errors required, <= 10 warnings" >> $GITHUB_STEP_SUMMARY
+          echo "- **FlatBuffers Schemas**: full syntax validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then
-            echo "## ✅ Pipeline CI Completado Exitosamente" >> $GITHUB_STEP_SUMMARY
+            echo "## ✅ CI Pipeline Completed Successfully" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Todos los checks de calidad han pasado. El código está listo para merge." >> $GITHUB_STEP_SUMMARY
+            echo "All quality checks passed. The code is ready to merge." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ Pipeline CI con Fallos" >> $GITHUB_STEP_SUMMARY
+            echo "## ❌ CI Pipeline Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Algunos checks de calidad han fallado. Por favor revisa los logs para más detalles." >> $GITHUB_STEP_SUMMARY
+            echo "Some quality checks failed. Please review the logs for details." >> $GITHUB_STEP_SUMMARY
           fi

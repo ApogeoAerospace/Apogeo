@@ -1,33 +1,33 @@
-# Doxyfile - Configuración de Doxygen para MoLab
-# Generado para el proyecto MoLab Aerospace Simulator
-# Fecha: Febrero 2026
+# Doxyfile - Doxygen configuration for MoLab
+# Generated for the MoLab Aerospace Simulator project
+# Date: February 2026
 
 #---------------------------------------------------------------------------
-# Información del Proyecto
+# Project Information
 #---------------------------------------------------------------------------
 
 PROJECT_NAME           = "MoLab Aerospace Simulator"
 PROJECT_NUMBER         = "1.0.0"
-PROJECT_BRIEF          = "Simulador aeroespacial modular con arquitectura de plugins"
+PROJECT_BRIEF          = "Modular aerospace simulator with plugin architecture"
 PROJECT_LOGO           = 
 
-# Directorio de salida para la documentación generada
+# Output directory for generated documentation
 OUTPUT_DIRECTORY       = docs/generated
 
-# Crear subdirectorios para HTML, LaTeX, etc.
+# Create subdirectories for HTML, LaTeX, etc.
 CREATE_SUBDIRS         = YES
 
 #---------------------------------------------------------------------------
-# Opciones de Entrada
+# Input Options
 #---------------------------------------------------------------------------
 
-# Directorios y archivos a documentar
+# Directories and files to document
 INPUT                  = src \
                          plugins \
                          tests \
                          README.md
 
-# Extensiones de archivo a procesar
+# File extensions to process
 FILE_PATTERNS          = *.cpp \
                          *.h \
                          *.hpp \
@@ -35,191 +35,191 @@ FILE_PATTERNS          = *.cpp \
                          *.fbs \
                          *.md
 
-# Procesar subdirectorios recursivamente
+# Process subdirectories recursively
 RECURSIVE              = YES
 
-# Archivos y directorios a excluir
+# Files and directories to exclude
 EXCLUDE                = build \
                          vcpkg_installed \
                          .git
 
-# Patrones a excluir
+# Exclusion patterns
 EXCLUDE_PATTERNS       = */build/* \
                          */.git/* \
                          */vcpkg_installed/*
 
-# Usar README.md como página principal
+# Use README.md as main page
 USE_MDFILE_AS_MAINPAGE = README.md
 
-# Mapear extensiones no estándar para parseo de Doxygen
+# Map non-standard extensions for Doxygen parsing
 EXTENSION_MAPPING      = fbs=C++
 
-# Layout personalizado para nombres de pestañas en español
+# Customized layout file
 LAYOUT_FILE            = docs/doxygen_layout.xml
 
 #---------------------------------------------------------------------------
-# Opciones de Build
+# Build Options
 #---------------------------------------------------------------------------
 
-# Extraer todos los elementos (incluso sin documentar)
+# Extract all elements (including undocumented)
 EXTRACT_ALL            = YES
 
-# Extraer miembros privados
+# Extract private members
 EXTRACT_PRIVATE        = YES
 
-# Extraer miembros estáticos
+# Extract static members
 EXTRACT_STATIC         = YES
 
-# Extraer miembros locales (variables de función)
+# Extract local members (function-scope variables)
 EXTRACT_LOCAL_CLASSES  = YES
 
-# Ordenar miembros alfabéticamente
+# Sort members alphabetically
 SORT_MEMBER_DOCS       = YES
 
-# Mostrar archivos incluidos
+# Show include files
 SHOW_INCLUDE_FILES     = YES
 
-# Mostrar namespaces
+# Show namespaces
 SHOW_NAMESPACES        = YES
 
 #---------------------------------------------------------------------------
-# Opciones de Warnings
+# Warning Options
 #---------------------------------------------------------------------------
 
-# Mostrar warnings para elementos sin documentar
+# Show warnings for undocumented elements
 WARN_IF_UNDOCUMENTED   = YES
 
-# Mostrar warnings para formato incorrecto
+# Show warnings for invalid documentation format
 WARN_IF_DOC_ERROR      = YES
 
-# Archivo de log de warnings (vacío = stderr)
+# Warnings log file (empty = stderr)
 WARN_LOGFILE           = docs/doxygen_warnings.log
 
 #---------------------------------------------------------------------------
-# Opciones de HTML
+# HTML Options
 #---------------------------------------------------------------------------
 
-# Generar documentación HTML
+# Generate HTML documentation
 GENERATE_HTML          = YES
 
-# Directorio de salida HTML
+# HTML output directory
 HTML_OUTPUT            = html
 
-# Barra lateral de navegación
+# Navigation sidebar tree
 GENERATE_TREEVIEW      = YES
 
-# Tema de colores
+# Color theme
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
 HTML_COLORSTYLE_GAMMA  = 80
 
-# Motor de búsqueda del lado del servidor
+# Server-side search engine
 SEARCHENGINE           = YES
 
-# Búsqueda del lado del cliente (JavaScript)
+# Client-side search (JavaScript)
 SERVER_BASED_SEARCH    = NO
 
 #---------------------------------------------------------------------------
-# Opciones de LaTeX/PDF
+# LaTeX/PDF Options
 #---------------------------------------------------------------------------
 
-# No generar LaTeX por defecto (activar si necesitas PDF)
+# Do not generate LaTeX by default (enable if PDF is needed)
 GENERATE_LATEX         = NO
 
 #---------------------------------------------------------------------------
-# Opciones de Gráficos
+# Graph Options
 #---------------------------------------------------------------------------
 
-# Generar gráficos de dependencias (requiere Graphviz)
+# Generate dependency graphs (requires Graphviz)
 HAVE_DOT               = YES
 
-# Gráficos de herencia de clases
+# Class inheritance graphs
 CLASS_GRAPH            = YES
 
-# Gráficos de colaboración entre clases
+# Class collaboration graphs
 COLLABORATION_GRAPH    = YES
 
-# Gráficos de dependencias de archivos include
+# Include dependency graphs
 INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
 
-# Gráficos de llamadas a funciones
+# Function call graphs
 CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
 
-# Formato de imagen
+# Image format
 DOT_IMAGE_FORMAT       = svg
 
-# Usar SVG interactivo
+# Use interactive SVG
 INTERACTIVE_SVG        = YES
 
-# Carpeta temporal de Graphviz
+# Graphviz temporary path
 DOT_PATH               = 
 
 #---------------------------------------------------------------------------
-# Opciones de Preprocesador
+# Preprocessor Options
 #---------------------------------------------------------------------------
 
-# Expandir macros
+# Expand macros
 ENABLE_PREPROCESSING   = YES
 
-# Buscar archivos include
+# Search include files
 SEARCH_INCLUDES        = YES
 
-# Rutas de includes
+# Include paths
 INCLUDE_PATH           = src \
                          src/core \
                          src/api \
                          plugins
 
-# Macros predefinidas
+# Predefined macros
 PREDEFINED             = PLUGIN_EXPORT= \
                          WIN32
 
 #---------------------------------------------------------------------------
-# Opciones de Lenguaje
+# Language Options
 #---------------------------------------------------------------------------
 
-# Codificación de entrada
+# Input encoding
 INPUT_ENCODING         = UTF-8
 
-# Idioma de salida
-OUTPUT_LANGUAGE        = Spanish
+# Output language
+OUTPUT_LANGUAGE        = English
 
-# Auto-enlazar palabras clave del lenguaje
+# Auto-link language keywords
 BUILTIN_STL_SUPPORT    = YES
 
 #---------------------------------------------------------------------------
-# Opciones Adicionales
+# Additional Options
 #---------------------------------------------------------------------------
 
-# Mostrar todos los miembros heredados
+# Show all inherited members
 INLINE_INHERITED_MEMB  = YES
 
-# Agrupar miembros por tipo
+# Group members by type
 SORT_BRIEF_DOCS        = YES
 
-# Mostrar etiquetas @todo
+# Show @todo tags
 GENERATE_TODOLIST      = YES
 
-# Mostrar etiquetas @bug
+# Show @bug tags
 GENERATE_BUGLIST       = YES
 
-# Mostrar etiquetas @deprecated
+# Show @deprecated tags
 GENERATE_DEPRECATEDLIST = YES
 
-# Número máximo de líneas de código en @code
+# Maximum number of code lines in @code
 MAX_INITIALIZER_LINES  = 30
 
-# Ocultar detalles de implementación de librería estándar
+# Hide standard-library implementation details
 HIDE_UNDOC_RELATIONS   = NO
 
-# Extraer documentación de código
+# Extract inline source documentation
 INLINE_SOURCES         = YES
 
-# Mostrar números de línea en código fuente
+# Show line numbers in source code
 SOURCE_BROWSER         = YES
 STRIP_CODE_COMMENTS    = NO
 
-# Referencias a código fuente
+# Source code references
 REFERENCES_LINK_SOURCE = YES

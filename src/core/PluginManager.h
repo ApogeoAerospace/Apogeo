@@ -1,5 +1,6 @@
 #ifndef PLUGIN_MANAGER_H
 #define PLUGIN_MANAGER_H
+#define PLUGIN_MANAGER_H
 
 #include "plugin_api.h"
 #include <string>
@@ -11,7 +12,7 @@
 
 /**
  * @file PluginManager.h
- * @brief Gestión de carga, ejecución y ciclo de vida de plugins dinámicos.
+ * @brief Management of load, execution, and lifecycle for dynamic plugins.
  */
 
 #if defined(_WIN32)
@@ -23,7 +24,7 @@
 
 /**
  * @enum PluginType
- * @brief Rol funcional de un plugin dentro del ciclo de simulación.
+ * @brief Functional role of a plugin within simulation cycle.
  */
 enum class PluginType {
     SEQUENTIAL_STATE_MODIFIER = 0,
@@ -40,7 +41,7 @@ namespace MoLab {
 
 /**
  * @struct LoadedPlugin
- * @brief Representa un plugin cargado con metadatos, funciones y métricas.
+ * @brief Represents a loaded plugin with metadata, functions, and metrics.
  */
 struct LoadedPlugin {
     PluginHandle handle = nullptr;
@@ -49,12 +50,12 @@ struct LoadedPlugin {
     std::string name;
     bool enabled = true;
 
-    // Métricas de rendimiento
+    // Performance metrics
     std::atomic<uint64_t> execution_count{0};
     std::atomic<double> total_execution_time{0.0};
     std::atomic<double> last_execution_time{0.0};
 
-    // Funciones de la API del plugin
+    // Plugin API functions
     PluginHandle(*create_func)() = nullptr;
     int32_t(*configure_func)(PluginHandle, const char*) = nullptr;
     int32_t(*tick_func)(PluginHandle, PluginTickData*) = nullptr;
@@ -67,14 +68,14 @@ struct LoadedPlugin {
     void* lib_handle = nullptr;
 #endif
 
-    // Constructor por defecto
+    // Default constructor
     LoadedPlugin() = default;
 
-    // Eliminar constructor de copia y operador de asignación
+    // Delete copy constructor and copy assignment
     LoadedPlugin(const LoadedPlugin&) = delete;
     LoadedPlugin& operator=(const LoadedPlugin&) = delete;
 
-    // Permitir constructor de movimiento y operador de asignación de movimiento
+    // Enable move constructor and move assignment
     LoadedPlugin(LoadedPlugin&& other) noexcept
         : handle(other.handle),
           type(other.type),
@@ -91,7 +92,7 @@ struct LoadedPlugin {
           set_host_services_func(other.set_host_services_func),
           lib_handle(other.lib_handle) {
 
-        // Resetear el objeto origen
+        // Reset source object
         other.handle = nullptr;
         other.create_func = nullptr;
         other.configure_func = nullptr;
@@ -118,7 +119,7 @@ struct LoadedPlugin {
             set_host_services_func = other.set_host_services_func;
             lib_handle = other.lib_handle;
 
-            // Resetear el objeto origen
+            // Reset source object
             other.handle = nullptr;
             other.create_func = nullptr;
             other.configure_func = nullptr;
@@ -133,65 +134,65 @@ struct LoadedPlugin {
 
 /**
  * @class PluginManager
- * @brief Gestiona el ciclo de vida y ejecución de plugins con seguridad de hilos.
+ * @brief Manages plugin lifecycle and execution with thread safety.
  */
 class PluginManager {
 public:
     /**
-     * @brief Construye el gestor e inicializa subsistemas auxiliares.
+     * @brief Constructs manager and initializes auxiliary subsystems.
      */
     PluginManager();
 
     /**
-     * @brief Destruye el gestor y libera recursos asociados.
+     * @brief Destroys manager and releases associated resources.
      */
     ~PluginManager();
 
-    // Prevenir copia y asignación
+    // Prevent copy and assignment
     PluginManager(const PluginManager&) = delete;
     PluginManager& operator=(const PluginManager&) = delete;
 
     /**
-     * @brief Carga un plugin dinámico y lo clasifica por tipo.
-     * @param path Ruta de la librería del plugin.
-     * @param type Tipo de plugin a registrar.
-     * @return `true` si el plugin se carga correctamente.
+     * @brief Loads a dynamic plugin and classifies it by type.
+     * @param path Plugin library path.
+     * @param type Plugin type to register.
+     * @return `true` if plugin is loaded successfully.
      */
     bool load_plugin(const std::string& path, PluginType type);
 
     /**
-     * @brief Carga plugins definidos en la configuración global.
-     * @return `true` si todos los plugins habilitados se cargaron correctamente.
+     * @brief Loads plugins defined in global configuration.
+     * @return `true` if all enabled plugins were loaded successfully.
      */
     bool load_plugins_from_config();
 
     /**
-     * @brief Ejecuta un ciclo completo de plugins e integración física.
-     * @param state_buffer Buffer de estado serializado.
-     * @param delta_time Paso temporal del tick.
+     * @brief Runs a complete plugin cycle and physical integration.
+     * @param state_buffer Serialized state buffer.
+     * @param delta_time Tick time step.
      */
     void run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time);
 
     /**
-     * @brief Libera todos los recursos y descarga todos los plugins.
+     * @brief Releases all resources and unloads all plugins.
      */
     void shutdown();
 
     /**
-     * @brief Obtiene la cantidad de plugins cargados.
-     * @return Número de plugins registrados.
+     * @brief Gets number of loaded plugins.
+     * @return Number of registered plugins.
      */
     size_t get_plugin_count() const;
 
     /**
-     * @brief Obtiene nombres de plugins cargados.
-     * @return Lista de nombres o rutas de plugins.
+     * @brief Gets names of loaded plugins.
+     * @return List of plugin names or paths.
      */
     std::vector<std::string> get_loaded_plugin_names() const;
 
     /**
      * @struct PluginMetrics
-     * @brief Métricas de ejecución acumuladas por plugin.
+     * @brief Accumulated execution metrics per plugin.
      */
     struct PluginMetrics {
         std::string name;
@@ -202,36 +203,36 @@ public:
     };
 
     /**
-     * @brief Obtiene métricas de rendimiento de plugins cargados.
-     * @return Vector de métricas por plugin.
+     * @brief Gets performance metrics for loaded plugins.
+     * @return Vector of metrics per plugin.
      */
     std::vector<PluginMetrics> get_plugin_metrics() const;
 
 private:
-    // Contenedores de plugins con protección de concurrencia
+    // Plugin containers with concurrency protection
     std::vector<LoadedPlugin> loaded_plugins_;
     mutable std::mutex plugins_mutex_;
 
-    // Métricas globales del ciclo de simulación
+    // Global simulation-cycle metrics
     std::atomic<uint64_t> total_cycles_{0};
     std::atomic<double> total_cycle_time_{0.0};
 
-    // Métodos internos de ejecución
+    // Internal execution methods
     void execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void execute_parallel_plugins(std::vector<uint8_t>& state_buffer, double delta_time);
     void apply_physics_integration(std::vector<uint8_t>& state_buffer, double delta_time);
 
-    // Utilidades
+    // Utilities
     std::vector<LoadedPlugin*> get_plugins_by_type(PluginType type);
     void cleanup_plugin(LoadedPlugin& plugin);
 
-    // Integrador físico
+    // Physics integrator
     std::unique_ptr<MoLab::PhysicsIntegrator> physics_integrator_;
 
-    // Scheduler de tareas para plugins paralelos
+    // Task scheduler for parallel plugins
     std::unique_ptr<PluginTaskScheduler> task_scheduler_;
 
-    // Acumuladores de fuerzas/torques (plugins paralelos)
+    // Force/torque accumulators (parallel plugins)
     PluginVector3 accumulated_force_{0.0f, 0.0f, 0.0f};
     PluginVector3 accumulated_torque_{0.0f, 0.0f, 0.0f};
     mutable std::mutex force_mutex_;

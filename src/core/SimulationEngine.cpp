@@ -14,7 +14,7 @@
 
 /**
  * @file SimulationEngine.cpp
- * @brief Implementación del motor principal de simulación.
+ * @brief Implementation of the main simulation engine.
  */
 
 namespace MoLab {

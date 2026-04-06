@@ -1,129 +1,129 @@
-# Referencia de configuración
+# Configuration reference
 
-Este documento define el comportamiento esperado de cada variable de configuración en
+This document defines the expected behavior of each configuration variable in
 `data/defaults/default_config.json`.
 
-## Estructura raíz
+## Root structure
 
-- `simulation`: controles globales de ejecución de la simulación.
-- `plugins`: carga de plugins y parámetros específicos por plugin.
-- `initial_state_file`: archivo de estado inicial.
-- `output_directory`: directorio base de resultados.
-- `logging`: comportamiento de salida y retención de logs.
-- `performance`: instrumentación de rendimiento y ajuste de ejecución.
-- `validation`: validaciones numéricas y de sanidad de estado.
-- `vehicle_models`: fuentes de datos del vehículo (aero, geometría, propulsión, masa y límites).
-- `mission_environment`: planeta, secuencia de vuelo, atmósfera/viento e integrador.
+- `simulation`: global simulation execution controls.
+- `plugins`: plugin loading and per-plugin parameters.
+- `initial_state_file`: initial state file.
+- `output_directory`: base result directory.
+- `logging`: output behavior and log retention.
+- `performance`: performance instrumentation and execution tuning.
+- `validation`: numeric and state-sanity validations.
+- `vehicle_models`: vehicle data sources (aero, geometry, propulsion, mass, limits).
+- `mission_environment`: planet, flight sequence, atmosphere/wind, integrator.
 
 ---
 
 ## `simulation`
 
-- `simulation.duration` (`number`, segundos)  
-  Tiempo simulado máximo antes de condición normal de parada.
+- `simulation.duration` (`number`, seconds)  
+  Maximum simulated time before normal stop condition.
 
 - `simulation.max_iterations` (`integer`)  
-  Número máximo de ticks antes de parada forzada.
+  Maximum number of ticks before forced stop.
 
 - `simulation.enable_logging` (`boolean`)  
-  Interruptor maestro para emisión de logs de simulación.
+  Master switch for simulation log emission.
 
-- `simulation.log_file` (`string`, ruta)  
-  Ruta del archivo de logs persistidos.
+- `simulation.log_file` (`string`, path)  
+  Path to persisted log file.
 
 - `simulation.log_level` (`string`)  
-  Nivel mínimo de severidad a emitir (por ejemplo: `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+  Minimum severity level to emit (for example: `DEBUG`, `INFO`, `WARNING`, `ERROR`).
 
 ---
 
 ## `plugins[]`
 
-Cada entrada de `plugins` configura un plugin.
+Each `plugins` entry configures one plugin.
 
 - `plugins[].name` (`string`)  
-  Nombre lógico del plugin para identificación en logs/UI.
+  Logical plugin name for log/UI identification.
 
 - `plugins[].type` (`integer`)  
-  Rol de ejecución del plugin:
-  - `0`: modificador secuencial de estado (muta estado directamente)
-  - `1`: calculador físico paralelo (salida de fuerza/torque)
+  Plugin execution role:
+  - `0`: sequential state modifier (mutates state directly)
+  - `1`: parallel physics calculator (force/torque output)
 
 - `plugins[].library_path` (`string`)  
-  Ruta/nombre de la biblioteca compartida para cargar el plugin.
+  Shared-library path/name to load plugin.
 
 - `plugins[].enabled` (`boolean`)  
-  Habilita/deshabilita carga y ejecución del plugin.
+  Enables/disables plugin load and execution.
 
 - `plugins[].parameters` (`object`)  
-  Configuración libre del plugin, pasada al API `plugin_configure`.
+  Free-form plugin configuration passed to `plugin_configure` API.
 
-- `plugins[].parameters.use_host_logger` (`boolean`, opcional, default `false`)  
-  Si es `true`, `PluginManager` intenta inyectar servicios del host para logging mediante
+- `plugins[].parameters.use_host_logger` (`boolean`, optional, default `false`)  
+  If `true`, `PluginManager` attempts to inject host logging services via
   `plugin_set_host_services(const PluginHostServices*)`.
 
-Ejemplo de parámetros en el archivo por defecto:
+Example parameters in default file:
 - `plugins[].parameters.step_size` (`number`)  
-  Factor de paso definido por el plugin.
+  Plugin-defined step factor.
 - `plugins[].parameters.debug_output` (`boolean`)  
-  Activación de salida de depuración definida por el plugin.
+  Plugin-defined debug output activation.
 
 ---
 
-## Entrada/Salida global
+## Global input/output
 
-- `initial_state_file` (`string`, ruta)  
-  Archivo fuente con el estado inicial de simulación.
+- `initial_state_file` (`string`, path)  
+  Source file with initial simulation state.
 
-- `output_directory` (`string`, ruta)  
-  Directorio raíz de artefactos/resultados.
+- `output_directory` (`string`, path)  
+  Root directory for artifacts/results.
 
 ---
 
 ## `logging`
 
 - `logging.console_output` (`boolean`)  
-  Si es `true`, escribe logs en consola/stdout.
+  If `true`, write logs to console/stdout.
 
 - `logging.file_output` (`boolean`)  
-  Si es `true`, escribe logs en archivo.
+  If `true`, write logs to file.
 
 - `logging.log_rotation` (`boolean`)  
-  Activa rotación de logs al alcanzar límite de tamaño.
+  Enable log rotation when size threshold is reached.
 
 - `logging.max_file_size_mb` (`number`, MB)  
-  Tamaño máximo de archivo antes de rotar.
+  Maximum file size before rotation.
 
 - `logging.max_files` (`integer`)  
-  Cantidad de archivos rotados a conservar.
+  Number of rotated files to keep.
 
 ---
 
 ## `performance`
 
 - `performance.enable_metrics` (`boolean`)  
-  Activa recolección de métricas (tiempo de tick, tiempos de plugins, etc.).
+  Enables metrics collection (tick time, plugin timings, etc.).
 
 - `performance.metrics_output_interval` (`integer`)  
-  Intervalo de publicación de métricas (típicamente cada N ticks).
+  Metrics publication interval (typically every N ticks).
 
 - `performance.enable_profiling` (`boolean`)  
-  Activa profiling/tracing profundo con mayor overhead.
+  Enables deeper profiling/tracing with higher overhead.
 
 - `performance.thread_pool_size` (`integer`)  
-  Número de workers para tareas paralelizables.
+  Number of workers for parallelizable tasks.
 
 ---
 
 ## `validation`
 
 - `validation.max_position_magnitude` (`number`)  
-  Límite superior de magnitud de posición antes de activar política de warning/error.
+  Upper position magnitude limit before warning/error policy is triggered.
 
 - `validation.max_velocity_magnitude` (`number`)  
-  Límite superior de magnitud de velocidad antes de activar política de warning/error.
+  Upper velocity magnitude limit before warning/error policy is triggered.
 
 - `validation.enable_nan_checks` (`boolean`)  
-  Activa validaciones de NaN/Inf en el estado de simulación.
+  Enables NaN/Inf checks on simulation state.
 
 ---
 
@@ -131,45 +131,45 @@ Ejemplo de parámetros en el archivo por defecto:
 
 ### `vehicle_models.aero_database`
 - `type` (`string`)  
-  Tipo de modelo aerodinámico (por ejemplo `lookup_table`).
-- `source.uri` (`string`, ruta/URI)  
-  Ubicación de la fuente de datos aerodinámicos.
+  Aerodynamic model type (for example `lookup_table`).
+- `source.uri` (`string`, path/URI)  
+  Aerodynamic data source location.
 - `source.format` (`string`)  
-  Formato de datos (por ejemplo `hdf5`).
+  Data format (for example `hdf5`).
 - `axes` (`array<string>`)  
-  Variables independientes para lookup/interpolación (por ejemplo `alpha_deg`, `beta_deg`, `mach`).
+  Independent variables for lookup/interpolation (for example `alpha_deg`, `beta_deg`, `mach`).
 
 ### `vehicle_models.reference_geometry`
-- `source.uri` (`string`, ruta/URI)  
-  Ubicación del dataset de geometría.
+- `source.uri` (`string`, path/URI)  
+  Geometry dataset location.
 - `source.format` (`string`)  
-  Formato del dataset de geometría (por ejemplo `csv`).
+  Geometry dataset format (for example `csv`).
 
 ### `vehicle_models.propulsion_model`
-- `source.uri` (`string`, ruta/URI)  
-  Ubicación del dataset de rendimiento de propulsión.
+- `source.uri` (`string`, path/URI)  
+  Propulsion performance dataset location.
 - `source.format` (`string`)  
-  Formato del dataset de propulsión (por ejemplo `csv`).
+  Propulsion dataset format (for example `csv`).
 
 ### `vehicle_models.mass_properties`
-- `source.uri` (`string`, ruta/URI)  
-  Ubicación del dataset de masa/inercia.
+- `source.uri` (`string`, path/URI)  
+  Mass/inertia dataset location.
 - `source.format` (`string`)  
-  Formato de propiedades de masa (por ejemplo `json`).
+  Mass properties format (for example `json`).
 
 ### `vehicle_models.physical_limits`
 - `actuators[]` (`array<object>`)  
-  Restricciones por actuador.
+  Per-actuator constraints.
   - `actuators[].id` (`string`)  
-    Identificador de actuador.
+    Actuator identifier.
   - `actuators[].max_rate_deg_s` (`number`, deg/s)  
-    Tasa máxima de deflexión.
+    Maximum deflection rate.
   - `actuators[].range_deg` (`number`, deg)  
-    Rango máximo absoluto de deflexión.
-- `structural.source.uri` (`string`, ruta/URI)  
-  Ubicación del dataset de restricciones estructurales.
+    Maximum absolute deflection range.
+- `structural.source.uri` (`string`, path/URI)  
+  Structural constraints dataset location.
 - `structural.source.format` (`string`)  
-  Formato de límites estructurales (por ejemplo `csv`).
+  Structural limits format (for example `csv`).
 
 ---
 
@@ -177,41 +177,41 @@ Ejemplo de parámetros en el archivo por defecto:
 
 ### `mission_environment.planet_model`
 - `planet_model` (`string`)  
-  Selección de modelo planetario/geodésico (por ejemplo `WGS84`).
+  Planetary/geodetic model selection (for example `WGS84`).
 
 ### `mission_environment.flight_sequence`
-- `source.uri` (`string`, ruta/URI)  
-  Archivo de definición de secuencia/fases de misión.
+- `source.uri` (`string`, path/URI)  
+  Mission sequence/phases definition file.
 - `source.format` (`string`)  
-  Formato de la secuencia (por ejemplo `yaml`).
+  Sequence format (for example `yaml`).
 
 ### `mission_environment.atmosphere_wind`
 - `model` (`string`)  
-  Selección de modelo atmosférico (por ejemplo `US_Standard_1976`).
-- `wind_profile_source.uri` (`string`, ruta/URI)  
-  Ubicación del dataset de perfil de viento.
+  Atmospheric model selection (for example `US_Standard_1976`).
+- `wind_profile_source.uri` (`string`, path/URI)  
+  Wind profile dataset location.
 - `wind_profile_source.format` (`string`)  
-  Formato del perfil de viento (por ejemplo `csv`).
+  Wind profile format (for example `csv`).
 
 ### `mission_environment.integrator_config`
 - `method` (`string`)  
-  Método de integración numérica (por ejemplo `runge_kutta_4`).
+  Numerical integration method (for example `runge_kutta_4`).
 - `rtol` (`number`)  
-  Tolerancia relativa para control adaptativo/error.
+  Relative tolerance for adaptive control/error.
 - `atol` (`number`)  
-  Tolerancia absoluta para control adaptativo/error.
+  Absolute tolerance for adaptive control/error.
 
 ---
 
-## Notas
+## Notes
 
-- Las rutas pueden ser relativas al directorio de trabajo del proceso o a la raíz del repositorio, según el launcher/runtime.
-- Las unidades deben tratarse como contrato obligatorio cuando están especificadas (segundos, deg/s, MB, etc.).
-- Las claves en `plugins[].parameters` son propiedad del plugin y pueden variar según implementación.
-- `use_host_logger` es una clave reservada/interpretada por el host para habilitar integración de logging centralizado en plugins.
+- Paths may be relative to process working directory or repository root, depending on launcher/runtime.
+- Units should be treated as mandatory contract where specified (seconds, deg/s, MB, etc.).
+- Keys in `plugins[].parameters` belong to plugin implementation and may vary.
+- `use_host_logger` is a host-reserved/interpreted key to enable centralized host logging integration in plugins.
 
 ---
 
-Estado de documentación: **Current**
+Documentation status: **Current**
 
-Volver a: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](../README.md)

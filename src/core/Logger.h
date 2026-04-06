@@ -10,14 +10,14 @@
 
 /**
  * @file Logger.h
- * @brief Sistema de logging centralizado para MoLab.
+ * @brief Centralized logging system for MoLab.
  */
 
 namespace MoLab {
 
 /**
  * @enum LogLevel
- * @brief Niveles de severidad soportados por el logger.
+ * @brief Severity levels supported by the logger.
  */
 enum class LogLevel {
     DEBUG = 0,
@@ -29,13 +29,13 @@ enum class LogLevel {
 
 /**
  * @class Logger
- * @brief Logger singleton con salida a consola y archivo.
+ * @brief Singleton logger with console and file output.
  */
 class Logger {
 public:
     /**
-     * @brief Obtiene la instancia global del logger.
-     * @return Referencia única al logger.
+     * @brief Gets the global logger instance.
+     * @return Unique reference to logger.
      */
     static Logger& getInstance() {
         static Logger instance;
@@ -43,8 +43,8 @@ public:
     }
 
     /**
-     * @brief Define el nivel mínimo de severidad a emitir.
-     * @param level Nuevo nivel mínimo.
+     * @brief Sets the minimum severity level to emit.
+     * @param level New minimum level.
      */
     void setLogLevel(LogLevel level) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -52,8 +52,8 @@ public:
     }
 
     /**
-     * @brief Configura un archivo de salida para logs en modo append.
-     * @param filename Ruta del archivo de log.
+     * @brief Configures an output log file in append mode.
+     * @param filename Log file path.
      */
     void setLogFile(const std::string& filename) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -67,7 +67,7 @@ public:
     }
 
     /**
-     * @brief Cierra el archivo de log activo y limpia la ruta configurada.
+     * @brief Closes the active log file and clears configured path.
      */
     void closeLogFile() {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -78,10 +78,10 @@ public:
     }
 
     /**
-     * @brief Emite un mensaje formateado según nivel y componente.
-     * @param level Nivel de severidad del mensaje.
-     * @param message Texto del mensaje.
-     * @param component Nombre del componente emisor.
+     * @brief Emits a formatted message by level and component.
+     * @param level Message severity level.
+     * @param message Message text.
+     * @param component Source component name.
      */
     void log(LogLevel level, const std::string& message, const std::string& component = "") {
         if (level < current_level_) {
@@ -125,45 +125,45 @@ public:
     }
 
     /**
-     * @brief Emite un mensaje de nivel `DEBUG`.
-     * @param message Texto del mensaje.
-     * @param component Componente emisor.
+     * @brief Emits a `DEBUG`-level message.
+     * @param message Message text.
+     * @param component Source component.
      */
     void debug(const std::string& message, const std::string& component = "") {
         log(LogLevel::DEBUG, message, component);
     }
 
     /**
-     * @brief Emite un mensaje de nivel `INFO`.
-     * @param message Texto del mensaje.
-     * @param component Componente emisor.
+     * @brief Emits an `INFO`-level message.
+     * @param message Message text.
+     * @param component Source component.
      */
     void info(const std::string& message, const std::string& component = "") {
         log(LogLevel::INFO, message, component);
     }
 
     /**
-     * @brief Emite un mensaje de nivel `WARNING`.
-     * @param message Texto del mensaje.
-     * @param component Componente emisor.
+     * @brief Emits a `WARNING`-level message.
+     * @param message Message text.
+     * @param component Source component.
      */
     void warning(const std::string& message, const std::string& component = "") {
         log(LogLevel::WARNING, message, component);
     }
 
     /**
-     * @brief Emite un mensaje de nivel `ERROR`.
-     * @param message Texto del mensaje.
-     * @param component Componente emisor.
+     * @brief Emits an `ERROR`-level message.
+     * @param message Message text.
+     * @param component Source component.
      */
     void error(const std::string& message, const std::string& component = "") {
         log(LogLevel::ERR, message, component);
     }
 
     /**
-     * @brief Emite un mensaje de nivel `CRITICAL`.
-     * @param message Texto del mensaje.
-     * @param component Componente emisor.
+     * @brief Emits a `CRITICAL`-level message.
+     * @param message Message text.
+     * @param component Source component.
      */
     void critical(const std::string& message, const std::string& component = "") {
         log(LogLevel::CRITICAL, message, component);
@@ -181,9 +181,9 @@ private:
     Logger& operator=(const Logger&) = delete;
 
     /**
-     * @brief Convierte un nivel de log a representación textual.
-     * @param level Nivel a convertir.
-     * @return Cadena legible del nivel.
+     * @brief Converts a log level to a string representation.
+     * @param level Level to convert.
+     * @return Readable level string.
      */
     std::string levelToString(LogLevel level) {
         switch (level) {
@@ -202,15 +202,15 @@ private:
     std::mutex mutex_;
 };
 
-/** @brief Macro de conveniencia para nivel `DEBUG`. */
+/** @brief Convenience macro for `DEBUG` level. */
 #define LOG_DEBUG(msg, component) MoLab::Logger::getInstance().debug(msg, component)
-/** @brief Macro de conveniencia para nivel `INFO`. */
+/** @brief Convenience macro for `INFO` level. */
 #define LOG_INFO(msg, component) MoLab::Logger::getInstance().info(msg, component)
-/** @brief Macro de conveniencia para nivel `WARNING`. */
+/** @brief Convenience macro for `WARNING` level. */
 #define LOG_WARNING(msg, component) MoLab::Logger::getInstance().warning(msg, component)
-/** @brief Macro de conveniencia para nivel `ERROR`. */
+/** @brief Convenience macro for `ERROR` level. */
 #define LOG_ERROR(msg, component) MoLab::Logger::getInstance().error(msg, component)
-/** @brief Macro de conveniencia para nivel `CRITICAL`. */
+/** @brief Convenience macro for `CRITICAL` level. */
 #define LOG_CRITICAL(msg, component) MoLab::Logger::getInstance().critical(msg, component)
 
 } // namespace MoLab

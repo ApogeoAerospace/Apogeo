@@ -1,34 +1,34 @@
-# Pipeline de CI de MoLab
+# MoLab CI Pipeline
 
-Este documento resume la validación automática ejecutada en GitHub Actions.
+This document summarizes the automated validation run in GitHub Actions.
 
-## Objetivo
+## Objective
 
-- Verificar compilación en plataformas soportadas.
-- Ejecutar pruebas unitarias.
-- Aplicar controles de calidad y análisis estático.
-- Publicar artefactos de build y cobertura.
+- Verify builds on supported platforms.
+- Run unit tests.
+- Apply quality checks and static analysis.
+- Publish build and coverage artifacts.
 
-## Jobs principales
+## Main jobs
 
-- `build-and-test`: compilación y validación básica multi-plataforma.
-- `integration-test`: ejecución de simulación corta con configuración real.
-- `unit-tests`: ejecución de pruebas con Google Test.
-- `code-coverage`: generación de cobertura con `lcov`/`genhtml`.
-- `static-analysis`: análisis estático con `clang-tidy`.
-- `code-quality`: validación de formato y archivos de configuración.
+- `build-and-test`: multi-platform build and basic validation.
+- `integration-test`: short simulation run with real configuration.
+- `unit-tests`: test execution with Google Test.
+- `code-coverage`: coverage generation with `lcov`/`genhtml`.
+- `static-analysis`: static analysis with `clang-tidy`.
+- `code-quality`: formatting and configuration-file validation.
 
-## Dependencias relevantes
+## Relevant dependencies
 
 - CMake (>= 3.20)
 - Compilador C++17
-- vcpkg para dependencias C++
+- vcpkg for C++ dependencies
 - Google Test
-- Python 3 para utilidades y scripts
+- Python 3 for utilities and scripts
 
-## Ejecución local equivalente
+## Equivalent local execution
 
-### Compilación
+### Build
 
 ```bash
 cmake -B build -S . \
@@ -36,7 +36,7 @@ cmake -B build -S . \
 cmake --build build --parallel
 ```
 
-### Pruebas unitarias
+### Unit tests
 
 ```bash
 cmake -B build -S . \
@@ -47,7 +47,7 @@ cd build
 ctest --output-on-failure --verbose
 ```
 
-### Cobertura
+### Coverage
 
 ```bash
 cmake -B build -S . \
@@ -59,10 +59,10 @@ cd build
 ctest
 ```
 
-## Artefactos
+## Artifacts
 
-El pipeline publica artefactos de build, reportes de tests y cobertura para inspección posterior.
+The pipeline publishes build artifacts, test reports, and coverage reports for later inspection.
 
-## Alcance documental
+## Documentation scope
 
-Este archivo es un resumen operativo. La definición exacta del pipeline está en los archivos YAML de `.github/workflows/`.
+This file is an operational summary. The exact pipeline definition lives in YAML files under `.github/workflows/`.

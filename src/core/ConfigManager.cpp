@@ -5,7 +5,7 @@
 
 /**
  * @file ConfigManager.cpp
- * @brief Implementación del gestor de configuración de MoLab.
+ * @brief Implementation of the MoLab configuration manager.
  */
 
 namespace MoLab {
@@ -14,10 +14,10 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
     try {
         std::ifstream file(config_file);
         if (!file.is_open()) {
-            // Archivo inexistente: usar valores por defecto y continuar
+            // Missing file: use default values and continue
             LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
             setDefaults();
-            return false; // Se aplican defaults, pero no se cargó archivo
+            return false; // Defaults are applied, but no file was loaded
         }
 
         nlohmann::json config_json;
@@ -26,7 +26,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
 
         LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
 
-        // Parsear secciones principales
+        // Parse main sections
         if (!parseSimulationConfig(config_json)) {
             return false;
         }
@@ -34,7 +34,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             return false;
         }
 
-        // Rutas de archivos
+        // File paths
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
@@ -47,7 +47,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             output_directory_ = "output/";
         }
 
-        // Validar coherencia general
+        // Validate overall consistency
         if (!validateConfig()) {
             LOG_ERROR("Configuration validation failed", "ConfigManager");
             return false;
@@ -57,7 +57,7 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         return true;
 
     } catch (const std::exception& e) {
-        // Falla al leer o parsear: usar defaults como fallback
+        // Read/parse failure: use defaults as fallback
         LOG_ERROR("Error loading config: " + std::string(e.what()), "ConfigManager");
         setDefaults();
         return false;
@@ -68,14 +68,14 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
     try {
         nlohmann::json config_json;
 
-        // Configuración de simulación
+        // Simulation configuration
         config_json["simulation"]["duration"] = simulation_config_.simulation_duration;
         config_json["simulation"]["max_iterations"] = simulation_config_.max_iterations;
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
 
-        // Configuración de plugins
+        // Plugin configuration
         for (const auto& plugin : plugin_configs_) {
             nlohmann::json plugin_json;
             plugin_json["name"] = plugin.name;
@@ -86,7 +86,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
             config_json["plugins"].push_back(plugin_json);
         }
 
-        // Rutas de archivos
+        // File paths
         config_json["initial_state_file"] = initial_state_file_;
         config_json["output_directory"] = output_directory_;
 
@@ -109,17 +109,17 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 }
 
 void ConfigManager::setDefaults() {
-    // Valores por defecto de simulación
+    // Default simulation values
     simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
 
-    // Limpiar configuración de plugins
+    // Clear plugin configuration
     plugin_configs_.clear();
 
-    // Rutas por defecto
+    // Default paths
     initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
@@ -136,7 +136,7 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
             simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
-            // Si no hay sección, usar defaults
+            // If section is missing, use defaults
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
@@ -166,7 +166,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                     plugin.parameters = plugin_json["parameters"];
                 }
 
-                // Solo agregar si hay nombre y ruta válida
+                // Add only if name and valid path are present
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
                 }
@@ -181,7 +181,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 }
 
 bool ConfigManager::validateConfig() const {
-    // Validación básica de simulación
+    // Basic simulation validation
     if (simulation_config_.simulation_duration <= 0) {
         LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
         return false;
@@ -192,7 +192,7 @@ bool ConfigManager::validateConfig() const {
         return false;
     }
 
-    // Validación de plugins
+    // Plugin validation
     for (const auto& plugin : plugin_configs_) {
         if (plugin.name.empty()) {
             LOG_ERROR("Plugin name cannot be empty", "ConfigManager");

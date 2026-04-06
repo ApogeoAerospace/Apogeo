@@ -1,8 +1,8 @@
-# API de plugins
+# Plugin API
 
-## Tipos
+## Types
 
-- `PluginHandle`: handle opaco de instancia de plugin.
+- `PluginHandle`: opaque plugin-instance handle.
 - `PluginVector3`: `{ float x, y, z }`.
 - `PluginTickData`:
   - `uint8_t* state_buffer`
@@ -10,8 +10,8 @@
   - `double delta_time`
   - `PluginVector3* output_force`
   - `PluginVector3* output_torque`
-  - `PluginVector3* force_out` (compatibilidad deprecada)
-  - `PluginVector3* torque_out` (compatibilidad deprecada)
+  - `PluginVector3* force_out` (deprecated compatibility)
+  - `PluginVector3* torque_out` (deprecated compatibility)
 - `PluginLogLevel`:
   - `PLUGIN_LOG_DEBUG`
   - `PLUGIN_LOG_INFO`
@@ -19,41 +19,41 @@
   - `PLUGIN_LOG_ERROR`
   - `PLUGIN_LOG_CRITICAL`
 - `PluginLogFn`:
-  - Callback C para que el plugin emita logs a través del host.
+  - C callback for plugin log emission through host.
 - `PluginHostServices`:
   - `uint32_t api_version`
   - `PluginLogFn log`
   - `void* user_data`
 
-## Exportaciones requeridas
+## Required exports
 
 - `plugin_create_instance()`
 - `plugin_tick(PluginHandle, PluginTickData*)`
 - `plugin_destroy_instance(PluginHandle)`
 
-## Exportación opcional
+## Optional export
 
 - `plugin_configure(PluginHandle, const char* json_params)`
 - `plugin_set_host_services(const PluginHostServices* services)`
 
-## Comportamiento en runtime
+## Runtime behavior
 
-- Los plugins secuenciales pueden mutar `state_buffer`.
-- Los plugins paralelos calculan fuerza/torque de salida.
-- `plugin_configure` se invoca cuando hay parámetros de plugin.
-- `plugin_set_host_services` se invoca por el host solo si:
-  - el plugin exporta el símbolo opcional, y
-  - `plugins[].parameters.use_host_logger == true` en configuración.
+- Sequential plugins can mutate `state_buffer`.
+- Parallel plugins compute output force/torque.
+- `plugin_configure` is invoked when plugin parameters are provided.
+- `plugin_set_host_services` is invoked by host only if:
+  - plugin exports the optional symbol, and
+  - `plugins[].parameters.use_host_logger == true` in configuration.
 
-## Integración de logging host-plugin
+## Host-plugin logging integration
 
-- El host registra un bridge de logging interno en `PluginManager` y lo inyecta al plugin mediante `PluginHostServices`.
-- Si un plugin no implementa `plugin_set_host_services`, sigue siendo compatible.
-- Si `use_host_logger` no está activo para un plugin, no se inyectan servicios y el plugin puede usar su fallback local.
-- Esta integración mantiene el límite modular del sistema: contrato C en `plugin_api.h` sin dependencia directa de `Logger.h` dentro de los plugins.
+- Host registers an internal logging bridge in `PluginManager` and injects it through `PluginHostServices`.
+- If a plugin does not implement `plugin_set_host_services`, it remains compatible.
+- If `use_host_logger` is not enabled for a plugin, no services are injected and plugin may use local fallback.
+- This integration preserves modular boundaries: C contract in `plugin_api.h` with no direct `Logger.h` dependency inside plugins.
 
 ---
 
-Estado de documentación: **Current**
+Documentation status: **Current**
 
-Volver a: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](../README.md)

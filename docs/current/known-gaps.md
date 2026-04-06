@@ -1,24 +1,24 @@
-# Brechas conocidas (actual)
+# Known gaps (current)
 
-## Brechas de integración configuración/runtime
+## Configuration/runtime integration gaps
 
-1. `output_directory` se parsea, pero la salida del motor sigue usando una ruta hardcodeada.
-2. `simulation.enable_logging` se parsea, pero no se usa como interruptor global on/off.
-3. La sección `logging.*` no está integrada con el backend de logging.
-4. La sección `performance.*` no está integrada con controles de scheduler/métricas.
-5. Los umbrales de `validation.*` no están integrados en la validación runtime.
-6. `vehicle_models.*` no se usa.
-7. `mission_environment.*` no se usa.
+1. `output_directory` is parsed, but engine output still uses a hardcoded path.
+2. `simulation.enable_logging` is parsed, but not used as a global on/off switch.
+3. `logging.*` section is not integrated with logging backend.
+4. `performance.*` section is not integrated with scheduler/metrics controls.
+5. `validation.*` thresholds are not integrated in runtime validation.
+6. `vehicle_models.*` is unused.
+7. `mission_environment.*` is unused.
 
-## Brechas de contrato UI/backend
+## UI/backend contract gaps
 
-- La UI web envía secciones de física/salida que el `ConfigManager` actual no parsea.
-- Diferencia de puertos:
-  - mensaje del lanzador: `8080`
-  - servidor Python: `8082`
+- The web UI sends physics/output sections that current `ConfigManager` does not parse.
+- Port mismatch:
+  - launcher message: `8080`
+  - Python server: `8082`
 
 ---
 
-Estado de documentación: **Current**
+Documentation status: **Current**
 
-Volver a: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](../README.md)

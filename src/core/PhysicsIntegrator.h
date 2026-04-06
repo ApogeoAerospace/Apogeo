@@ -15,33 +15,33 @@
 
 /**
  * @file PhysicsIntegrator.h
- * @brief Integración numérica del estado físico de simulación.
+ * @brief Numerical integration of simulation physical state.
  */
 
 namespace MoLab {
 
 /**
- * @brief Tipo de estado plano para ODE: `pos(3), vel(3), quat(4), omega(3)`.
+ * @brief Flat ODE state type: `pos(3), vel(3), quat(4), omega(3)`.
  */
 using OdeState = std::array<double, 13>;
 
-// Alias de Eigen para tipos matemáticos internos.
-// Se usan por sus operaciones de álgebra lineal (producto cuaternión,
-// producto cruz, descomposición LDLT del tensor de inercia), no solo
-// como contenedores de datos.
+// Eigen aliases for internal mathematical types.
+// Used for linear algebra operations (quaternion product,
+// cross product, LDLT decomposition of inertia tensor), not only
+// as data containers.
 using Vector3 = Eigen::Vector3d;
 using Quaternion4 = Eigen::Quaterniond;
 using InertiaTensor3 = Eigen::Matrix3d;
 
 // ---------------------------------------------------------------------------
-// Funciones auxiliares de conversión entre OdeState y tipos Eigen
+// Helper conversion functions between OdeState and Eigen types
 // ---------------------------------------------------------------------------
 
-// Disposición del vector plano:
-//   [0..2]  = posición  (x, y, z)
-//   [3..5]  = velocidad (vx, vy, vz)
-//   [6..9]  = orientación cuaternión (w, x, y, z)
-//   [10..12] = velocidad angular (wx, wy, wz)
+// Flat vector layout:
+//   [0..2]  = position  (x, y, z)
+//   [3..5]  = velocity (vx, vy, vz)
+//   [6..9]  = quaternion orientation (w, x, y, z)
+//   [10..12] = angular velocity (wx, wy, wz)
 
 inline Vector3 odePosition(const OdeState& y) {
     return Vector3(y[0], y[1], y[2]);
@@ -69,7 +69,7 @@ inline void odePackQuat(OdeState& y, const Quaternion4& q) {
     y[6] = q.w(); y[7] = q.x(); y[8] = q.y(); y[9] = q.z();
 }
 
-// Construir tensor de inercia simétrico 3x3 a partir de los 6 componentes independientes.
+// Build symmetric 3x3 inertia tensor from 6 independent components.
 inline InertiaTensor3 makeInertiaTensor(double ixx, double iyy, double izz,
                                         double ixy, double ixz, double iyz) {
     InertiaTensor3 I;
@@ -79,22 +79,22 @@ inline InertiaTensor3 makeInertiaTensor(double ixx, double iyy, double izz,
     return I;
 }
 
-// Verifica si el tensor de inercia es diagonal (productos de inercia ~0).
+    // Checks whether inertia tensor is diagonal (inertia products ~0).
 inline bool isInertiaDiagonal(const InertiaTensor3& I, double tol = 1e-10) {
     return std::abs(I(0, 1)) < tol && std::abs(I(0, 2)) < tol && std::abs(I(1, 2)) < tol;
 }
 
 /**
  * @struct PhysicsState
- * @brief Estado físico interno utilizado por el integrador numérico.
+ * @brief Internal physical state used by the numerical integrator.
  */
 struct PhysicsState {
     Vector3 position;
     Vector3 velocity;
-    Quaternion4 orientation;         // Cuaternión unitario (w, x, y, z)
+    Quaternion4 orientation;         // Unit quaternion (w, x, y, z)
     Vector3 angular_velocity;
     double mass;
-    InertiaTensor3 inertia;          // Tensor de inercia completo
+    InertiaTensor3 inertia;          // Full inertia tensor
     double time;
 
     PhysicsState()
@@ -107,27 +107,27 @@ struct PhysicsState {
           time(0.0) {}
 
     /**
-     * @brief Empaqueta el estado en formato plano para `odeint`.
-     * @return Estado plano equivalente.
+     * @brief Packs state into flat format for `odeint`.
+     * @return Equivalent flat state.
      */
     OdeState toOdeState() const;
 
     /**
-     * @brief Carga variables dinámicas desde un estado plano.
-     * @param y Estado plano fuente.
+     * @brief Loads dynamic variables from a flat state.
+     * @param y Source flat state.
      */
     void fromOdeState(const OdeState& y);
 };
 
 /**
  * @class PhysicsIntegrator
- * @brief Integrador físico basado en Boost.Odeint.
+ * @brief Physics integrator based on Boost.Odeint.
  */
 class PhysicsIntegrator {
 public:
     /**
      * @enum IntegratorType
-     * @brief Algoritmos de integración disponibles.
+     * @brief Available integration algorithms.
      */
     enum class IntegratorType {
         EULER,
@@ -136,19 +136,19 @@ public:
     };
 
     /**
-     * @brief Construye un integrador con un método inicial.
-     * @param type Tipo de integrador a usar.
+     * @brief Constructs integrator with an initial method.
+     * @param type Integrator type to use.
      */
     PhysicsIntegrator(IntegratorType type = IntegratorType::RUNGE_KUTTA_4);
     ~PhysicsIntegrator() = default;
 
     /**
-     * @brief Integra el estado físico durante un paso temporal.
-     * @param current_state Estado actual.
-     * @param total_force Fuerza total aplicada.
-     * @param total_torque Torque total aplicado.
-     * @param dt Paso de integración en segundos.
-     * @return Nuevo estado integrado.
+     * @brief Integrates physical state over one time step.
+     * @param current_state Current state.
+     * @param total_force Total applied force.
+     * @param total_torque Total applied torque.
+     * @param dt Integration step in seconds.
+     * @return New integrated state.
      */
     PhysicsState integrate(const PhysicsState& current_state,
                           const Vector3& total_force,
@@ -156,33 +156,33 @@ public:
                           double dt);
 
     /**
-     * @brief Cambia el integrador activo por enumeración.
-     * @param type Tipo de integrador.
+     * @brief Changes active integrator by enum.
+     * @param type Integrator type.
      */
     void setIntegratorType(IntegratorType type) { integrator_type_ = type; }
 
     /**
-     * @brief Cambia el integrador activo por nombre.
-     * @param type_name Nombre del método (`euler`, `runge_kutta_4`, `verlet`).
+     * @brief Changes active integrator by name.
+     * @param type_name Method name (`euler`, `runge_kutta_4`, `verlet`).
      */
     void setIntegratorType(const std::string& type_name);
 
     /**
-     * @brief Obtiene el tipo de integrador activo.
-     * @return Tipo de integrador actual.
+     * @brief Gets active integrator type.
+     * @return Current integrator type.
      */
     IntegratorType getIntegratorType() const { return integrator_type_; }
 
     /**
-     * @brief Obtiene el nombre del integrador activo.
-     * @return Nombre del método de integración.
+     * @brief Gets active integrator name.
+     * @return Integration method name.
      */
     std::string getIntegratorTypeName() const;
 
     /**
-     * @brief Convierte un estado FlatBuffers a estado físico interno.
-     * @param fb_state Estado serializado.
-     * @return Estado físico para integración.
+     * @brief Converts FlatBuffers state into internal physical state.
+     * @param fb_state Serialized state.
+     * @return Physical state for integration.
      */
     static PhysicsState fromFlatBuffer(const state_vector::GeneralState* fb_state);
 
@@ -190,7 +190,7 @@ private:
     IntegratorType integrator_type_;
 
     /**
-     * @brief Calcula derivadas del sistema ODE para integración.
+     * @brief Computes ODE system derivatives for integration.
      */
     static void computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                       double mass,

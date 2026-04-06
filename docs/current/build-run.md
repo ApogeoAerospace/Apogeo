@@ -1,38 +1,38 @@
-# Compilación y ejecución (actual)
+# Build and Run (Current)
 
-## Requisitos
+## Requirements
 
 - C++17
 - CMake >= 3.20
-- Soporte para Ninja
+- Ninja support
 - FlatBuffers
 - nlohmann_json
 - Boost
-- GTest (para pruebas)
+- GTest (for tests)
 - Eigen
 
-## Compilación
+## Build
 
 ```bash
 cmake -S . -B build -G Ninja
 cmake --build build
 ```
 
-## Ejecutar simulador
+## Run simulator
 
 ```bash
 build/bin/simulator --config data/defaults/default_config.json
 ```
 
-## Ejecutar pruebas
+## Run tests
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-## Notas del lanzador web
+## Web launcher notes
 
-- `launch_web.sh` abre el navegador en `http://localhost:8080`
-- `tools/molab_web_gui.py` actualmente escucha en el puerto `8082`
+- `scripts/launch_web.sh` opens the browser on `http://localhost:8082`
+- `tools/molab_web_gui_v2.py` is the current launcher entry point
 
-Esta diferencia debe resolverse en el roadmap.
+This behavior is now aligned with the current scripts.

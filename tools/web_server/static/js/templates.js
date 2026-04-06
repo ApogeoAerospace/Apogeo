@@ -170,20 +170,20 @@ const Templates = {
             // Calculate and log altitude for user info
             const pos = config.initial_state.position;
             
-            // CORRECCIÓN: Detectar sistema de coordenadas antes de calcular altitud
-            const EARTH_RADIUS = 6378137.0; // metros (WGS84)
-            const GEOCENTRIC_THRESHOLD = 1000000; // 1M metros
+            // FIX: Detect coordinate system before calculating altitude
+            const EARTH_RADIUS = 6378137.0; // meters (WGS84)
+            const GEOCENTRIC_THRESHOLD = 1000000; // 1M meters
             const magnitude = Math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2);
             
             let altitude;
             let coordSystem;
             if (magnitude > GEOCENTRIC_THRESHOLD) {
-                // Coordenadas geocéntricas (ECEF)
+                // Geocentric coordinates (ECEF)
                 altitude = magnitude - EARTH_RADIUS;
                 coordSystem = 'GEOCENTRIC';
             } else {
-                // Coordenadas locales (topocéntricas)
-                altitude = pos[2]; // Z es directamente la altitud
+                // Local coordinates (topocentric)
+                altitude = pos[2]; // Z is directly the altitude
                 coordSystem = 'LOCAL';
             }
             

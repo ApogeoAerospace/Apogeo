@@ -1,59 +1,59 @@
-# Modelo de Vector de Estado
+# State Vector Model
 
-\page state_vector_model Modelo de Vector de Estado
+\page state_vector_model State Vector Model
 
-Esta página describe el modelo de estado de simulación serializado que utiliza MoLab.
-El modelo se define en `src/schemas/state_vector.fbs` y se genera a C++.
+This page describes the serialized simulation state model used by MoLab.
+The model is defined in `src/schemas/state_vector.fbs` and generated to C++.
 
 ## Namespace
 
-Todos los tipos generados están bajo `state_vector`.
+All generated types are under `state_vector`.
 
-## Tipos principales
+## Main types
 
 - `Vec3`: vector 3D (`x`, `y`, `z`)
-- `Quaternion`: cuaternión de actitud (`x`, `y`, `z`, `w`)
-- `InertiaTensor`: representación compacta del tensor de inercia
-- `EngineCmd`: comando por motor (aceleración y TVC)
-- `GeneralState`: tabla raíz del estado
+- `Quaternion`: attitude quaternion (`x`, `y`, `z`, `w`)
+- `InertiaTensor`: compact representation of inertia tensor
+- `EngineCmd`: per-engine command (throttle and TVC)
+- `GeneralState`: root state table
 
-## Secciones de `GeneralState`
+## `GeneralState` sections
 
-### Tiempo / Integrador
+### Time / Integrator
 - `sim_time`
 - `dt`
 
-### Cinemática
+### Kinematics
 - `position`
 - `velocity`
 - `orientation`
 - `angular_velocity`
 
-### Dinámica / Propiedades de masa
+### Dynamics / Mass properties
 - `total_mass`
 - `cg_location`
 - `inertia_tensor`
 - `propellant_masses`
 
-### Aerodinámica
+### Aerodynamics
 - `mach_number`
 - `dynamic_pressure`
 - `angle_of_attack`
 - `sideslip_angle`
 
-### Entorno
+### Environment
 - `atm_density`
 - `atm_pressure`
 - `atm_temperature`
 - `wind_velocity`
 - `gravity`
 
-### Actuación / Control
+### Actuation / Control
 - `engines`
 - `surface_deflections`
 
 ## Notas
 
-- `GeneralState` es el tipo raíz del schema (`root_type GeneralState`).
-- El schema es consumido por módulos del núcleo como `InitialStateLoader`,
-  `PhysicsIntegrator`, `PluginManager` y `SimulationEngine`.
+- `GeneralState` is the root schema type (`root_type GeneralState`).
+- The schema is consumed by core modules such as `InitialStateLoader`,
+  `PhysicsIntegrator`, `PluginManager`, and `SimulationEngine`.

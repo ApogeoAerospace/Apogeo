@@ -10,7 +10,7 @@
 
 /**
  * @file InitialStateLoader.cpp
- * @brief Implementación de la carga de estado inicial desde JSON a FlatBuffers.
+ * @brief Implementation for loading initial state from JSON into FlatBuffers.
  */
 
 using json = nlohmann::json;

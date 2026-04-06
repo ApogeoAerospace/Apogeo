@@ -7,13 +7,13 @@
 
 /**
  * @file main.cpp
- * @brief Punto de entrada de la aplicación MoLab.
+ * @brief Entry point for the MoLab application.
  */
 
 /**
- * @brief Imprime la ayuda de uso en consola.
+ * @brief Prints usage help to console.
  *
- * @param program_name Nombre del ejecutable invocado.
+ * @param program_name Invoked executable name.
  */
 void print_usage(const char* program_name) {
     std::cout << "Usage: " << program_name << " [options]\n";
@@ -30,7 +30,7 @@ void print_usage(const char* program_name) {
 }
 
 /**
- * @brief Imprime la versión actual del simulador.
+ * @brief Prints current simulator version.
  */
 void print_version() {
     std::cout << "MoLab Aerospace Simulator v1.0.0\n";
@@ -39,11 +39,11 @@ void print_version() {
 }
 
 /**
- * @brief Ejecuta la inicialización y el ciclo principal del simulador.
+ * @brief Runs simulator initialization and main loop.
  *
- * @param argc Número de argumentos de línea de comandos.
- * @param argv Valores de los argumentos de línea de comandos.
- * @return `0` si la ejecución finaliza correctamente, `1` en caso de error.
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument values.
+ * @return `0` on successful execution, `1` on error.
  */
 int main(int argc, char* argv[]) {
     // Parse command line arguments
@@ -138,21 +138,21 @@ int main(int argc, char* argv[]) {
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
 
-            // Determinar frecuencia de progreso basada en total de ticks
-            // Más frecuente para simulaciones largas, menos para cortas
+            // Determine progress frequency based on total ticks
+            // More frequent for long runs, less frequent for short ones
             int progress_interval;
             if (tick_count <= 100) {
-                progress_interval = 10;      // Cada 10 ticks para sims cortas
+                progress_interval = 10;      // Every 10 ticks for short runs
             } else if (tick_count <= 1000) {
-                progress_interval = 50;      // Cada 50 ticks para sims medianas
+                progress_interval = 50;      // Every 50 ticks for medium runs
             } else if (tick_count <= 5000) {
-                progress_interval = 100;     // Cada 100 ticks para sims largas
+                progress_interval = 100;     // Every 100 ticks for long runs
             } else {
-                progress_interval = 250;     // Cada 250 ticks para sims muy largas
+                progress_interval = 250;     // Every 250 ticks for very long runs
             }
 
             for (int i = 0; i < tick_count; ++i) {
-                // LOGGING DE PROGRESO: Frecuente y simple para interfaz externa
+                // PROGRESS LOGGING: frequent and simple for external interface
                 if (i % progress_interval == 0 || i == tick_count - 1) {
                     LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }

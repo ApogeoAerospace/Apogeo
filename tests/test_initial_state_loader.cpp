@@ -7,7 +7,7 @@
 
 /**
  * @file test_initial_state_loader.cpp
- * @brief Pruebas unitarias para `InitialStateLoader`.
+ * @brief Unit tests for `InitialStateLoader`.
  */
 
 using json = nlohmann::json;

@@ -1,34 +1,35 @@
 ## Flujo de trabajo de desarrollo
+# Contributing
 
-1. **Crear un issue**: antes de iniciar una nueva funcionalidad o corrección, abre un issue para discutir los cambios propuestos.
+1. **Create an issue**: before starting a new feature or fix, open an issue to discuss the proposed changes.
 
-2. **Ramas**:
-   - Todo trabajo nuevo debe hacerse en una rama de funcionalidad.
-   - Crea la rama desde `develop`:
+2. **Branches**:
+   - All new work must be done in a feature branch.
+   - Create the branch from `develop`:
      ```bash
      git checkout develop
      git pull origin develop
-     git checkout -b feature/nombre-de-tu-funcionalidad
+     git checkout -b feature/your-feature-name
      ```
 
-3. **Realizar cambios**:
-   - Haz commits en tu rama de funcionalidad.
-   - Usa mensajes de commit claros y descriptivos.
+3. **Make changes**:
+   - Commit your work in your feature branch.
+   - Use clear and descriptive commit messages.
 
-4. **Subir cambios**:
-   - Sube tu rama al repositorio remoto:
+4. **Push changes**:
+   - Push your branch to the remote repository:
      ```bash
-     git push origin feature/nombre-de-tu-funcionalidad
+     git push origin feature/your-feature-name
      ```
 
-5. **Crear pull request**:
-   - Abre un pull request desde tu rama hacia `develop`.
-   - Referencia el issue relacionado en la descripción.
-   - Asegura al menos una revisión antes de hacer merge.
+5. **Create pull request**:
+   - Open a pull request from your branch to `develop`.
+   - Reference the related issue in the description.
+   - Ensure at least one review before merge.
 
-## Estilo de código
+## Code style
 
-1. **Convenciones de nombres**:
-   - Variables y funciones: `snake_case`.
-   - Clases: `PascalCase`.
-   - Constantes: `UPPER_CASE_SNAKE_CASE`.
+1. **Naming conventions**:
+   - Variables and functions: `snake_case`.
+   - Classes: `PascalCase`.
+   - Constants: `UPPER_CASE_SNAKE_CASE`.

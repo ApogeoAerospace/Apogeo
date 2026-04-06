@@ -1,24 +1,24 @@
-# CMake versión 3.20 mínima
+# Minimum CMake version 3.20
 cmake_minimum_required(VERSION 3.20)
 project(Molab VERSION 0.0.0 LANGUAGES CXX)
 include(FetchContent)
 
-# C++ 17
+# C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Organización del output
+# Output directory layout
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# Dependencias
-find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers para serialización y deserialización de datos
-find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json para manejo de JSON
-find_package(Boost REQUIRED) # Boost (header-only, para Odeint)
+# Dependencies
+find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers for data serialization/deserialization
+find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json for JSON handling
+find_package(Boost REQUIRED) # Boost (header-only, used by Odeint)
 
-# Directorios con los esquemas de FlatBuffers y archivos generados
+# Directories for FlatBuffers schemas and generated files
 set(SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/schemas")
 set(GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 
@@ -27,7 +27,7 @@ set(GENERATED_HEADER "${GENERATED_DIR}/state_vector_generated.h")
 
 find_program(FLATC_EXECUTABLE flatc REQUIRED)
 
-# Comando para generar los archivos de FlatBuffers
+# Command to generate FlatBuffers files
 add_custom_command(
   OUTPUT ${GENERATED_HEADER}
   COMMAND ${FLATC_EXECUTABLE} -c --gen-mutable -o ${GENERATED_DIR} ${SCHEMA_FILE}
@@ -35,13 +35,13 @@ add_custom_command(
   COMMENT "Generating C++ sources from FlatBuffers schema..."
 )
 
-# Se asegura de que los encabezados generados estén disponibles para los targets que los requieren.
+# Ensures generated headers are available for targets that require them.
 add_custom_target(
   generate_flatbuffers ALL
   DEPENDS ${GENERATED_HEADER}
 )
 
-# --- Eigen (solo encabezados, vía FetchContent) ---
+# --- Eigen (header-only, via FetchContent) ---
 FetchContent_Declare(
     Eigen
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
@@ -54,14 +54,14 @@ if(NOT eigen_POPULATED)
     FetchContent_Populate(Eigen)
 endif()
 
-# Crear target solo encabezados manualmente (sin add_subdirectory).
-# Esto evita por completo que Eigen registre tests, docs o demos.
+# Create header-only target manually (without add_subdirectory).
+# This avoids Eigen registering tests, docs, or demos.
 add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
 set_target_properties(Eigen3::Eigen PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
 )
 
-# --- Configuración del núcleo ---
+# --- Core configuration ---
 set(CORE_SOURCES
     src/core/SimulationEngine.cpp
     src/core/PluginManager.cpp
@@ -72,10 +72,10 @@ set(CORE_SOURCES
     src/core/TimeManager.cpp
 )
 
-# Crear la biblioteca del núcleo
+# Create core library
 add_library(core STATIC ${CORE_SOURCES})
 
-# Configurar includes
+# Configure include directories
 target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
@@ -83,7 +83,7 @@ target_include_directories(core PUBLIC
     ${GENERATED_DIR}
 )
 
-# Vincular dependencias
+# Link dependencies
 target_link_libraries(core PUBLIC
     flatbuffers::flatbuffers
     nlohmann_json::nlohmann_json
@@ -96,13 +96,13 @@ target_include_directories(core PUBLIC
 
 add_dependencies(core generate_flatbuffers)
 
-# --- Configuración del ejecutable principal ---
-# Ejecutable principal
+# --- Main executable configuration ---
+# Main executable
 add_executable(simulator src/main.cpp)
 target_link_libraries(simulator core ${CMAKE_DL_LIBS})
 target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Crear directorios necesarios y copiar archivos de datos
+# Create required directories and copy runtime data files
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
@@ -131,9 +131,9 @@ set(PLUGIN_NAMES
     structures
 )
 
-# Estructura estandarizada de salida para plugins:
-# - Binarios de ejecución del plugin (.dll/.so/.dylib) -> bin/plugins
-# - Librerías de archivo/importación (.lib/.a)         -> lib/plugins
+# Standardized plugin output layout:
+# - Plugin runtime binaries (.dll/.so/.dylib) -> bin/plugins
+# - Archive/import libraries (.lib/.a)        -> lib/plugins
 set(PLUGIN_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
 set(PLUGIN_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/plugins")
 
@@ -159,7 +159,7 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     add_library(${_plugin_name} SHARED ${_plugin_sources})
     add_dependencies(${_plugin_name} generate_flatbuffers)
 
-    # Mantener consistente la ruta de binarios de plugins en todas las plataformas/configuraciones
+    # Keep plugin binary output path consistent across platforms/configurations
     set_target_properties(${_plugin_name} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
         LIBRARY_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
@@ -184,11 +184,11 @@ endforeach()
 message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
 message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")
 
-# --- Opciones de compilación para cobertura y análisis ---
+# --- Build options for coverage and analysis ---
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 option(ENABLE_TESTING "Enable unit tests" ON)
 
-# Configuración de cobertura de código
+# Code coverage configuration
 if(ENABLE_COVERAGE)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(STATUS "Code coverage enabled")
@@ -199,14 +199,14 @@ if(ENABLE_COVERAGE)
     endif()
 endif()
 
-# --- Tests unitarios ---
+# --- Unit tests ---
 if(ENABLE_TESTING)
     enable_testing()
 
-    # Buscar Google Test
+    # Find Google Test
     find_package(GTest CONFIG REQUIRED)
 
-    # Tests del núcleo
+    # Core tests
     add_executable(core_tests
         tests/test_config_manager.cpp
         tests/test_physics_integrator.cpp
@@ -230,7 +230,7 @@ if(ENABLE_TESTING)
         ${GENERATED_DIR}
     )
 
-    # Registrar tests con CTest
+    # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(core_tests)
 

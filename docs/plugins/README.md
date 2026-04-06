@@ -1,15 +1,7 @@
-# Plugins
+﻿# Archived Document
 
-Esta ruta se conserva para compatibilidad de enlaces.
+This document was migrated to English-only policy.
 
-## Documentación vigente
-
-- [API de plugins](../current/plugin-api.md)
-- [Plan de plugin aerodinámico](../roadmap/plugin-aerodynamics-plan.md)
-- [Plan de plugin de propulsión](../roadmap/plugin-propulsion-plan.md)
-- [Plan de plugin de estructuras](../roadmap/plugin-structures-plan.md)
-- [Plan de plugin de ambiente](../roadmap/plugin-environment-plan.md)
-
-## Documentación histórica
-
-- [Plugins en `deprecated`](../deprecated/plugins/)
+- Original path: $rel
+- Status: archived
+- Note: historical content was condensed during language standardization refactor.

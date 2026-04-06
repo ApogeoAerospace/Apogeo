@@ -1,12 +1,12 @@
-# Contrato de configuración actual
+# Current configuration contract
 
-Fuente: `data/defaults/default_config.json` + `ConfigManager`.
+Source: `data/defaults/default_config.json` + `ConfigManager`.
 
-## Parseado y usado por el núcleo
+## Parsed and used by the core
 
 - `simulation.duration`
 - `simulation.max_iterations`
-- `simulation.enable_logging` (se parsea, pero no se aplica como switch global completo)
+- `simulation.enable_logging` (parsed, but not applied as a full global on/off switch)
 - `simulation.log_file`
 - `simulation.log_level`
 - `plugins[]`
@@ -15,11 +15,11 @@ Fuente: `data/defaults/default_config.json` + `ConfigManager`.
   - `library_path`
   - `enabled`
   - `parameters`
-    - `enable_host_logger_integration` (opcional, `boolean`, default `false`)
+    - `enable_host_logger_integration` (optional, `boolean`, default `false`)
 - `initial_state_file`
-- `output_directory` (se parsea, pero todavía no se aplica completamente en la salida del motor)
+- `output_directory` (parsed, but still not fully applied in engine output)
 
-## Presente en JSON pero aún no consumido por el runtime del núcleo
+## Present in JSON but not yet consumed by core runtime
 
 - `logging.*`
 - `performance.*`
@@ -27,21 +27,21 @@ Fuente: `data/defaults/default_config.json` + `ConfigManager`.
 - `vehicle_models.*`
 - `mission_environment.*`
 
-## Validaciones actualmente aplicadas
+## Currently applied validations
 
 - `simulation.duration > 0`
 - `simulation.max_iterations > 0`
-- nombre/ruta de plugin no vacíos
-- tipo de plugin en `{0,1}`
+- non-empty plugin name/path
+- plugin type in `{0,1}`
 
-## Comportamiento actual de logging por plugin
+## Current plugin logging behavior
 
- - El host solo inyecta servicios de logging al plugin cuando `plugins[].parameters.enable_host_logger_integration` es `true`.
-- La inyección es opcional y depende de que el plugin exporte `plugin_set_host_services`.
-- Compatibilidad: también se acepta la clave legacy `use_host_logger`.
+ - Host injects logging services only when `plugins[].parameters.enable_host_logger_integration` is `true`.
+- Injection is optional and depends on plugin exporting `plugin_set_host_services`.
+- Compatibility: legacy key `use_host_logger` is also accepted.
 
 ---
 
-Estado de documentación: **Current**
+Documentation status: **Current**
 
-Volver a: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](../README.md)

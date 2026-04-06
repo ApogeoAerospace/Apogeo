@@ -10,7 +10,7 @@
 
 /**
  * @file SimulationEngine.h
- * @brief Declaración del motor principal de simulación de MoLab.
+ * @brief Declaration of the main MoLab simulation engine.
  */
 
 namespace MoLab {
@@ -23,116 +23,116 @@ namespace state_vector {
 
 /**
  * @class SimulationEngine
- * @brief Motor principal que orquesta estado, plugins, tiempo y salida.
+ * @brief Main engine that orchestrates state, plugins, time, and output.
  */
 namespace MoLab {
 
 class SimulationEngine {
 public:
     /**
-     * @brief Construye el motor de simulación.
+     * @brief Constructs the simulation engine.
      */
     SimulationEngine();
 
     /**
-     * @brief Destruye el motor de simulación y libera recursos.
+     * @brief Destroys the simulation engine and releases resources.
      */
     ~SimulationEngine() noexcept;
 
-    // Evitar copia y asignación
+    // Disable copy and assignment
     SimulationEngine(const SimulationEngine&) = delete;
     SimulationEngine& operator=(const SimulationEngine&) = delete;
 
     /**
-     * @brief Inicializa la simulación con un archivo de estado inicial.
-     * @param state_filepath Ruta al archivo de estado JSON.
-     * @return `true` si la inicialización fue exitosa.
+     * @brief Initializes simulation with an initial state file.
+     * @param state_filepath Path to initial JSON state file.
+     * @return `true` if initialization is successful.
      */
     bool initialize(const std::string& state_filepath);
 
     /**
-     * @brief Inicializa la simulación desde un archivo de configuración.
-     * @param config_filepath Ruta al archivo de configuración JSON.
-     * @return `true` si la inicialización fue exitosa.
+     * @brief Initializes simulation from a configuration file.
+     * @param config_filepath Path to JSON configuration file.
+     * @return `true` if initialization is successful.
      */
     bool initialize_with_config(const std::string& config_filepath);
 
     /**
-     * @brief Carga un plugin dinámico por nombre/ruta y tipo.
-     * @param path Identificador del plugin.
-     * @param plugin_type Tipo de plugin esperado.
+     * @brief Loads a dynamic plugin by name/path and type.
+     * @param path Plugin identifier.
+     * @param plugin_type Expected plugin type.
      */
     void load_plugin(const std::string& path, int plugin_type);
 
     /**
-     * @brief Ejecuta un tick completo de simulación.
+     * @brief Executes a full simulation tick.
      */
     void run_tick();
 
     /**
-     * @brief Ejecuta la simulación completa según la configuración activa.
-     * @return `true` si la simulación termina correctamente.
+     * @brief Runs the full simulation using active configuration.
+     * @return `true` if simulation completes successfully.
      */
     bool run_simulation();
 
     /**
-     * @brief Libera recursos y cierra la simulación.
+     * @brief Releases resources and shuts down simulation.
      */
     void shutdown();
 
     /**
-     * @brief Obtiene el tiempo de simulación acumulado.
-     * @return Tiempo de simulación en segundos.
+     * @brief Gets accumulated simulation time.
+     * @return Simulation time in seconds.
      */
     double get_simulation_time() const { return simulation_time_; }
 
     /**
-     * @brief Obtiene el número de iteraciones ejecutadas.
-     * @return Cantidad de ticks procesados.
+     * @brief Gets number of executed iterations.
+     * @return Count of processed ticks.
      */
     uint64_t get_iteration_count() const { return iteration_count_; }
 
     /**
-     * @brief Obtiene la duración del último tick.
-     * @return Duración en milisegundos.
+     * @brief Gets the duration of the last tick.
+     * @return Duration in milliseconds.
      */
     double get_last_tick_duration() const { return last_tick_duration_; }
 
     /**
-     * @brief Indica si la simulación se encuentra en ejecución.
-     * @return `true` si el motor está activo.
+     * @brief Indicates whether simulation is currently running.
+     * @return `true` if engine is active.
      */
     bool is_running() const { return is_running_; }
 
     /**
-     * @brief Valida el estado interno de simulación actual.
-     * @return `true` si el estado es válido.
+     * @brief Validates current internal simulation state.
+     * @return `true` if state is valid.
      */
     bool validate_simulation_state() const;
 
     /**
-     * @brief Imprime métricas de rendimiento de simulación y plugins.
+     * @brief Prints simulation and plugin performance metrics.
      */
     void print_performance_metrics() const;
 
 private:
-    // Gestor de plugins
+    // Plugin manager
     std::unique_ptr<PluginManager> plugin_manager_;
 
-    // Buffer de estado actual (thread-safe)
+    // Current state buffer (thread-safe)
     std::vector<uint8_t> current_state_buffer_;
     mutable std::mutex state_mutex_;
 
-    // Estado de simulación
+    // Simulation state
     std::atomic<double> simulation_time_{0.0};
     std::atomic<uint64_t> iteration_count_{0};
     std::atomic<double> last_tick_duration_{0.0};
     std::atomic<bool> is_running_{false};
 
     /**
-     * @brief Valida un estado ya parseado.
-     * @param state Estado a validar.
-     * @return `true` si el estado es válido.
+     * @brief Validates an already parsed state.
+     * @param state State to validate.
+     * @return `true` if state is valid.
      */
     bool validate_simulation_state(const state_vector::GeneralState* state) const;
 };

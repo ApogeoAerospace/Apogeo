@@ -1,21 +1,21 @@
-# Guía de Estilo de Documentación - MoLab
+# Documentation Style Guide - MoLab
 
-> Estado: **Implementado (guía oficial vigente)**
+> Status: **Implemented (active official guide)**
 
-Este documento establece el estándar oficial para la documentación dentro del código fuente del proyecto MoLab. Todo el equipo debe seguir estas convenciones para mantener consistencia y facilitar la generación automática de documentación.
+This document defines the official standard for documentation inside the MoLab source code. The entire team should follow these conventions to keep consistency and enable automated documentation generation.
 
-## Herramienta Oficial: Doxygen
+## Official Tool: Doxygen
 
-MoLab utiliza **Doxygen** como herramienta de documentación. Doxygen lee comentarios especiales en el código y genera documentación HTML, PDF o LaTeX automáticamente.
+MoLab uses **Doxygen** as its documentation tool. Doxygen reads special comments in the code and generates HTML, PDF, or LaTeX documentation automatically.
 
-### Instalación de Doxygen
+### Doxygen installation
 
 **Windows:**
 ```bash
-# Usando winget
+# Using winget
 winget install doxygen
 
-# O descargar desde: https://www.doxygen.nl/download.html
+# Or download from: https://www.doxygen.nl/download.html
 ```
 
 **Linux:**
@@ -28,124 +28,124 @@ sudo apt install doxygen doxygen-gui graphviz
 brew install doxygen graphviz
 ```
 
-### Generar la documentación
+### Generate documentation
 
-Desde la raíz del proyecto:
+From the project root:
 ```bash
 doxygen Doxyfile
 ```
 
-La documentación se generará en `docs/generated/html/index.html`.
+Documentation will be generated at `docs/generated/html/index.html`.
 
 ---
 
-## Formato de comentarios
+## Comment format
 
-### Estilo oficial: Javadoc con `/**`
+### Official style: Javadoc with `/**`
 
-Usamos el estilo Javadoc con doble asterisco para todos los comentarios de documentación:
+Use Javadoc-style double-asterisk blocks for all documentation comments:
 
 ```cpp
 /**
- * @brief Descripción corta de una línea.
+ * @brief One-line short description.
  *
- * Descripción más detallada del elemento. Puede ocupar
- * múltiples líneas y explicar el comportamiento en profundidad.
+ * More detailed description of the element. It can span
+ * multiple lines and explain behavior in depth.
  */
 ```
 
-### Idioma
+### Language
 
-- **Comentarios de documentación**: Español
-- **Nombres de variables, clases y métodos**: Inglés (como el código existente)
+- **Documentation comments**: English
+- **Variable, class, and method names**: English (matching existing code)
 
 ---
 
-## Documentación de clases
+## Class documentation
 
-Toda clase pública debe tener un bloque de documentación antes de su declaración.
+Every public class must have a documentation block before its declaration.
 
-### Plantilla
+### Template
 
 ```cpp
 /**
- * @class NombreClase
- * @brief Descripción breve de la clase.
+ * @class ClassName
+ * @brief Short class description.
  *
- * Descripción detallada de la responsabilidad de la clase,
- * su propósito en el sistema y cómo se relaciona con otros componentes.
+ * Detailed description of the class responsibility,
+ * its purpose in the system, and how it relates to other components.
  *
- * @author Nombre del autor (opcional)
- * @date Fecha de creación (opcional)
+ * @author Author name (optional)
+ * @date Creation date (optional)
  *
- * @see ClaseRelacionada
+ * @see RelatedClass
  */
-class NombreClase {
+class ClassName {
     // ...
 };
 ```
 
 ---
 
-## Documentación de métodos y funciones
+## Method and function documentation
 
-### Plantilla
+### Template
 
 ```cpp
 /**
- * @brief Descripción breve del método.
+ * @brief Short method description.
  *
- * Descripción detallada del comportamiento, incluyendo
- * casos especiales y efectos secundarios.
+ * Detailed behavior description, including
+ * special cases and side effects.
  *
- * @param nombre_parametro Descripción del parámetro.
- * @param otro_parametro Descripción de otro parámetro.
+ * @param parameter_name Parameter description.
+ * @param other_parameter Description of another parameter.
  *
- * @return Descripción del valor de retorno.
+ * @return Description of the return value.
  *
- * @throws TipoExcepcion Cuándo se lanza esta excepción.
+ * @throws ExceptionType When this exception is thrown.
  *
- * @pre Precondición que debe cumplirse antes de llamar.
- * @post Postcondición garantizada después de ejecutar.
+ * @pre Precondition that must be true before calling.
+ * @post Postcondition guaranteed after execution.
  *
- * @note Notas adicionales importantes.
- * @warning Advertencias sobre uso incorrecto.
+ * @note Additional important notes.
+ * @warning Warnings about incorrect usage.
  */
 ```
 
 ---
 
-## Comandos Doxygen de referencia rápida
+## Doxygen quick reference commands
 
-| Comando | Uso |
-|---------|-----|
-| `@brief` | Descripción corta (una línea) |
-| `@param` | Documentar un parámetro |
-| `@return` | Documentar el valor de retorno |
-| `@throws` | Documentar excepciones |
-| `@see` | Referencia a elementos relacionados |
-| `@note` | Nota informativa |
-| `@warning` | Advertencia importante |
-| `@deprecated` | Marcar como obsoleto |
-| `@todo` | Tareas pendientes |
-| `@bug` | Bugs conocidos |
-
----
-
-## Lista de verificación
-
-Antes de hacer commit, verifica:
-
-- [ ] ¿Todas las clases públicas tienen `@brief` y descripción?
-- [ ] ¿Todos los métodos públicos tienen `@param` y `@return`?
-- [ ] ¿Los archivos nuevos tienen bloque `@file`?
-- [ ] ¿La documentación está en español?
-- [ ] ¿`doxygen Doxyfile` ejecuta sin warnings relevantes?
+| Command | Usage |
+|---------|-------|
+| `@brief` | Short description (one line) |
+| `@param` | Document a parameter |
+| `@return` | Document the return value |
+| `@throws` | Document exceptions |
+| `@see` | Reference related elements |
+| `@note` | Informational note |
+| `@warning` | Important warning |
+| `@deprecated` | Mark as deprecated |
+| `@todo` | Pending tasks |
+| `@bug` | Known bugs |
 
 ---
 
-## Documento de referencia histórica
+## Verification checklist
 
-La versión histórica se conserva en:
+Before committing, verify:
 
-- [Versión depredada de la guía](./deprecated/DOCUMENTATION_STYLE_GUIDE.md)
+- [ ] Do all public classes have `@brief` and description?
+- [ ] Do all public methods include `@param` and `@return`?
+- [ ] Do new files include an `@file` block?
+- [ ] Is documentation written in English?
+- [ ] Does `doxygen Doxyfile` run without relevant warnings?
+
+---
+
+## Historical reference document
+
+The historical version is kept at:
+
+- [Deprecated guide version](./deprecated/DOCUMENTATION_STYLE_GUIDE.md)

@@ -1,68 +1,66 @@
-# Simulador Aeroespacial MoLab
 # MoLab Aerospace Simulator
 
-Motor de simulación aeroespacial modular con arquitectura de plugins e integración de fuerzas en tiempo real.
+Modular aerospace simulation engine with plugin architecture and real-time force integration.
 
-## Requisitos
+## Requirements
 
-- Compilador compatible con C++17
-- CMake 3.20 o superior
-- Python 3 (interfaces y utilidades)
+- C++17-compatible compiler
+- CMake 3.20 or newer
+- Python 3 (interfaces and utilities)
 
-## Compilación rápida
+## Quick build
 
 ```bash
 cmake -B build -S .
 cmake --build build --parallel
 ```
 
-## Ejecución
+## Execution
 
-### Interfaz web (recomendada)
+### Web interface (recommended)
 
 ```bash
-./launch_web.sh
+./scripts/launch_web.sh
 ```
 
-Abrir `http://localhost:8080`.
+Open `http://localhost:8082`.
 
-### Lanzador inteligente
+### Smart launcher
 
 ```bash
 ./launch_molab.sh
 ```
 
-### GUI de escritorio
+### Desktop GUI
 
 ```bash
 ./launch_gui.sh
 ```
 
-### Línea de comandos
+### Command line
 
 ```bash
-./bin/simulator --config ../data/config/basic_config.json --ticks 50
-./bin/simulator --config ../data/config/main_config.json --ticks 100
+build/bin/simulator --config data/defaults/default_config.json --ticks 50
 ```
 
-## Documentación
+## Documentation
 
-- Índice de documentación del proyecto: `docs/README.md`
-- Guía de estilo Doxygen: `docs/DOCUMENTATION_STYLE_GUIDE.md`
-- Salida HTML generada por Doxygen: `docs/generated/html/index.html`
+- Project documentation index: `docs/README.md`
+- Doxygen style guide: `docs/DOCUMENTATION_STYLE_GUIDE.md`
+- Generated Doxygen HTML output: `docs/generated/html/index.html`
 
-## Estructura del repositorio
+## Repository structure
 
 ```text
 MoLab/
-├── src/                  # Código fuente principal
-├── tests/                # Pruebas unitarias (Google Test)
-├── docs/                 # Documentación técnica y funcional
-├── tools/                # Utilidades y servidores auxiliares
-├── data/                 # Configuración y estados iniciales
-└── plugins/              # Plugins de simulación
+├── src/                  # Main source code
+├── tests/                # Unit tests (Google Test)
+├── docs/                 # Technical and functional documentation
+├── tools/                # Utilities and auxiliary servers
+├── data/                 # Configuration and initial states
+└── plugins/              # Simulation plugins
 ```
 
-## Licencia
+## License
 
-Proyecto bajo licencia MIT.
+Project under GNU AFFERO GENERAL PUBLIC LICENSE V3

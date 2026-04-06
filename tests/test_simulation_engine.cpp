@@ -7,7 +7,7 @@
 
 /**
  * @file test_simulation_engine.cpp
- * @brief Pruebas unitarias para `SimulationEngine`.
+ * @brief Unit tests for `SimulationEngine`.
  */
 
 using json = nlohmann::json;
@@ -220,7 +220,7 @@ TEST_F(SimulationEngineTest, ValidateStateAfterTick) {
     EXPECT_TRUE(engine.validate_simulation_state());
 }
 
-// Ground Collision Se maneja en el módulo de ambiente, no en el núcleo de simulación
+    // Ground collision is handled by the environment module, not by the simulation core
 
 TEST_F(SimulationEngineTest, MultipleInitializations) {
     SimulationEngine engine;

@@ -1,13 +1,7 @@
-# Diagramas
+﻿# Archived Document
 
-Esta ruta se conserva para compatibilidad de enlaces.
+This document was migrated to English-only policy.
 
-## Documentación vigente
-
-- [Arquitectura actual](../current/architecture.md)
-- [Brechas conocidas](../current/known-gaps.md)
-- [Resumen de roadmap](../roadmap/roadmap-overview.md)
-
-## Documentación histórica
-
-- [Diagramas en `deprecated`](../deprecated/diagramas/)
+- Original path: $rel
+- Status: archived
+- Note: historical content was condensed during language standardization refactor.

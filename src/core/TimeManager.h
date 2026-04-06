@@ -9,119 +9,119 @@
 
 /**
  * @file TimeManager.h
- * @brief Declaración del gestor centralizado de tiempo de simulación y UTC.
+ * @brief Declaration of centralized simulation-time and UTC manager.
  */
 
 namespace MoLab {
 
 /**
- * @brief Gestor centralizado de tiempo para MoLab
+ * @brief Centralized time manager for MoLab
  *
- * Maneja tanto el tiempo de simulación (relativo) como el tiempo UTC (absoluto).
- * Proporciona conversiones entre diferentes formatos de tiempo y sincronización.
+ * Handles both simulation time (relative) and UTC time (absolute).
+ * Provides conversions across time formats and synchronization support.
  */
 class TimeManager {
 public:
     /**
-     * @brief Obtiene la instancia global del gestor de tiempo.
-     * @return Referencia única a `TimeManager`.
+     * @brief Gets the global time manager instance.
+     * @return Unique reference to `TimeManager`.
      */
     static TimeManager& getInstance();
 
     /**
-     * @brief Inicializa tiempos de arranque de simulación y UTC.
-     * @param utc_start_time Tiempo UTC inicial en segundos Unix.
-     * @param simulation_start_time Tiempo inicial de simulación.
+     * @brief Initializes simulation and UTC start times.
+     * @param utc_start_time Initial UTC time in Unix seconds.
+     * @param simulation_start_time Initial simulation time.
      */
     void initialize(double utc_start_time = 0.0, double simulation_start_time = 0.0);
 
     /**
-     * @brief Fija el tiempo UTC de inicio y reinicia el tiempo simulado.
-     * @param utc_time Nuevo tiempo UTC base.
+     * @brief Sets UTC start time and resets simulation time.
+     * @param utc_time New base UTC time.
      */
     void setSimulationStartTime(double utc_time);
 
     /**
-     * @brief Incrementa el tiempo de simulación.
-     * @param delta_time Incremento temporal.
+     * @brief Increments simulation time.
+     * @param delta_time Time increment.
      */
     void updateSimulationTime(double delta_time);
 
     /**
-     * @brief Establece explícitamente el tiempo de simulación.
-     * @param time Tiempo de simulación deseado.
+     * @brief Explicitly sets simulation time.
+     * @param time Desired simulation time.
      */
     void setSimulationTime(double time);
 
     /**
-     * @brief Obtiene el tiempo de simulación actual.
-     * @return Tiempo relativo de simulación.
+     * @brief Gets current simulation time.
+     * @return Relative simulation time.
      */
     double getSimulationTime() const;
 
     /**
-     * @brief Obtiene el tiempo UTC actual asociado a la simulación.
-     * @return Tiempo UTC en segundos Unix.
+     * @brief Gets current UTC time associated with simulation.
+     * @return UTC time in Unix seconds.
      */
     double getCurrentUTC() const;
 
     /**
-     * @brief Obtiene el tiempo UTC base de la ejecución.
-     * @return Tiempo UTC inicial.
+     * @brief Gets base UTC time for current run.
+     * @return Initial UTC time.
      */
     double getStartUTC() const;
 
     /**
-     * @brief Obtiene el tiempo UTC actual formateado.
-     * @return Cadena de tiempo legible.
+     * @brief Gets current UTC time as formatted string.
+     * @return Readable time string.
      */
     std::string getCurrentUTCString() const;
 
     /**
-     * @brief Obtiene el tiempo UTC inicial formateado.
-     * @return Cadena de tiempo legible.
+     * @brief Gets initial UTC time as formatted string.
+     * @return Readable time string.
      */
     std::string getStartUTCString() const;
 
     /**
-     * @brief Convierte tiempo de simulación a UTC.
-     * @param sim_time Tiempo relativo de simulación.
-     * @return Tiempo UTC equivalente.
+     * @brief Converts simulation time to UTC.
+     * @param sim_time Relative simulation time.
+     * @return Equivalent UTC time.
      */
     double simulationTimeToUTC(double sim_time) const;
 
     /**
-     * @brief Convierte tiempo UTC a tiempo relativo de simulación.
-     * @param utc_time Tiempo UTC.
-     * @return Tiempo relativo de simulación.
+     * @brief Converts UTC time to relative simulation time.
+     * @param utc_time UTC time.
+     * @return Relative simulation time.
      */
     double utcToSimulationTime(double utc_time) const;
 
     /**
-     * @brief Reinicia el gestor de tiempo con una nueva referencia UTC actual.
+     * @brief Resets time manager using a new current UTC reference.
      */
     void reset();
 
     /**
-     * @brief Formatea un timestamp UTC para salida legible.
-     * @param utc_time Tiempo UTC en segundos Unix.
-     * @return Cadena formateada en UTC.
+     * @brief Formats a UTC timestamp for readable output.
+     * @param utc_time UTC time in Unix seconds.
+     * @return UTC formatted string.
      */
     std::string formatTime(double utc_time) const;
 
     /**
-     * @brief Obtiene el tiempo UTC real del sistema.
-     * @return Tiempo actual en segundos Unix con milisegundos.
+     * @brief Gets current real system UTC time.
+     * @return Current Unix time in seconds with milliseconds.
      */
     double getCurrentRealTimeUTC() const;
 
     /**
-     * @brief Bloquea explícitamente el mutex interno de tiempo.
+     * @brief Explicitly locks internal time mutex.
      */
     void lock() { time_mutex_.lock(); }
 
     /**
-     * @brief Desbloquea explícitamente el mutex interno de tiempo.
+     * @brief Explicitly unlocks internal time mutex.
      */
     void unlock() { time_mutex_.unlock(); }
 

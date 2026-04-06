@@ -157,8 +157,8 @@ PluginVector3 StructuresModule::computeStructuralForce(const state_vector::Gener
         return out;
     }
 
-    // Modelo temporal de plantilla: amortiguamiento lineal simplificado.
-    // Debe reemplazarse por el modelo estructural definitivo.
+    // Temporary template model: simplified linear damping.
+    // Must be replaced by the final structural model.
     const double c = 5.0;
     out.x = static_cast<float>(-c * state->velocity()->x());
     out.y = static_cast<float>(-c * state->velocity()->y());
@@ -172,8 +172,8 @@ PluginVector3 StructuresModule::computeStructuralTorque(const state_vector::Gene
         return out;
     }
 
-    // Modelo temporal de plantilla: amortiguamiento angular simplificado.
-    // Debe reemplazarse por el modelo estructural definitivo.
+    // Temporary template model: simplified angular damping.
+    // Must be replaced by the final structural model.
     const double c_ang = 3.0;
     out.x = static_cast<float>(-c_ang * state->angular_velocity()->x());
     out.y = static_cast<float>(-c_ang * state->angular_velocity()->y());

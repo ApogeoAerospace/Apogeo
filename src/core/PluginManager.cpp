@@ -19,7 +19,7 @@
 
 /**
  * @file PluginManager.cpp
- * @brief Implementación del gestor de carga y ejecución de plugins.
+ * @brief Implementation of plugin load and execution manager.
  */
 
 #ifdef _WIN32
@@ -31,7 +31,7 @@ namespace MoLab {
 namespace {
 
 /**
- * @brief Adaptador de logging para que los plugins usen el logger del host.
+ * @brief Logging adapter so plugins can use the host logger.
  */
 void plugin_host_log_bridge(int32_t level, const char* component, const char* message, void* user_data) {
     (void)user_data;
@@ -62,7 +62,7 @@ void plugin_host_log_bridge(int32_t level, const char* component, const char* me
 }
 
 /**
- * @brief Retorna una instancia estable de servicios del host para plugins.
+ * @brief Returns a stable host-services instance for plugins.
  */
 const PluginHostServices* get_stable_host_services() {
     static PluginHostServices services = [] {
@@ -158,7 +158,7 @@ static std::vector<std::string> build_plugin_candidates(const std::string& norma
     return candidates;
 }
 
-// Scheduler simple para ejecutar tareas de plugins en paralelo.
+// Simple scheduler to run plugin tasks in parallel.
 class PluginTaskScheduler {
 public:
     explicit PluginTaskScheduler(size_t thread_count) {
@@ -385,13 +385,13 @@ bool PluginManager::load_plugins_from_config() {
 void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Fase 1: ejecución secuencial (modifica estado)
+    // Phase 1: sequential execution (modifies state)
     execute_sequential_plugins(state_buffer, delta_time);
 
-    // Fase 2: ejecución paralela (calcula fuerzas)
+    // Phase 2: parallel execution (computes forces)
     execute_parallel_plugins(state_buffer, delta_time);
 
-    // Fase 3: integración física con fuerzas/torques acumulados
+    // Phase 3: physical integration with accumulated forces/torques
     apply_physics_integration(state_buffer, delta_time);
 
     total_cycles_++;
@@ -540,7 +540,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
+    // If there are no forces/torques, only advance time without rebuilding buffer
     if (total_force.isZero() && total_torque.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
@@ -556,7 +556,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     flatbuffers::FlatBufferBuilder builder;
 
-    // Cinemática actualizada
+    // Updated kinematics
     auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
     auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
     auto orientation = state_vector::Quaternion(
@@ -566,7 +566,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         static_cast<float>(new_state.orientation.w()));
     auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
 
-    // Propiedades de masa y CG
+    // Mass and CG properties
     float total_mass = current_state->total_mass();
     state_vector::Vec3 cg_loc = current_state->cg_location()
         ? state_vector::Vec3(current_state->cg_location()->x(), current_state->cg_location()->y(), current_state->cg_location()->z())
@@ -581,8 +581,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Datos aerodinámicos - Los plugins actualizan estos valores en el buffer
-    // PluginManager solo los copia del estado actual
+    // Aerodynamic data - plugins update these values in the buffer
+    // PluginManager only copies them from current state
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();
@@ -592,7 +592,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     float atm_pressure = current_state->atm_pressure();
     float atm_temperature = current_state->atm_temperature();
 
-    // Arrays: copiar si existen
+    // Arrays: copy if present
     flatbuffers::Offset<flatbuffers::Vector<float>> propellant_masses_fb;
     if (auto pm = current_state->propellant_masses()) {
         std::vector<float> pm_vec;
@@ -601,7 +601,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         propellant_masses_fb = builder.CreateVector(pm_vec);
     }
 
-    // Engines (vector de structs)
+    // Engines (vector of structs)
     flatbuffers::Offset<flatbuffers::Vector<const state_vector::EngineCmd*>> engines_fb;
     if (auto engines = current_state->engines()) {
         std::vector<state_vector::EngineCmd> eng_vec;
@@ -622,7 +622,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         surface_deflections_fb = builder.CreateVector(sd_vec);
     }
 
-    // Construir GeneralState preservando dt
+    // Build GeneralState while preserving dt
     state_vector::GeneralStateBuilder gs_builder(builder);
     gs_builder.add_sim_time(static_cast<float>(new_state.time));
     gs_builder.add_dt(current_state->dt());
@@ -652,7 +652,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    // Actualizar buffer de estado
+    // Update state buffer
     const uint8_t* new_buffer = builder.GetBufferPointer();
     uint32_t new_size = builder.GetSize();
     state_buffer.assign(new_buffer, new_buffer + new_size);

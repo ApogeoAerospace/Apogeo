@@ -1,25 +1,25 @@
-# CMake standalone del plugin Structures.
-# Este archivo permite compilar únicamente este módulo fuera del build raíz.
+# Standalone CMake for Structures plugin.
+# This file allows building only this module outside the root build.
 
 cmake_minimum_required(VERSION 3.20)
 project(structures_plugin_standalone LANGUAGES CXX)
 
-# Estándar C++ del proyecto.
+# Project C++ standard.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Dependencias requeridas por el plugin.
+# Dependencies required by the plugin.
 find_package(flatbuffers CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-# Directorio raíz del repositorio (este CMake vive en plugins/structures).
+# Repository root directory (this CMake lives in plugins/structures).
 get_filename_component(MOLAB_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 
-# Permite sobreescribir desde CLI el directorio de headers generados por FlatBuffers.
-set(MOLAB_GENERATED_DIR "" CACHE PATH "Directorio que contiene state_vector_generated.h")
+# Allows overriding generated FlatBuffers headers directory from CLI.
+set(MOLAB_GENERATED_DIR "" CACHE PATH "Directory containing state_vector_generated.h")
 
-# Resuelve el include generado por FlatBuffers.
+# Resolves FlatBuffers-generated include path.
 set(_generated_candidates)
 if(MOLAB_GENERATED_DIR)
     list(APPEND _generated_candidates "${MOLAB_GENERATED_DIR}")
@@ -40,30 +40,30 @@ endforeach()
 
 if(NOT GENERATED_INCLUDE_DIR)
     message(FATAL_ERROR
-        "No se encontró state_vector_generated.h. "
-        "Compila primero el proyecto raíz o pasa -DMOLAB_GENERATED_DIR=<ruta>/generated")
+        "state_vector_generated.h was not found. "
+        "Build the root project first or pass -DMOLAB_GENERATED_DIR=<path>/generated")
 endif()
 
-# Biblioteca del plugin.
+# Plugin library.
 add_library(structures SHARED
     structures.cpp
     structures_module.cpp
 )
 
-# Directorios de include.
+# Include directories.
 target_include_directories(structures PRIVATE
     "${MOLAB_ROOT_DIR}/src/api"
     "${MOLAB_ROOT_DIR}/plugins/structures"
     "${GENERATED_INCLUDE_DIR}"
 )
 
-# Dependencias de enlace.
+# Link dependencies.
 target_link_libraries(structures PRIVATE
     flatbuffers::flatbuffers
     nlohmann_json::nlohmann_json
 )
 
-# Configuración del compilador.
+# Compiler configuration.
 target_compile_features(structures PRIVATE cxx_std_17)
 target_compile_options(structures PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-fPIC>
@@ -71,13 +71,13 @@ target_compile_options(structures PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
 )
 
-# Directorios de salida (layout simple para build local del plugin).
+# Output directories (simple layout for local plugin build).
 set_target_properties(structures PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins"
 )
 
-# Nomenclatura específica por plataforma.
+# Platform-specific naming.
 if(WIN32)
     set_target_properties(structures PROPERTIES
         PREFIX ""
@@ -95,7 +95,7 @@ else()
     )
 endif()
 
-# Instalación del plugin.
+# Plugin installation.
 install(TARGETS structures
     LIBRARY DESTINATION plugins
     RUNTIME DESTINATION plugins

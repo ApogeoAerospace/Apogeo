@@ -30,25 +30,25 @@ struct StructuralLimits {
 };
 
 /**
- * @brief Dominio del modulo Structures: datos de masa, limites y calculo estructural.
+ * @brief Structures module domain: mass data, limits, and structural calculations.
  */
 class StructuresModule {
 public:
     /**
-     * @brief Carga propiedades de masa placeholder para el modulo Structures.
+     * @brief Loads placeholder mass properties for Structures module.
      *
      * @details
-     * La fuente para masa actual, centro de masa e inercia es el
-     * buffer principal de simulacion. Mientras esa integracion no exista,
-     * se permite esta carga desde JSON como placeholder temporal.
+     * The source for current mass, center of mass, and inertia is the
+     * main simulation buffer. While that integration is unavailable,
+     * loading from JSON is allowed as a temporary placeholder.
      *
-     * Nota: los actuadores NO se toman desde este JSON. La fuente oficial de
-     * actuadores es la configuracion general recibida en plugin_configure().
+     * Note: actuators are NOT taken from this JSON. The official source for
+     * actuators is the general configuration passed to plugin_configure().
      */
     bool loadMassPropertiesFromJson(const std::string& json_path);
 
     /**
-     * @brief Carga limites estructurales desde CSV.
+     * @brief Loads structural limits from CSV.
      */
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
 
@@ -56,7 +56,7 @@ public:
     InertiaTensorData getInertiaTensor() const;
 
     /**
-     * @brief Verifica limites maximos de integridad estructural.
+     * @brief Checks maximum structural integrity limits.
      */
     bool checkStructuralIntegrity(double dynamic_pressure, double g_force) const;
 

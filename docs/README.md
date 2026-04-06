@@ -1,32 +1,32 @@
-# Documentación de MoLab
+# MoLab Documentation
 
-Este directorio concentra la documentación técnica y funcional del proyecto.
+This directory contains the project's technical and functional documentation.
 
-## Estructura
+## Structure
 
-- `docs/current/`: documentación vigente y alineada con el código actual.
-- `docs/roadmap/`: planes de implementación y trabajo futuro.
-- `docs/deprecated/`: material histórico conservado por trazabilidad.
+- `docs/current/`: active documentation aligned with current code.
+- `docs/roadmap/`: implementation plans and future work.
+- `docs/deprecated/`: historical material kept for traceability.
 
-## Enlaces principales
+## Main links
 
-- [Compilación y ejecución](./current/build-run.md)
-- [Arquitectura actual](./current/architecture.md)
-- [Configuración actual](./current/config.md)
-- [API de plugins](./current/plugin-api.md)
-- [Brechas conocidas](./current/known-gaps.md)
-- [Guía de estilo Doxygen](./current/doxygen-style.md)
+- [Build and run](./current/build-run.md)
+- [Current architecture](./current/architecture.md)
+- [Current configuration](./current/config.md)
+- [Plugin API](./current/plugin-api.md)
+- [Known gaps](./current/known-gaps.md)
+- [Doxygen style guide](./current/doxygen-style.md)
 
-## Documentación generada
+## Generated documentation
 
-La salida HTML de Doxygen se genera en:
+Doxygen HTML output is generated at:
 
 - `docs/generated/html/index.html`
 
-## Convención de estado documental
+## Documentation status convention
 
-Todo documento debe ubicarse según su estado:
+Each document should be placed according to its status:
 
-- Vigente (`current`)
-- Planificado (`roadmap`)
-- Histórico (`deprecated`)
+- Active (`current`)
+- Planned (`roadmap`)
+- Historical (`deprecated`)
