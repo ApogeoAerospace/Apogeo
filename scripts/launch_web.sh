@@ -1,48 +1,53 @@
 #!/bin/bash
+#!/usr/bin/env bash
 
-# MoLab Web Interface Launcher
-# Starts a local web server for the MoLab GUI
+# MoLab Web Interface Launcher (cross-platform)
 
-set -e
+set -euo pipefail
 
-echo "🌐 Starting MoLab Web Interface..."
-
-# Change to project root
 cd "$(dirname "$0")/.."
 
-# Check if Python 3 is available
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Error: Python 3 is required but not found."
-    echo "Please install Python 3 and try again."
-    exit 1
-fi
-
-# Check if build directory exists
-if [ ! -d "build" ]; then
-    echo "⚠️  Build directory not found. Building MoLab first..."
-    if [ -f "tools/build_and_run.sh" ]; then
-        echo "n" | ./tools/build_and_run.sh
+find_python() {
+    if command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+    elif command -v python >/dev/null 2>&1; then
+        echo "python"
+    elif command -v py >/dev/null 2>&1; then
+        echo "py -3"
     else
-        echo "❌ Error: Build script not found. Please build MoLab manually."
-        exit 1
+        return 1
     fi
-fi
+}
 
-# Check if simulator exists
-if [ ! -f "build/bin/simulator" ]; then
-    echo "❌ Error: MoLab simulator not found in build/bin/"
-    echo "Please build the project first using: ./tools/build_and_run.sh"
+PYTHON_CMD="$(find_python || true)"
+if [ -z "${PYTHON_CMD}" ]; then
+    echo "❌ Python 3 not found."
     exit 1
 fi
 
-echo "✅ All dependencies ready"
-echo "🚀 Launching web interface..."
-echo ""
-echo "📋 Instructions:"
-echo "   • The web interface will open automatically in your browser"
-echo "   • If it doesn't open, go to: http://localhost:8080"
-echo "   • Use Ctrl+C to stop the server"
-echo ""
+if [ ! -d "build" ]; then
+    echo "⚠️  Build directory not found. Configuring project..."
+    cmake -S . -B build -G Ninja
+fi
 
-# Launch web interface
-python3 tools/molab_web_gui.py
+SIMULATOR="build/bin/simulator"
+case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*) SIMULATOR="build/bin/simulator.exe" ;;
+esac
+
+if [ ! -f "${SIMULATOR}" ]; then
+    echo "⚠️  Simulator not found. Building project..."
+    cmake -S . -B build -G Ninja
+    cmake --build build --parallel
+fi
+
+if [ ! -f "${SIMULATOR}" ]; then
+    echo "❌ Could not find simulator binary after build: ${SIMULATOR}"
+    exit 1
+fi
+
+echo "🌐 Starting MoLab web interface"
+echo "   URL: http://localhost:8082"
+echo "   Stop with Ctrl+C"
+
+exec ${PYTHON_CMD} tools/molab_web_gui_v2.py
