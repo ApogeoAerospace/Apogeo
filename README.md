@@ -1,66 +1,123 @@
 # MoLab Aerospace Simulator
+# MoLab
 
-Modular aerospace simulation engine with plugin architecture and real-time force integration.
+Modular aerospace simulation engine with plugin architecture, FlatBuffers state exchange, and real-time force/torque integration.
+
+## What MoLab includes
+
+- Core simulation runtime in C++17 (`simulator`)
+- Plugin execution pipeline (sequential + parallel plugin roles)
+- Physics integration (`Euler`, `Runge-Kutta 4`, `Verlet`)
+- Stable CLI execution path for simulation runs
+- Unit tests with Google Test + CTest
+
+## Current repository status
+
+- Build system: CMake (minimum `3.20`)
+- Recommended generator: `Ninja`
+- Active plugin configured in build: `structures`
+- Additional legacy/deprecated plugins and docs are kept for historical traceability
 
 ## Requirements
 
 - C++17-compatible compiler
-- CMake 3.20 or newer
-- Python 3 (interfaces and utilities)
+- CMake `>= 3.20`
+- Python 3
+- Ninja (recommended)
 
-## Quick build
+Quick dependency check:
+
+- macOS/Linux: `./scripts/install_dependencies.sh`
+- Windows PowerShell: `./scripts/install_dependencies.ps1`
+
+## Build
+
+### Recommended (Ninja)
 
 ```bash
-cmake -B build -S .
+cmake -S . -B build -G Ninja
 cmake --build build --parallel
 ```
 
-## Execution
-
-### Web interface (recommended)
+### With tests explicitly enabled
 
 ```bash
-./scripts/launch_web.sh
+cmake -S . -B build -G Ninja -DENABLE_TESTING=ON
+cmake --build build --parallel
 ```
 
-Open `http://localhost:8082`.
+## Run
 
-### Smart launcher
+### Current supported execution path
 
-```bash
-./launch_molab.sh
-```
+At the moment, visual interfaces are not considered operational.
+Use the core simulator directly through CLI.
 
-### Desktop GUI
-
-```bash
-./launch_gui.sh
-```
-
-### Command line
+### CLI simulation
 
 ```bash
 build/bin/simulator --config data/defaults/default_config.json --ticks 50
 ```
 
+On Windows this may be:
+
+```powershell
+build/bin/simulator.exe --config data/defaults/default_config.json --ticks 50
+```
+
+## Scripts (core workflow)
+
+- Dependency check:
+  - macOS/Linux: `./scripts/install_dependencies.sh`
+  - Windows PowerShell: `./scripts/install_dependencies.ps1`
+
+- Local CI-like smoke checks:
+  - macOS/Linux: `./scripts/test_ci_pipeline.sh`
+  - Windows PowerShell: `./scripts/test_ci_pipeline.ps1`
+
+> Note: Web-launch scripts are present in the repository, but they are currently not part of the supported workflow.
+
+## Test
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+Main test coverage includes:
+
+- `ConfigManager`
+- `PhysicsIntegrator`
+- `TimeManager`
+- `SimulationEngine`
+- `OutputManager`
+- `InitialStateLoader`
+
 ## Documentation
 
-- Project documentation index: `docs/README.md`
+- Documentation index: `docs/README.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Build and run guide: `docs/BUILD_RUN.md`
+- Configuration guide: `docs/CONFIG.md`
+- Full config reference: `docs/CONFIG_REFERENCE.md`
+- Plugin API: `docs/PLUGIN_API.md`
+- Known gaps: `docs/KNOWN_GAPS.md`
 - Doxygen style guide: `docs/DOCUMENTATION_STYLE_GUIDE.md`
-- Generated Doxygen HTML output: `docs/generated/html/index.html`
+- Doxygen generated HTML: `docs/generated/html/index.html`
 
 ## Repository structure
 
 ```text
 MoLab/
-├── src/                  # Main source code
-├── tests/                # Unit tests (Google Test)
-├── docs/                 # Technical and functional documentation
-├── tools/                # Utilities and auxiliary servers
-├── data/                 # Configuration and initial states
-└── plugins/              # Simulation plugins
+├── src/                  # Core engine, API headers, schema
+├── plugins/              # Runtime plugins (active + deprecated)
+├── tests/                # Google Test-based unit tests
+├── tools/                # Web server and helper tooling
+├── scripts/              # Cross-platform helper scripts
+├── data/                 # Default config/state and model data
+├── docs/                 # Active, generated, and historical docs
+└── CMakeLists.txt        # Main build entry
 ```
 
 ## License
 
-Project under GNU AFFERO GENERAL PUBLIC LICENSE V3
+GNU Affero General Public License v3.0 (AGPL-3.0)
