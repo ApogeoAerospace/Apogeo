@@ -8,7 +8,7 @@ Source: `data/defaults/default_config.json` + `ConfigManager`.
 - `SimulationEngine::initialize_with_config()` consumes the preloaded `ConfigManager` state and does not reload the file.
 - `ConfigManager` emits no logs before a successful config load.
 - If config loading fails, `ConfigManager` forces full logging (console enabled, logger verbosity raised) and emits detailed failure diagnostics.
-- On successful load, `ConfigManager` applies `logging.console_output` to the logger before emitting its success message.
+- On successful load, `ConfigManager` applies `logging.console_output` and `logging.file_output` to the logger before emitting its success message.
 - On failure, `ConfigManager` emits the exact parse/validation failure detail (not a generic message).
 
 ## Parsed and used by the core
@@ -28,10 +28,10 @@ Source: `data/defaults/default_config.json` + `ConfigManager`.
 - `initial_state_file`
 - `output_directory` (parsed, but still not fully applied in engine output)
 - `logging.console_output` (applied to logger console/stdout emission)
+- `logging.file_output` (applied to logger file emission)
 
 ## Present in JSON but not yet consumed by core runtime
 
-- `logging.file_output`
 - `logging.log_rotation`
 - `logging.max_file_size_mb`
 - `logging.max_files`

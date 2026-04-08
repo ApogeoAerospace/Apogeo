@@ -111,8 +111,10 @@ int main(int argc, char* argv[]) {
     auto& logger = MoLab::Logger::getInstance();
     logger.setConsoleOutputEnabled(sim_config.console_output);
 
-    if (!sim_config.log_file.empty()) {
+    if (sim_config.file_output && !sim_config.log_file.empty()) {
         logger.setLogFile(sim_config.log_file);
+    } else if (!sim_config.file_output) {
+        logger.closeLogFile();
     }
 
     if (!log_level_overridden) {

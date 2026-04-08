@@ -69,7 +69,15 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         }
 
         config_loaded_ = true;
-        Logger::getInstance().setConsoleOutputEnabled(simulation_config_.console_output);
+        auto& logger = Logger::getInstance();
+        logger.setConsoleOutputEnabled(simulation_config_.console_output);
+        if (simulation_config_.file_output) {
+            if (!simulation_config_.log_file.empty()) {
+                logger.setLogFile(simulation_config_.log_file);
+            }
+        } else {
+            logger.closeLogFile();
+        }
         LOG_INFO("Configuration loaded successfully", "ConfigManager");
         return true;
 
@@ -93,6 +101,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
         config_json["logging"]["console_output"] = simulation_config_.console_output;
+        config_json["logging"]["file_output"] = simulation_config_.file_output;
 
         // Plugin configuration
         for (const auto& plugin : plugin_configs_) {
@@ -135,6 +144,7 @@ void ConfigManager::setDefaults() {
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
     simulation_config_.console_output = true;
+    simulation_config_.file_output = true;
 
     // Clear plugin configuration
     plugin_configs_.clear();
@@ -166,8 +176,10 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json, std::strin
 
         if (json.contains("logging") && json["logging"].is_object()) {
             simulation_config_.console_output = json["logging"].value("console_output", true);
+            simulation_config_.file_output = json["logging"].value("file_output", true);
         } else {
             simulation_config_.console_output = true;
+            simulation_config_.file_output = true;
         }
 
         return true;

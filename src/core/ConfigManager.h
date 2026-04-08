@@ -36,6 +36,7 @@ struct SimulationConfig {
     std::string log_file;
     std::string log_level;
     bool console_output;
+    bool file_output;
 };
 
 /**

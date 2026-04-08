@@ -15,7 +15,7 @@
 
 1. `main.cpp` processes command-line options.
 2. `main.cpp` loads configuration once through `ConfigManager::loadConfig()`.
-3. Logger bootstrap is applied from loaded config (level, file, `logging.console_output`).
+3. Logger bootstrap is applied from loaded config (level, file, `logging.console_output`, `logging.file_output`).
 4. `SimulationEngine::initialize_with_config()` consumes preloaded config.
 5. `ConfigManager` parses:
    - `simulation`

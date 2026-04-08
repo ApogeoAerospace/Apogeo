@@ -4,7 +4,7 @@
 
 1. `output_directory` is parsed, but engine output still uses a hardcoded path.
 2. `simulation.enable_logging` is parsed, but not used as a global on/off switch.
-3. `logging.console_output` is integrated; remaining `logging.*` keys are not integrated with logging backend.
+3. `logging.console_output` and `logging.file_output` are integrated; remaining logging keys (`logging.log_rotation`, `logging.max_file_size_mb`, `logging.max_files`) are not integrated with logging backend.
 4. `performance.*` section is not integrated with scheduler/metrics controls.
 5. `validation.*` thresholds are not integrated in runtime validation.
 6. `vehicle_models.*` is unused.

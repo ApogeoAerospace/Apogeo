@@ -87,6 +87,7 @@ Example parameters in default config:
 
 - `logging.file_output` (`boolean`)  
   If `true`, log messages are written to configured log file.
+  Currently integrated in core runtime through `Logger::setLogFile(...)` / `Logger::closeLogFile()`.
 
 - `logging.log_rotation` (`boolean`)  
   Enables rolling/rotating log files when size limit is reached.
