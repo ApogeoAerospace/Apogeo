@@ -65,3 +65,4 @@ vcpkg_installed/
 /vcpkg_installed/vcpkg/manifest-info.json
 /vcpkg_installed/vcpkg/status
 docs/generated/
+/Testing/Temporary

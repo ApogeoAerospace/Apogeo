@@ -215,6 +215,7 @@ if(ENABLE_TESTING)
         tests/test_output_manager.cpp
         tests/test_simulation_engine.cpp
         tests/test_initial_state_loader.cpp
+        tests/test_command_event_protocol.cpp
     )
 
     target_link_libraries(core_tests PRIVATE

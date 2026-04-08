@@ -1,0 +1,80 @@
+#pragma once
+
+#include <string>
+#include <nlohmann/json.hpp>
+
+namespace MoLab {
+
+struct ParsedCommand {
+    std::string command;
+    std::string request_id;
+    nlohmann::json payload = nlohmann::json::object();
+};
+
+inline bool parseCommandJsonLine(const std::string& line, ParsedCommand& out, std::string* error = nullptr) {
+    try {
+        const auto json = nlohmann::json::parse(line);
+
+        if (!json.is_object()) {
+            if (error) {
+                *error = "Command must be a JSON object";
+            }
+            return false;
+        }
+
+        if (!json.contains("command") || !json["command"].is_string()) {
+            if (error) {
+                *error = "Missing or invalid 'command' field";
+            }
+            return false;
+        }
+
+        out.command = json["command"].get<std::string>();
+        out.request_id = json.value("request_id", "");
+        out.payload = json.value("payload", nlohmann::json::object());
+
+        return true;
+    } catch (const std::exception& e) {
+        if (error) {
+            *error = e.what();
+        }
+        return false;
+    }
+}
+
+inline nlohmann::json buildAckJson(const std::string& request_id,
+                                   const nlohmann::json& data = nlohmann::json::object()) {
+    return nlohmann::json{
+        {"type", "ack"},
+        {"ok", true},
+        {"request_id", request_id},
+        {"data", data}
+    };
+}
+
+inline nlohmann::json buildErrorJson(const std::string& request_id,
+                                     const std::string& code,
+                                     const std::string& message,
+                                     const nlohmann::json& details = nlohmann::json::object()) {
+    return nlohmann::json{
+        {"type", "error"},
+        {"ok", false},
+        {"request_id", request_id},
+        {"error", {
+            {"code", code},
+            {"message", message},
+            {"details", details}
+        }}
+    };
+}
+
+inline nlohmann::json buildEventJson(const std::string& event_name,
+                                     const nlohmann::json& payload = nlohmann::json::object()) {
+    return nlohmann::json{
+        {"type", "event"},
+        {"event", event_name},
+        {"payload", payload}
+    };
+}
+
+} // namespace MoLab
