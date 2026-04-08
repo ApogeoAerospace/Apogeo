@@ -113,7 +113,9 @@ TEST_F(SimulationEngineTest, InitializeWithNonExistentFile) {
 
 TEST_F(SimulationEngineTest, InitializeWithConfig) {
     SimulationEngine engine;
-    EXPECT_TRUE(engine.initialize_with_config(test_config_file));
+    auto& config = MoLab::ConfigManager::getInstance();
+    config.loadConfig(test_config_file);
+    EXPECT_TRUE(engine.initialize_from_loaded_config());
 }
 
 TEST_F(SimulationEngineTest, GetSimulationTime) {

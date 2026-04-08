@@ -35,6 +35,7 @@ struct SimulationConfig {
     bool enable_logging;
     std::string log_file;
     std::string log_level;
+    bool console_output;
 };
 
 /**
@@ -110,12 +111,13 @@ public:
 
     /**
      * @brief Validates current configuration consistency.
+     * @param error_detail Detailed validation error when returning `false`.
      * @return `true` if parameters are valid.
      */
-    bool validateConfig() const;
+    bool validateConfig(std::string& error_detail) const;
 
 private:
-    ConfigManager() = default;
+    ConfigManager();
     ~ConfigManager() = default;
     ConfigManager(const ConfigManager&) = delete;
     ConfigManager& operator=(const ConfigManager&) = delete;
@@ -130,19 +132,22 @@ private:
      * @param json Configuration JSON document.
      * @return `true` if section was processed successfully.
      */
-    bool parseSimulationConfig(const nlohmann::json& json);
+    bool parseSimulationConfig(const nlohmann::json& json, std::string& error_detail);
 
     /**
      * @brief Parses the `plugins` section from JSON.
      * @param json Configuration JSON document.
      * @return `true` if section was processed successfully.
      */
-    bool parsePluginConfigs(const nlohmann::json& json);
+    bool parsePluginConfigs(const nlohmann::json& json, std::string& error_detail);
+
+    void logLoadFailure(const std::string& message);
 
     SimulationConfig simulation_config_;
     std::vector<PluginConfig> plugin_configs_;
     std::string initial_state_file_;
     std::string output_directory_;
+    bool config_loaded_ = false;
 };
 
 } // namespace MoLab

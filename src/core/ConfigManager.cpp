@@ -1,4 +1,5 @@
 #include "ConfigManager.h"
+#include "ConfigManager.h"
 #include "Logger.h"
 #include <fstream>
 #include <iostream>
@@ -10,13 +11,19 @@
 
 namespace MoLab {
 
+ConfigManager::ConfigManager() {
+    setDefaults();
+    config_loaded_ = false;
+}
+
 bool ConfigManager::loadConfig(const std::string& config_file) {
     try {
         std::ifstream file(config_file);
         if (!file.is_open()) {
-            // Missing file: use default values and continue
-            LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
+            // Use default values.
             setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Config file not found, using defaults: " + config_file);
             return false; // Defaults are applied, but no file was loaded
         }
 
@@ -24,13 +31,19 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         file >> config_json;
         file.close();
 
-        LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
+        std::string error_detail;
 
         // Parse main sections
-        if (!parseSimulationConfig(config_json)) {
+        if (!parseSimulationConfig(config_json, error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Failed to parse simulation config: " + error_detail + ". Using defaults");
             return false;
         }
-        if (!parsePluginConfigs(config_json)) {
+        if (!parsePluginConfigs(config_json, error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Failed to parse plugin config: " + error_detail + ". Using defaults");
             return false;
         }
 
@@ -48,18 +61,23 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         }
 
         // Validate overall consistency
-        if (!validateConfig()) {
-            LOG_ERROR("Configuration validation failed", "ConfigManager");
+        if (!validateConfig(error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Configuration validation failed: " + error_detail + ". Using defaults");
             return false;
         }
 
+        config_loaded_ = true;
+        Logger::getInstance().setConsoleOutputEnabled(simulation_config_.console_output);
         LOG_INFO("Configuration loaded successfully", "ConfigManager");
         return true;
 
     } catch (const std::exception& e) {
         // Read/parse failure: use defaults as fallback
-        LOG_ERROR("Error loading config: " + std::string(e.what()), "ConfigManager");
         setDefaults();
+        config_loaded_ = false;
+        logLoadFailure("Error loading config: " + std::string(e.what()));
         return false;
     }
 }
@@ -74,6 +92,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
+        config_json["logging"]["console_output"] = simulation_config_.console_output;
 
         // Plugin configuration
         for (const auto& plugin : plugin_configs_) {
@@ -115,6 +134,7 @@ void ConfigManager::setDefaults() {
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
+    simulation_config_.console_output = true;
 
     // Clear plugin configuration
     plugin_configs_.clear();
@@ -123,10 +143,10 @@ void ConfigManager::setDefaults() {
     initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
-    LOG_INFO("Using default configuration", "ConfigManager");
+    // No ConfigManager logs before load.
 }
 
-bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
+bool ConfigManager::parseSimulationConfig(const nlohmann::json& json, std::string& error_detail) {
     try {
         if (json.contains("simulation")) {
             const auto& sim = json["simulation"];
@@ -143,14 +163,21 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
             simulation_config_.log_file = "logs/molab.log";
             simulation_config_.log_level = "INFO";
         }
+
+        if (json.contains("logging") && json["logging"].is_object()) {
+            simulation_config_.console_output = json["logging"].value("console_output", true);
+        } else {
+            simulation_config_.console_output = true;
+        }
+
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing simulation config: " + std::string(e.what()), "ConfigManager");
+        error_detail = e.what();
         return false;
     }
 }
 
-bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
+bool ConfigManager::parsePluginConfigs(const nlohmann::json& json, std::string& error_detail) {
     try {
         plugin_configs_.clear();
 
@@ -175,42 +202,56 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing plugin configs: " + std::string(e.what()), "ConfigManager");
+        error_detail = e.what();
         return false;
     }
 }
 
-bool ConfigManager::validateConfig() const {
+bool ConfigManager::validateConfig(std::string& error_detail) const {
     // Basic simulation validation
     if (simulation_config_.simulation_duration <= 0) {
-        LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
+        error_detail = "simulation.duration must be positive (got " + std::to_string(simulation_config_.simulation_duration) + ")";
         return false;
     }
 
     if (simulation_config_.max_iterations <= 0) {
-        LOG_ERROR("Invalid max iterations: must be positive", "ConfigManager");
+        error_detail = "simulation.max_iterations must be positive (got " + std::to_string(simulation_config_.max_iterations) + ")";
         return false;
     }
 
     // Plugin validation
     for (const auto& plugin : plugin_configs_) {
         if (plugin.name.empty()) {
-            LOG_ERROR("Plugin name cannot be empty", "ConfigManager");
+            error_detail = "plugin name cannot be empty";
             return false;
         }
 
         if (plugin.library_path.empty()) {
-            LOG_ERROR("Plugin library path cannot be empty for: " + plugin.name, "ConfigManager");
+            error_detail = "plugin library_path cannot be empty";
             return false;
         }
 
         if (plugin.type < 0 || plugin.type > 1) {
-            LOG_ERROR("Invalid plugin type for " + plugin.name + ": must be 0 or 1", "ConfigManager");
+            error_detail = "plugin type must be 0 or 1 (got " + std::to_string(plugin.type) + ")";
             return false;
         }
     }
 
     return true;
+}
+
+void ConfigManager::logLoadFailure(const std::string& message) {
+    auto& logger = Logger::getInstance();
+
+    // On configuration load failure, force full logger visibility so diagnostics
+    // are not lost even if console output was disabled in previous runtime state.
+    logger.setConsoleOutputEnabled(true);
+    logger.setLogLevel(LogLevel::DEBUG);
+    if (!simulation_config_.log_file.empty()) {
+        logger.setLogFile(simulation_config_.log_file);
+    }
+
+    logger.error(message, "ConfigManager");
 }
 
 } // namespace MoLab

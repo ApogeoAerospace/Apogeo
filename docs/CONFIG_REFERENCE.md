@@ -3,6 +3,10 @@
 This document defines the intended behavior of each configuration variable in
 `data/defaults/default_config.json`.
 
+Configuration is loaded once during bootstrap in `main.cpp` and then consumed by runtime components through `ConfigManager`.
+`ConfigManager` remains silent until load success. If loading fails, it forces full logging and emits detailed diagnostics.
+Parse/validation errors include detailed failure reasons.
+
 ## Root Structure
 
 - `simulation`: Global simulation run controls.
@@ -79,6 +83,7 @@ Example parameters in default config:
 
 - `logging.console_output` (`boolean`)  
   If `true`, log messages are written to console/stdout.
+  Currently integrated in core runtime through `Logger::setConsoleOutputEnabled(...)`.
 
 - `logging.file_output` (`boolean`)  
   If `true`, log messages are written to configured log file.

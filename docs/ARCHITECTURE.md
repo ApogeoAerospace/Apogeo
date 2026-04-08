@@ -14,16 +14,18 @@
 ## Main execution flow
 
 1. `main.cpp` processes command-line options.
-2. `SimulationEngine::initialize_with_config()` loads configuration.
-3. `ConfigManager` parses:
+2. `main.cpp` loads configuration once through `ConfigManager::loadConfig()`.
+3. Logger bootstrap is applied from loaded config (level, file, `logging.console_output`).
+4. `SimulationEngine::initialize_with_config()` consumes preloaded config.
+5. `ConfigManager` parses:
    - `simulation`
    - `plugins`
    - `initial_state_file`
    - `output_directory`
-4. `PluginManager::load_plugins_from_config()` loads enabled plugins.
+6. `PluginManager::load_plugins_from_config()` loads enabled plugins.
    - If plugin exports `plugin_set_host_services` and `use_host_logger=true`, the host injects logging services.
-5. Engine initializes initial state and runs ticks.
-6. Tick cycle:
+7. Engine initializes initial state and runs ticks.
+8. Tick cycle:
    - sequential plugins (`type=0`)
    - parallel plugins (`type=1`)
    - physics integration

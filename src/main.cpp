@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <filesystem>
 #include "../core/SimulationEngine.h"
 #include "../core/Logger.h"
 #include "../core/ConfigManager.h"
@@ -50,6 +49,7 @@ int main(int argc, char* argv[]) {
     std::string config_file = "data/default_config.json";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
+    bool log_level_overridden = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
         } else if (arg == "-l" || arg == "--log-level") {
             if (i + 1 < argc) {
                 log_level = argv[++i];
+                log_level_overridden = true;
             } else {
                 std::cerr << "Error: --log-level requires a level\n";
                 return 1;
@@ -97,8 +98,27 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Initialize logging
+    // Load configuration once during bootstrap.
+    // `SimulationEngine::initialize_from_loaded_config()` consumes this loaded state.
+    auto& config_manager = MoLab::ConfigManager::getInstance();
+    if (!config_manager.loadConfig(config_file)) {
+        // Defaults are already applied by ConfigManager when file is missing/invalid.
+    }
+
+    const auto& sim_config = config_manager.getSimulationConfig();
+
+    // Initialize logging from loaded config (single source of truth)
     auto& logger = MoLab::Logger::getInstance();
+    logger.setConsoleOutputEnabled(sim_config.console_output);
+
+    if (!sim_config.log_file.empty()) {
+        logger.setLogFile(sim_config.log_file);
+    }
+
+    if (!log_level_overridden) {
+        log_level = sim_config.log_level;
+    }
+
     if (log_level == "DEBUG") {
         logger.setLogLevel(MoLab::LogLevel::DEBUG);
     } else if (log_level == "INFO") {
@@ -114,18 +134,12 @@ int main(int argc, char* argv[]) {
     LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
     LOG_INFO("Configuration file: " + config_file, "Main");
 
-    // Check if config file exists
-    if (!std::filesystem::exists(config_file)) {
-        LOG_WARNING("Configuration file not found: " + config_file, "Main");
-        LOG_INFO("Using default configuration", "Main");
-    }
-
     try {
         // Initialize simulation engine
         MoLab::SimulationEngine engine;
 
-        // Initialize with configuration
-        bool init_success = engine.initialize_with_config(config_file);
+        // Initialize from already loaded configuration
+        bool init_success = engine.initialize_from_loaded_config();
 
         if (!init_success) {
             LOG_CRITICAL("Failed to initialize simulation engine", "Main");

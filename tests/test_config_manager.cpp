@@ -76,7 +76,8 @@ TEST_F(ConfigManagerTest, ValidateConfigSuccess) {
     auto& config_manager = ConfigManager::getInstance();
     config_manager.loadConfig(test_config_file);
 
-    EXPECT_TRUE(config_manager.validateConfig());
+    std::string error_detail;
+    EXPECT_TRUE(config_manager.validateConfig(error_detail));
 }
 
 TEST_F(ConfigManagerTest, GetInitialStateFile) {

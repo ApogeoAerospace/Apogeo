@@ -51,11 +51,14 @@ public:
     bool initialize(const std::string& state_filepath);
 
     /**
-     * @brief Initializes simulation from a configuration file.
-     * @param config_filepath Path to JSON configuration file.
-     * @return `true` if initialization is successful.
+     * @brief Initializes simulation from configuration already loaded in `ConfigManager`.
+     *
+     * This method does not load configuration files. The caller is responsible
+     * for calling `ConfigManager::loadConfig(...)` before invoking this method.
+     *
+     * @return `true` if plugin bootstrap and state initialization are successful.
      */
-    bool initialize_with_config(const std::string& config_filepath);
+    bool initialize_from_loaded_config();
 
     /**
      * @brief Loads a dynamic plugin by name/path and type.

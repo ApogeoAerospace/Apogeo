@@ -67,6 +67,15 @@ public:
     }
 
     /**
+     * @brief Enables or disables console/stdout log emission.
+     * @param enabled If `true`, logs are written to console.
+     */
+    void setConsoleOutputEnabled(bool enabled) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        console_output_enabled_ = enabled;
+    }
+
+    /**
      * @brief Closes the active log file and clears configured path.
      */
     void closeLogFile() {
@@ -109,7 +118,9 @@ public:
         std::string log_line = ss.str();
 
         // Output to console
-        std::cout << log_line << std::endl;
+        if (console_output_enabled_) {
+            std::cout << log_line << std::endl;
+        }
 
         // Output to file if available
         if (!log_file_path_.empty()) {
@@ -199,6 +210,7 @@ private:
     LogLevel current_level_;
     std::ofstream log_file_;
     std::string log_file_path_;
+    bool console_output_enabled_ = true;
     std::mutex mutex_;
 };
 

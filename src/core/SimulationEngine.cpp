@@ -79,31 +79,8 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     return true;
 }
 
-bool SimulationEngine::initialize_with_config(const std::string& config_filepath) {
-    LOG_INFO("Initializing simulation with config: " + config_filepath, "SimulationEngine");
-
-    auto& config_manager = ConfigManager::getInstance();
-    if (!config_manager.loadConfig(config_filepath)) {
-        LOG_WARNING("Failed to load config, using defaults", "SimulationEngine");
-    }
-
-    const auto& sim_config = config_manager.getSimulationConfig();
-
-    // Configure logging
-    auto& logger = Logger::getInstance();
-    if (sim_config.log_level == "DEBUG") {
-        logger.setLogLevel(LogLevel::DEBUG);
-    } else if (sim_config.log_level == "INFO") {
-        logger.setLogLevel(LogLevel::INFO);
-    } else if (sim_config.log_level == "WARNING") {
-        logger.setLogLevel(LogLevel::WARNING);
-    } else if (sim_config.log_level == "ERROR") {
-        logger.setLogLevel(LogLevel::ERR);
-    }
-
-    if (!sim_config.log_file.empty()) {
-        logger.setLogFile(sim_config.log_file);
-    }
+bool SimulationEngine::initialize_from_loaded_config() {
+    LOG_INFO("Initializing simulation", "SimulationEngine");
 
     // Load plugins from configuration
     if (!plugin_manager_->load_plugins_from_config()) {
@@ -111,7 +88,7 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
     }
 
     // Initialize with state file
-    return initialize(config_manager.getInitialStateFile());
+    return initialize(ConfigManager::getInstance().getInitialStateFile());
 }
 
 void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
