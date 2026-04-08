@@ -53,6 +53,11 @@ Source: `data/defaults/default_config.json` + `ConfigManager`.
 - Injection is optional and depends on plugin exporting `plugin_set_host_services`.
 - Compatibility: legacy key `use_host_logger` is also accepted.
 
+## Logger extensibility
+
+- `Logger` supports an optional structured sink callback through `setStructuredSink(...)`.
+- The sink receives raw fields `(LogLevel, message, component)` for each accepted log event.
+
 ---
 
 Documentation status: **Current**

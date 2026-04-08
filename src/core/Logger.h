@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <mutex>
+#include <functional>
 
 /**
  * @file Logger.h
@@ -76,6 +77,15 @@ public:
     }
 
     /**
+     * @brief Sets an optional structured sink callback for log events.
+     * @param sink Callback receiving `(level, message, component)`.
+     */
+    void setStructuredSink(std::function<void(LogLevel, const std::string&, const std::string&)> sink) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        structured_sink_ = std::move(sink);
+    }
+
+    /**
      * @brief Closes the active log file and clears configured path.
      */
     void closeLogFile() {
@@ -97,40 +107,54 @@ public:
             return;
         }
 
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::function<void(LogLevel, const std::string&, const std::string&)> structured_sink;
 
-        auto now = std::chrono::system_clock::now();
-        auto time_t = std::chrono::system_clock::to_time_t(now);
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now.time_since_epoch()) % 1000;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
 
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
-        ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
-        ss << " [" << levelToString(level) << "]";
+            auto now = std::chrono::system_clock::now();
+            auto time_t = std::chrono::system_clock::to_time_t(now);
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) % 1000;
 
-        if (!component.empty()) {
-            ss << " [" << component << "]";
-        }
+            std::stringstream ss;
+            ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
+            ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+            ss << " [" << levelToString(level) << "]";
 
-        ss << " " << message;
-
-        std::string log_line = ss.str();
-
-        // Output to console
-        if (console_output_enabled_) {
-            std::cout << log_line << std::endl;
-        }
-
-        // Output to file if available
-        if (!log_file_path_.empty()) {
-            if (!log_file_.is_open()) {
-                log_file_.open(log_file_path_, std::ios::app);
+            if (!component.empty()) {
+                ss << " [" << component << "]";
             }
-            if (log_file_.is_open()) {
-                log_file_ << log_line << std::endl;
-                log_file_.flush();
-                log_file_.close();
+
+            ss << " " << message;
+
+            std::string log_line = ss.str();
+
+            // Output to console
+            if (console_output_enabled_) {
+                std::cout << log_line << std::endl;
+            }
+
+            // Output to file if available
+            if (!log_file_path_.empty()) {
+                if (!log_file_.is_open()) {
+                    log_file_.open(log_file_path_, std::ios::app);
+                }
+                if (log_file_.is_open()) {
+                    log_file_ << log_line << std::endl;
+                    log_file_.flush();
+                    log_file_.close();
+                }
+            }
+
+            structured_sink = structured_sink_;
+        }
+
+        if (structured_sink) {
+            try {
+                structured_sink(level, message, component);
+            } catch (...) {
+                // Structured sink does not break normal logging path.
             }
         }
     }
@@ -211,6 +235,7 @@ private:
     std::ofstream log_file_;
     std::string log_file_path_;
     bool console_output_enabled_ = true;
+    std::function<void(LogLevel, const std::string&, const std::string&)> structured_sink_;
     std::mutex mutex_;
 };
 

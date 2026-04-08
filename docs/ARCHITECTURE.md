@@ -41,3 +41,6 @@
 - Current plugin scheduler uses threads (`PluginTaskScheduler`).
 - `SimulationEngine` still has partially hardcoded output behavior.
 - `PluginManager` optionally resolves `plugin_set_host_services` during load (`load_plugin`) and applies config-based activation in `load_plugins_from_config`.
+- `Logger` provides an optional structured sink callback via `setStructuredSink(...)`.
+  - The callback receives `(LogLevel, message, component)` for each emitted log event.
+  - If no sink is configured, console/file logging only is used.
