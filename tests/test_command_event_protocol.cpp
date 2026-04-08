@@ -16,6 +16,11 @@ TEST(CommandEventProtocolTest, ParseCommandJsonLineValidAndInvalid) {
     const std::string invalid = R"({"request_id":"req-2"})";
     EXPECT_FALSE(parseCommandJsonLine(invalid, command, &error));
     EXPECT_FALSE(error.empty());
+
+    const std::string compat = R"({"type":"command","id":"req-3","name":"get_status"})";
+    EXPECT_TRUE(parseCommandJsonLine(compat, command, &error));
+    EXPECT_EQ(command.command, "get_status");
+    EXPECT_EQ(command.request_id, "req-3");
 }
 
 TEST(CommandEventProtocolTest, BuildAckErrorAndEventJson) {

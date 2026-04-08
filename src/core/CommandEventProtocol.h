@@ -22,15 +22,17 @@ inline bool parseCommandJsonLine(const std::string& line, ParsedCommand& out, st
             return false;
         }
 
-        if (!json.contains("command") || !json["command"].is_string()) {
+        const bool has_command = json.contains("command") && json["command"].is_string();
+        const bool has_name = json.contains("name") && json["name"].is_string();
+        if (!has_command && !has_name) {
             if (error) {
-                *error = "Missing or invalid 'command' field";
+                *error = "Missing or invalid 'command' or 'name' field";
             }
             return false;
         }
 
-        out.command = json["command"].get<std::string>();
-        out.request_id = json.value("request_id", "");
+        out.command = has_command ? json["command"].get<std::string>() : json["name"].get<std::string>();
+        out.request_id = json.value("request_id", json.value("id", ""));
         out.payload = json.value("payload", nlohmann::json::object());
 
         return true;

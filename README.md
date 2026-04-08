@@ -63,6 +63,18 @@ On Windows this may be:
 build/bin/simulator.exe --config data/defaults/default_config.json --ticks 50
 ```
 
+### IPC stdio mode (skeleton)
+
+`simulator` supports an optional JSON-line IPC mode:
+
+```bash
+echo '{"type":"command","id":"1","name":"get_status"}' | build/bin/simulator --ipc stdio
+```
+
+Current supported command:
+
+- `get_status`
+
 ## Scripts (core workflow)
 
 - Dependency check:

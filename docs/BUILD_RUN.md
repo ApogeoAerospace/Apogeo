@@ -24,6 +24,14 @@ cmake --build build
 build/bin/simulator --config data/defaults/default_config.json
 ```
 
+## Run simulator in IPC stdio mode
+
+```bash
+echo '{"type":"command","id":"1","name":"get_status"}' | build/bin/simulator --ipc stdio
+```
+
+Current IPC support is intentionally minimal and includes only `get_status`.
+
 ## Run tests
 
 ```bash

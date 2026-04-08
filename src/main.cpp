@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <iostream>
+#include "../core/CommandEventProtocol.h"
 #include "../core/SimulationEngine.h"
 #include "../core/Logger.h"
 #include "../core/ConfigManager.h"
@@ -21,6 +23,7 @@ void print_usage(const char* program_name) {
     std::cout << "  -s, --state <file>      Use specified initial state file\n";
     std::cout << "  -t, --ticks <number>    Run specified number of ticks (default: full simulation)\n";
     std::cout << "  -l, --log-level <level> Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) (default: INFO)\n";
+    std::cout << "  --ipc stdio             Enable JSON line IPC mode over stdin/stdout\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  --version               Show version information\n";
     std::cout << "\nExamples:\n";
@@ -50,6 +53,7 @@ int main(int argc, char* argv[]) {
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
     bool log_level_overridden = false;
+    bool ipc_stdio_mode = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -89,6 +93,19 @@ int main(int argc, char* argv[]) {
                 log_level_overridden = true;
             } else {
                 std::cerr << "Error: --log-level requires a level\n";
+                return 1;
+            }
+        } else if (arg == "--ipc") {
+            if (i + 1 < argc) {
+                std::string transport = argv[++i];
+                if (transport == "stdio") {
+                    ipc_stdio_mode = true;
+                } else {
+                    std::cerr << "Error: unsupported IPC transport '" << transport << "'\n";
+                    return 1;
+                }
+            } else {
+                std::cerr << "Error: --ipc requires a transport (e.g., stdio)\n";
                 return 1;
             }
         } else {
@@ -146,6 +163,40 @@ int main(int argc, char* argv[]) {
         if (!init_success) {
             LOG_CRITICAL("Failed to initialize simulation engine", "Main");
             return 1;
+        }
+
+        if (ipc_stdio_mode) {
+            std::string line;
+            while (std::getline(std::cin, line)) {
+                if (line.empty()) {
+                    continue;
+                }
+
+                MoLab::ParsedCommand command;
+                std::string parse_error;
+                if (!MoLab::parseCommandJsonLine(line, command, &parse_error)) {
+                    std::cout << MoLab::buildErrorJson("", "parse_error", parse_error).dump() << std::endl;
+                    continue;
+                }
+
+                if (command.command == "get_status") {
+                    const auto status = engine.getStatus();
+                    std::cout << MoLab::buildAckJson(command.request_id,
+                        {
+                            {"running", status.running},
+                            {"tick", status.tick},
+                            {"sim_time", status.sim_time},
+                            {"last_tick_duration", status.last_tick_duration}
+                        }).dump() << std::endl;
+                } else {
+                    std::cout << MoLab::buildErrorJson(command.request_id,
+                        "unsupported_command",
+                        "Unsupported command: " + command.command).dump() << std::endl;
+                }
+            }
+
+            engine.shutdown();
+            return 0;
         }
 
         LOG_INFO("Simulation engine initialized successfully", "Main");

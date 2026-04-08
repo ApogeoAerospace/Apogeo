@@ -31,6 +31,11 @@
    - physics integration
    - output record
 
+Optional control path:
+
+- `main.cpp` supports `--ipc stdio` mode for JSON-line command handling over stdin/stdout.
+- Current command set is minimal (`get_status`) and returns read-only engine status snapshot.
+
 ## Plugin roles
 
 - `0` = `SEQUENTIAL_STATE_MODIFIER`
