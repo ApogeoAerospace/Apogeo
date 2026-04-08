@@ -222,6 +222,15 @@ bool SimulationEngine::run_simulation() {
   return true;
 }
 
+SimulationEngine::EngineStatus SimulationEngine::getStatus() const {
+    return EngineStatus{
+        is_running_.load(),
+        iteration_count_.load(),
+        simulation_time_.load(),
+        last_tick_duration_.load()
+    };
+}
+
 void SimulationEngine::shutdown() {
     if (is_running_) {
         LOG_INFO("Shutting down simulation", "SimulationEngine");

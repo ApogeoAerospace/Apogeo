@@ -29,6 +29,13 @@ namespace MoLab {
 
 class SimulationEngine {
 public:
+    struct EngineStatus {
+        bool running;
+        uint64_t tick;
+        double sim_time;
+        double last_tick_duration;
+    };
+
     /**
      * @brief Constructs the simulation engine.
      */
@@ -106,6 +113,12 @@ public:
      * @return `true` if engine is active.
      */
     bool is_running() const { return is_running_; }
+
+    /**
+     * @brief Gets a read-only runtime status snapshot.
+     * @return Current engine status values.
+     */
+    EngineStatus getStatus() const;
 
     /**
      * @brief Validates current internal simulation state.
