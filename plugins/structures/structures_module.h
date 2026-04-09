@@ -57,7 +57,22 @@ public:
      */
     bool checkStructuralIntegrity(double dynamic_pressure, double g_force) const;
 
+    /**
+     * @brief Calcula la fuerza estructural del tick actual.
+     *
+     * @warning La semantica final de salida de torque aun no esta
+     * validado formalmente. Esta salida
+     * se considera temporal y su lógica puede cambiar.
+     */
     PluginVector3 computeStructuralForce(const state_vector::GeneralState* state) const;
+
+    /**
+     * @brief Calcula el torque estructural del tick actual.
+     *
+     * @warning La semantica final de salida de torque aun no esta
+     * validado formalmente.
+     * Esta salida se considera temporal y su lógica puede cambiar.
+     */
     PluginVector3 computeStructuralTorque(const state_vector::GeneralState* state) const;
 
     double initialMassKg() const;

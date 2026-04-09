@@ -46,8 +46,15 @@ extern "C" {
 PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     auto* instance = new StructuresPluginInstance();
 
-    instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
-    instance->module.loadStructuralLimitsFromCsv(kDefaultStructuralLimitsPath);
+    const bool mass_loaded = instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
+    const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(kDefaultStructuralLimitsPath);
+    if (!mass_loaded || !limits_loaded) {
+        std::cout << "[Structures] Error: no se pudo inicializar con datos por defecto."
+                  << " mass_loaded=" << mass_loaded
+                  << " limits_loaded=" << limits_loaded << std::endl;
+        delete instance;
+        return nullptr;
+    }
     instance->initialized = true;
 
     std::cout << "[Structures] Instancia creada." << std::endl;
@@ -89,8 +96,16 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         }
 
         // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
-        instance->module.loadMassPropertiesFromJson(mass_json_path);
-        instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
+        const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
+        const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
+        if (!mass_loaded || !limits_loaded) {
+            if (instance->debug_output) {
+                std::cout << "[Structures] Error: configuracion invalida de fuentes estructurales."
+                          << " mass_loaded=" << mass_loaded
+                          << " limits_loaded=" << limits_loaded << std::endl;
+            }
+            return -4;
+        }
         return 0;
     } catch (...) {
         return -3;
@@ -99,6 +114,9 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
 
 /**
  * @brief Ejecuta un tick estructural tipo 1 (solo lectura de estado, salida fuerza/torque).
+ *
+ * @warning Implementacion donde no se aplica logica fisica activa.
+ * Devuelve salida neutra (cero) para preservar compatibilidad del flujo.
  */
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     if (!handle || !data || !data->state_buffer) {
@@ -121,47 +139,15 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
         return -3;
     }
 
-    const double vx = state->velocity()->x();
-    const double vy = state->velocity()->y();
-    const double vz = state->velocity()->z();
-    const double speed = std::sqrt(vx * vx + vy * vy + vz * vz);
-
-    // Primer tick: warm-up de velocidad previa para evitar pico artificial de g.
-    if (!instance->speed_initialized) {
-        instance->previous_speed_m_s = speed;
-        instance->speed_initialized = true;
-
-        *force_output = instance->module.computeStructuralForce(state);
-        if (torque_output) {
-            *torque_output = instance->module.computeStructuralTorque(state);
-        }
-        return 0;
-    }
-
-    const double ax = data->delta_time > 0.0 ? (speed - instance->previous_speed_m_s) / data->delta_time : 0.0;
-    instance->previous_speed_m_s = speed;
-    const double g_force = std::abs(ax) / kStandardGravity;
-
-    const double px = state->position()->x();
-    const double py = state->position()->y();
-    const double pz = state->position()->z();
-    double altitude = std::sqrt(px * px + py * py + pz * pz) - kEarthRadiusM;
-    altitude = std::max(0.0, altitude);
-
-    const double air_density = kSeaLevelDensity * std::exp(-altitude / kScaleHeight);
-    const double dynamic_pressure = 0.5 * air_density * speed * speed;
-
-    // Tick >= 2: evaluacion de integridad con g y presion dinamica actuales.
-    const bool integrity_ok = instance->module.checkStructuralIntegrity(dynamic_pressure, g_force);
-    if (!integrity_ok && instance->debug_output) {
-        std::cout << "[Structures] Warning: limite estructural excedido. q="
-                  << dynamic_pressure << " Pa, g=" << g_force << std::endl;
-    }
-
-    *force_output = instance->module.computeStructuralForce(state);
+    // No hay salida fisica activa por ahora, estilo template
+    force_output->x = 0.0f;
+    force_output->y = 0.0f;
+    force_output->z = 0.0f;
 
     if (torque_output) {
-        *torque_output = instance->module.computeStructuralTorque(state);
+        torque_output->x = 0.0f;
+        torque_output->y = 0.0f;
+        torque_output->z = 0.0f;
     }
 
     return 0;

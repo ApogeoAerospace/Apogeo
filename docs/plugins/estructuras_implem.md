@@ -77,13 +77,10 @@ Structures usa el patron tipo 1: lee estado, calcula fuerza/torque estructurales
 
 - Carga masa/CoM/inercia desde JSON placeholder (`mass_properties.json`).
 - Carga limites estructurales desde CSV (`structural_limits.csv`).
-- En `plugin_tick` calcula:
-  - velocidad,
-  - aceleracion longitudinal aproximada,
-  - `g_force`,
-  - presion dinamica aproximada,
-  - chequeo de integridad estructural,
-  - fuerza y torque de amortiguamiento estructural.
+- En `plugin_tick`, en la fase actual, el plugin de este modo:
+  - no aplica logica fisica activa,
+  - entrega salida neutra `force=(0,0,0)` y `torque=(0,0,0)`,
+  - se mantiene para preservar compatibilidad del flujo de plugins tipo 1.
 
 ## 4.2 Ajuste de primer tick (warm-up)
 
@@ -129,8 +126,8 @@ Capa plugin/API (orquestacion):
 - Maneja ciclo de vida exportado (`create/configure/tick/destroy`).
 - Carga defaults al crear instancia.
 - En `plugin_configure` toma parametros estructurales (`mass_properties_path`, `structural_limits_path`, `debug_output`).
-- Ejecuta logica de tick tipo 1, incluyendo warm-up del primer tick.
-- Reporta warning cuando integridad excede limites y `debug_output == true`.
+- Ejecuta `plugin_tick` en modo template (salida neutra de fuerza/torque).
+- Mantiene compatibilidad de flujo con plugins tipo 1 sin aplicar fisica activa.
 
 ## 5.2 Archivos del core relevantes para Structures
 
