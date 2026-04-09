@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
 #include <iostream>
-#include "../core/CommandEventProtocol.h"
 #include "../core/SimulationEngine.h"
 #include "../core/Logger.h"
 #include "../core/ConfigManager.h"
+#include "ipc/IpcSession.h"
 
 /**
  * @file main.cpp
@@ -138,24 +138,17 @@ int main(int argc, char* argv[]) {
         log_level = sim_config.log_level;
     }
 
-    if (log_level == "DEBUG") {
-        logger.setLogLevel(MoLab::LogLevel::DEBUG);
-    } else if (log_level == "INFO") {
-        logger.setLogLevel(MoLab::LogLevel::INFO);
-    } else if (log_level == "WARNING") {
-        logger.setLogLevel(MoLab::LogLevel::WARNING);
-    } else if (log_level == "ERROR") {
-        logger.setLogLevel(MoLab::LogLevel::ERR);
-    } else if (log_level == "CRITICAL") {
-        logger.setLogLevel(MoLab::LogLevel::CRITICAL);
-    }
-
-    LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
-    LOG_INFO("Configuration file: " + config_file, "Main");
+    MoLab::applyLogLevel(logger, log_level);
 
     try {
-        // Initialize simulation engine
         MoLab::SimulationEngine engine;
+
+        if (ipc_stdio_mode) {
+            return MoLab::runIpcStdioSession(engine, logger);
+        }
+
+        LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
+        LOG_INFO("Configuration file: " + config_file, "Main");
 
         // Initialize from already loaded configuration
         bool init_success = engine.initialize_from_loaded_config();
@@ -163,40 +156,6 @@ int main(int argc, char* argv[]) {
         if (!init_success) {
             LOG_CRITICAL("Failed to initialize simulation engine", "Main");
             return 1;
-        }
-
-        if (ipc_stdio_mode) {
-            std::string line;
-            while (std::getline(std::cin, line)) {
-                if (line.empty()) {
-                    continue;
-                }
-
-                MoLab::ParsedCommand command;
-                std::string parse_error;
-                if (!MoLab::parseCommandJsonLine(line, command, &parse_error)) {
-                    std::cout << MoLab::buildErrorJson("", "parse_error", parse_error).dump() << std::endl;
-                    continue;
-                }
-
-                if (command.command == "get_status") {
-                    const auto status = engine.getStatus();
-                    std::cout << MoLab::buildAckJson(command.request_id,
-                        {
-                            {"running", status.running},
-                            {"tick", status.tick},
-                            {"sim_time", status.sim_time},
-                            {"last_tick_duration", status.last_tick_duration}
-                        }).dump() << std::endl;
-                } else {
-                    std::cout << MoLab::buildErrorJson(command.request_id,
-                        "unsupported_command",
-                        "Unsupported command: " + command.command).dump() << std::endl;
-                }
-            }
-
-            engine.shutdown();
-            return 0;
         }
 
         LOG_INFO("Simulation engine initialized successfully", "Main");

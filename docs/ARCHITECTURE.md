@@ -34,7 +34,9 @@
 Optional control path:
 
 - `main.cpp` supports `--ipc stdio` mode for JSON-line command handling over stdin/stdout.
-- Current command set is minimal (`get_status`) and returns read-only engine status snapshot.
+- IPC commands are focused on runtime control (`initialize`, `run_ticks`, `run_full`, `shutdown`, `get_status`).
+- Configurable startup behavior remains file-based through `default_config.json` + CLI (`--config`).
+- IPC mode streams structured events (`log`, `error`, `tick_completed`, `simulation_started`, `simulation_finished`, `state_sample`).
 
 ## Plugin roles
 

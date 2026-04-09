@@ -71,9 +71,20 @@ build/bin/simulator.exe --config data/defaults/default_config.json --ticks 50
 echo '{"type":"command","id":"1","name":"get_status"}' | build/bin/simulator --ipc stdio
 ```
 
-Current supported command:
+Current supported commands:
 
 - `get_status`
+- `initialize`
+- `run_ticks` (payload: `{ "count": <positive-int> }`)
+- `run_full`
+- `shutdown`
+
+See `docs/IPC_PROTOCOL.md` for request/response/event examples.
+
+Important IPC semantics are also documented there:
+
+- `shutdown` releases engine resources but does not, by itself, terminate the `--ipc stdio` process.
+- For compatibility, command parsing accepts both `name`/`command` and `id`/`request_id`.
 
 ## Scripts (core workflow)
 
@@ -109,6 +120,7 @@ Main test coverage includes:
 - Build and run guide: `docs/BUILD_RUN.md`
 - Configuration guide: `docs/CONFIG.md`
 - Full config reference: `docs/CONFIG_REFERENCE.md`
+- IPC protocol: `docs/IPC_PROTOCOL.md`
 - Plugin API: `docs/PLUGIN_API.md`
 - Known gaps: `docs/KNOWN_GAPS.md`
 - Doxygen style guide: `docs/DOCUMENTATION_STYLE_GUIDE.md`

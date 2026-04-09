@@ -14,6 +14,7 @@ Parse/validation errors include detailed failure reasons.
 - `initial_state_file`: Input state file used to initialize simulation state.
 - `output_directory`: Base directory for generated simulation outputs.
 - `logging`: Logger output/retention behavior.
+- `ipc`: IPC transport throttling behavior for event/telemetry output.
 - `performance`: Performance instrumentation and execution tuning.
 - `validation`: Runtime sanity and numerical safety checks.
 - `vehicle_models`: Vehicle model data sources (aero, geometry, propulsion, mass, limits).
@@ -97,6 +98,18 @@ Example parameters in default config:
 
 - `logging.max_files` (`integer`)  
   Number of rotated log files retained.
+
+---
+
+## `ipc`
+
+- `ipc.tick_event_interval` (`integer`, ticks)
+  Emit `tick_completed` IPC events every N ticks.
+
+- `ipc.telemetry_interval_ticks` (`integer`, ticks)
+  Emit `state_sample` IPC telemetry every N ticks.
+
+Both values must be positive integers.
 
 ---
 

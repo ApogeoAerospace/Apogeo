@@ -190,6 +190,8 @@ TEST_F(SimulationEngineTest, GetLastTickDuration) {
 
     engine.run_tick();
     EXPECT_GE(engine.get_last_tick_duration(), 0.0);
+    EXPECT_GE(engine.get_last_compute_tick_duration(), 0.0);
+    EXPECT_GE(engine.get_last_io_tick_duration(), 0.0);
 }
 
 TEST_F(SimulationEngineTest, PrintPerformanceMetrics) {

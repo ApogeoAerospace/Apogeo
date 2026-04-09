@@ -98,7 +98,10 @@ add_dependencies(core generate_flatbuffers)
 
 # --- Main executable configuration ---
 # Main executable
-add_executable(simulator src/main.cpp)
+add_executable(simulator
+    src/main.cpp
+    src/ipc/IpcSession.cpp
+)
 target_link_libraries(simulator core ${CMAKE_DL_LIBS})
 target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -216,6 +219,8 @@ if(ENABLE_TESTING)
         tests/test_simulation_engine.cpp
         tests/test_initial_state_loader.cpp
         tests/test_command_event_protocol.cpp
+        tests/test_ipc_session.cpp
+        src/ipc/IpcSession.cpp
     )
 
     target_link_libraries(core_tests PRIVATE
@@ -226,6 +231,7 @@ if(ENABLE_TESTING)
 
     target_include_directories(core_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
         ${GENERATED_DIR}

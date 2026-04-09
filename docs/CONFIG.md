@@ -29,6 +29,8 @@ Source: `data/defaults/default_config.json` + `ConfigManager`.
 - `output_directory` (parsed, but still not fully applied in engine output)
 - `logging.console_output` (applied to logger console/stdout emission)
 - `logging.file_output` (applied to logger file emission)
+- `ipc.tick_event_interval` (applied in IPC mode as default `tick_completed` throttle)
+- `ipc.telemetry_interval_ticks` (applied in IPC mode as default `state_sample` throttle)
 
 ## Present in JSON but not yet consumed by core runtime
 

@@ -42,4 +42,7 @@ TEST(CommandEventProtocolTest, BuildAckErrorAndEventJson) {
     EXPECT_EQ(event["event"], "status");
     EXPECT_EQ(event["payload"]["running"], true);
     EXPECT_EQ(event["payload"]["tick"], 42);
+
+    const auto sequenced_event = buildEventJson("status", { {"tick", 43} }, 7);
+    EXPECT_EQ(sequenced_event["event_seq"], 7);
 }

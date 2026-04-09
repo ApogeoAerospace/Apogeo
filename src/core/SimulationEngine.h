@@ -34,6 +34,8 @@ public:
         uint64_t tick;
         double sim_time;
         double last_tick_duration;
+        double compute_tick_duration_ms;
+        double io_tick_duration_ms;
     };
 
     /**
@@ -109,6 +111,18 @@ public:
     double get_last_tick_duration() const { return last_tick_duration_; }
 
     /**
+     * @brief Gets compute-only duration of the last tick.
+     * @return Duration in milliseconds.
+     */
+    double get_last_compute_tick_duration() const { return compute_tick_duration_ms_; }
+
+    /**
+     * @brief Gets I/O/output duration of the last tick.
+     * @return Duration in milliseconds.
+     */
+    double get_last_io_tick_duration() const { return io_tick_duration_ms_; }
+
+    /**
      * @brief Indicates whether simulation is currently running.
      * @return `true` if engine is active.
      */
@@ -143,6 +157,8 @@ private:
     std::atomic<double> simulation_time_{0.0};
     std::atomic<uint64_t> iteration_count_{0};
     std::atomic<double> last_tick_duration_{0.0};
+    std::atomic<double> compute_tick_duration_ms_{0.0};
+    std::atomic<double> io_tick_duration_ms_{0.0};
     std::atomic<bool> is_running_{false};
 
     /**

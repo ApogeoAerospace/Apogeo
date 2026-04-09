@@ -9,6 +9,7 @@
 #include <deque>
 #include <thread>
 #include <atomic>
+#include <functional>
 #include "state_vector_generated.h"
 #include "nlohmann/json.hpp"
 
@@ -134,6 +135,12 @@ public:
      */
     void printSummary();
 
+    /**
+     * @brief Sets an optional real-time telemetry callback.
+     * @param callback Callback receiving `(point, tick)` from writer thread.
+     */
+    void setRealtimeTelemetryCallback(std::function<void(const SimulationDataPoint&, int)> callback);
+
 private:
     OutputManager() = default;
     ~OutputManager() noexcept;
@@ -196,6 +203,7 @@ private:
     std::deque<PendingPoint> pending_points_;
     std::thread writer_thread_;
     std::atomic<bool> writer_running_{false};
+    std::function<void(const SimulationDataPoint&, int)> realtime_telemetry_callback_;
 
     // Internal state
     bool initialized_ = false;

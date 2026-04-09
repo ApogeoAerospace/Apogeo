@@ -30,7 +30,19 @@ build/bin/simulator --config data/defaults/default_config.json
 echo '{"type":"command","id":"1","name":"get_status"}' | build/bin/simulator --ipc stdio
 ```
 
-Current IPC support is intentionally minimal and includes only `get_status`.
+Quick command examples:
+
+```bash
+echo '{"type":"command","id":"1","name":"initialize"}' | build/bin/simulator --ipc stdio
+echo '{"type":"command","id":"2","name":"run_ticks","payload":{"count":10}}' | build/bin/simulator --ipc stdio
+```
+
+See `docs/IPC_PROTOCOL.md` for the full IPC contract.
+
+Protocol notes:
+
+- `shutdown` finalizes engine resources but does not automatically exit the process in `--ipc stdio` mode.
+- `run_ticks` returns an `ack` on success; if execution fails mid-run, an `error` is emitted instead of a success `ack`.
 
 ## Run tests
 

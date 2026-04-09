@@ -37,6 +37,8 @@ struct SimulationConfig {
     std::string log_level;
     bool console_output;
     bool file_output;
+    int ipc_tick_event_interval;
+    int ipc_telemetry_interval_ticks;
 };
 
 /**

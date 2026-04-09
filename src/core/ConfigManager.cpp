@@ -100,6 +100,8 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
+        config_json["ipc"]["tick_event_interval"] = simulation_config_.ipc_tick_event_interval;
+        config_json["ipc"]["telemetry_interval_ticks"] = simulation_config_.ipc_telemetry_interval_ticks;
         config_json["logging"]["console_output"] = simulation_config_.console_output;
         config_json["logging"]["file_output"] = simulation_config_.file_output;
 
@@ -145,6 +147,8 @@ void ConfigManager::setDefaults() {
     simulation_config_.log_level = "INFO";
     simulation_config_.console_output = true;
     simulation_config_.file_output = true;
+    simulation_config_.ipc_tick_event_interval = 50;
+    simulation_config_.ipc_telemetry_interval_ticks = 5;
 
     // Clear plugin configuration
     plugin_configs_.clear();
@@ -180,6 +184,14 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json, std::strin
         } else {
             simulation_config_.console_output = true;
             simulation_config_.file_output = true;
+        }
+
+        if (json.contains("ipc") && json["ipc"].is_object()) {
+            simulation_config_.ipc_tick_event_interval = json["ipc"].value("tick_event_interval", 50);
+            simulation_config_.ipc_telemetry_interval_ticks = json["ipc"].value("telemetry_interval_ticks", 5);
+        } else {
+            simulation_config_.ipc_tick_event_interval = 50;
+            simulation_config_.ipc_telemetry_interval_ticks = 5;
         }
 
         return true;
@@ -228,6 +240,16 @@ bool ConfigManager::validateConfig(std::string& error_detail) const {
 
     if (simulation_config_.max_iterations <= 0) {
         error_detail = "simulation.max_iterations must be positive (got " + std::to_string(simulation_config_.max_iterations) + ")";
+        return false;
+    }
+
+    if (simulation_config_.ipc_tick_event_interval <= 0) {
+        error_detail = "ipc.tick_event_interval must be positive (got " + std::to_string(simulation_config_.ipc_tick_event_interval) + ")";
+        return false;
+    }
+
+    if (simulation_config_.ipc_telemetry_interval_ticks <= 0) {
+        error_detail = "ipc.telemetry_interval_ticks must be positive (got " + std::to_string(simulation_config_.ipc_telemetry_interval_ticks) + ")";
         return false;
     }
 

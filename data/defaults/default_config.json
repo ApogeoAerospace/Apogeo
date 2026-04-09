@@ -38,6 +38,10 @@
         "max_file_size_mb": 100,
         "max_files": 5
     },
+    "ipc": {
+        "tick_event_interval": 50,
+        "telemetry_interval_ticks": 5
+    },
     "performance": {
         "enable_metrics": true,
         "metrics_output_interval": 1000,

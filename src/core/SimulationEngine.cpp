@@ -74,6 +74,9 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     output_manager.initializeOutput("molab_simulation");    // Reset simulation state
     simulation_time_ = 0.0;
     iteration_count_ = 0;
+    last_tick_duration_ = 0.0;
+    compute_tick_duration_ms_ = 0.0;
+    io_tick_duration_ms_ = 0.0;
 
     LOG_INFO("Simulation initialized successfully", "SimulationEngine");
     return true;
@@ -129,7 +132,7 @@ void SimulationEngine::run_tick() {
     LOG_INFO("Starting simulation", "SimulationEngine");
   }
 
-  auto start_time = std::chrono::high_resolution_clock::now();
+  auto compute_start_time = std::chrono::high_resolution_clock::now();
 
   double delta_time = 0.0;
   const state_vector::GeneralState* state = nullptr;
@@ -173,12 +176,18 @@ void SimulationEngine::run_tick() {
   simulation_time_.store(simulation_time_.load() + delta_time);
   iteration_count_++;
 
-  auto& output_manager = OutputManager::getInstance();
-  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  auto compute_end_time = std::chrono::high_resolution_clock::now();
 
-  auto end_time = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-  last_tick_duration_ = duration.count() / 1000.0;
+  auto& output_manager = OutputManager::getInstance();
+  auto io_start_time = compute_end_time;
+  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  auto io_end_time = std::chrono::high_resolution_clock::now();
+
+  auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end_time - compute_start_time);
+  auto io_duration = std::chrono::duration_cast<std::chrono::microseconds>(io_end_time - io_start_time);
+  compute_tick_duration_ms_ = compute_duration.count() / 1000.0;
+  io_tick_duration_ms_ = io_duration.count() / 1000.0;
+  last_tick_duration_ = compute_tick_duration_ms_.load() + io_tick_duration_ms_.load();
 
   if (iteration_count_ % 5000 == 0) {
     LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
@@ -227,7 +236,9 @@ SimulationEngine::EngineStatus SimulationEngine::getStatus() const {
         is_running_.load(),
         iteration_count_.load(),
         simulation_time_.load(),
-        last_tick_duration_.load()
+        last_tick_duration_.load(),
+        compute_tick_duration_ms_.load(),
+        io_tick_duration_ms_.load()
     };
 }
 
@@ -315,6 +326,8 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
     LOG_INFO("=== SIMULATION PERFORMANCE METRICS ===", "SimulationEngine");
     LOG_INFO("Total iterations: " + std::to_string(iteration_count_.load()), "SimulationEngine");
     LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
+    LOG_INFO("Last compute tick duration: " + std::to_string(compute_tick_duration_ms_.load()) + "ms", "SimulationEngine");
+    LOG_INFO("Last I/O tick duration: " + std::to_string(io_tick_duration_ms_.load()) + "ms", "SimulationEngine");
     LOG_INFO("Last tick duration: " + std::to_string(last_tick_duration_.load()) + "ms", "SimulationEngine");
 
     // Get plugin metrics

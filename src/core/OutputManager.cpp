@@ -294,6 +294,11 @@ void OutputManager::printSummary() {
   LOG_INFO("Output files saved in: " + output_dir_, "OutputManager");
 }
 
+void OutputManager::setRealtimeTelemetryCallback(std::function<void(const SimulationDataPoint&, int)> callback) {
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  realtime_telemetry_callback_ = std::move(callback);
+}
+
 SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralState* state, double time, double utc_time, int tick) {
   SimulationDataPoint point;
   point.time = time;
@@ -486,6 +491,7 @@ void OutputManager::writeMetricsJSON() {
 void OutputManager::writerLoop() {
   for (;;) {
     PendingPoint pending;
+    std::function<void(const SimulationDataPoint&, int)> telemetry_callback;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
       queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
@@ -498,26 +504,37 @@ void OutputManager::writerLoop() {
       pending_points_.pop_front();
     }
 
-    std::lock_guard<std::mutex> lock(data_mutex_);
+    {
+      std::lock_guard<std::mutex> lock(data_mutex_);
 
-    if (!initialized_) {
-      continue;
+      if (!initialized_) {
+        continue;
+      }
+
+      data_points_.push_back(pending.point);
+
+      if (output_csv_ && csv_file_ && csv_file_->is_open()) {
+        writeDataPointCSV(pending.point, pending.tick);
+      }
+
+      if (output_json_ && json_file_ && json_file_->is_open()) {
+        writeDataPointJSON(pending.point, pending.tick);
+      }
+
+      if (output_binary_ && binary_file_ && binary_file_->is_open()) {
+        binary_file_->write(reinterpret_cast<const char*>(&pending.point), sizeof(SimulationDataPoint));
+      }
+
+      last_recorded_tick_ = pending.tick;
+      telemetry_callback = realtime_telemetry_callback_;
     }
 
-    data_points_.push_back(pending.point);
-
-    if (output_csv_ && csv_file_ && csv_file_->is_open()) {
-      writeDataPointCSV(pending.point, pending.tick);
+    if (telemetry_callback) {
+      try {
+        telemetry_callback(pending.point, pending.tick);
+      } catch (...) {
+        // Telemetry callback must not break async output writer.
+      }
     }
-
-    if (output_json_ && json_file_ && json_file_->is_open()) {
-      writeDataPointJSON(pending.point, pending.tick);
-    }
-
-    if (output_binary_ && binary_file_ && binary_file_->is_open()) {
-      binary_file_->write(reinterpret_cast<const char*>(&pending.point), sizeof(SimulationDataPoint));
-    }
-
-    last_recorded_tick_ = pending.tick;
   }
 }

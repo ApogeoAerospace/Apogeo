@@ -12,6 +12,7 @@
 
 ## UI/backend contract gaps
 
+- Legacy web parsing path is deprecated in favor of `--ipc stdio` command/event protocol.
 - The web UI sends physics/output sections that current `ConfigManager` does not parse.
 - Port mismatch:
   - launcher message: `8080`

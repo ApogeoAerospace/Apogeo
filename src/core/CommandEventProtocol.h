@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 #include <nlohmann/json.hpp>
 
 namespace MoLab {
@@ -71,12 +72,19 @@ inline nlohmann::json buildErrorJson(const std::string& request_id,
 }
 
 inline nlohmann::json buildEventJson(const std::string& event_name,
-                                     const nlohmann::json& payload = nlohmann::json::object()) {
-    return nlohmann::json{
+                                     const nlohmann::json& payload = nlohmann::json::object(),
+                                     uint64_t event_seq = 0) {
+    auto event = nlohmann::json{
         {"type", "event"},
         {"event", event_name},
         {"payload", payload}
     };
+
+    if (event_seq > 0) {
+        event["event_seq"] = event_seq;
+    }
+
+    return event;
 }
 
 } // namespace MoLab
