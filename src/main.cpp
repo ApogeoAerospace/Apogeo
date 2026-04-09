@@ -164,23 +164,25 @@ int main(int argc, char* argv[]) {
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
 
-            // Determine progress frequency based on total ticks
-            // More frequent for long runs, less frequent for short ones
-            int progress_interval;
-            if (tick_count <= 100) {
-                progress_interval = 10;      // Every 10 ticks for short runs
-            } else if (tick_count <= 1000) {
-                progress_interval = 50;      // Every 50 ticks for medium runs
-            } else if (tick_count <= 5000) {
-                progress_interval = 100;     // Every 100 ticks for long runs
-            } else {
-                progress_interval = 250;     // Every 250 ticks for very long runs
+            const bool debug_progress_logging = (log_level == "DEBUG");
+            int progress_interval = tick_count;
+            if (debug_progress_logging) {
+                // Determine progress frequency based on total ticks
+                // More frequent for long runs, less frequent for short ones
+                if (tick_count <= 100) {
+                    progress_interval = 10;      // Every 10 ticks for short runs
+                } else if (tick_count <= 1000) {
+                    progress_interval = 50;      // Every 50 ticks for medium runs
+                } else if (tick_count <= 5000) {
+                    progress_interval = 100;     // Every 100 ticks for long runs
+                } else {
+                    progress_interval = 250;     // Every 250 ticks for very long runs
+                }
             }
 
             for (int i = 0; i < tick_count; ++i) {
-                // PROGRESS LOGGING: frequent and simple for external interface
-                if (i % progress_interval == 0 || i == tick_count - 1) {
-                    LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
+                if (debug_progress_logging && (i % progress_interval == 0 || i == tick_count - 1)) {
+                    LOG_DEBUG("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }
                 engine.run_tick();
             }
