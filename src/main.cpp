@@ -115,6 +115,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    auto& logger = MoLab::Logger::getInstance();
+    if (ipc_stdio_mode) {
+        logger.setConsoleOutputEnabled(false);
+    }
+
     // Load configuration once during bootstrap.
     // `SimulationEngine::initialize_from_loaded_config()` consumes this loaded state.
     auto& config_manager = MoLab::ConfigManager::getInstance();
@@ -124,9 +129,8 @@ int main(int argc, char* argv[]) {
 
     const auto& sim_config = config_manager.getSimulationConfig();
 
-    // Initialize logging from loaded config (single source of truth)
-    auto& logger = MoLab::Logger::getInstance();
-    logger.setConsoleOutputEnabled(sim_config.console_output);
+    // Initialize logging from loaded config (if ipc mode, disable console output)
+    logger.setConsoleOutputEnabled(ipc_stdio_mode ? false : sim_config.console_output);
 
     if (sim_config.file_output && !sim_config.log_file.empty()) {
         logger.setLogFile(sim_config.log_file);

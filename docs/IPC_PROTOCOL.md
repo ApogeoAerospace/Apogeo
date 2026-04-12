@@ -148,6 +148,13 @@ IPC mode emits asynchronous events:
 
 All event messages include `event_seq` (monotonic session-local sequence number).
 
+### Startup log replay behavior
+
+- On `--ipc stdio` session start, the simulator replays recent logger history as `log` events.
+- Replay is capped to the latest `256` accepted log entries.
+- Replayed `ERROR`/`CRITICAL` entries also emit `error` events.
+- In IPC mode, plain console log lines are disabled to keep stdout JSON-only.
+
 Example:
 
 ```json

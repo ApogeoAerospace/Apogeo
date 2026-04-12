@@ -8,6 +8,8 @@
 #include <sstream>
 #include <mutex>
 #include <functional>
+#include <vector>
+#include <deque>
 
 /**
  * @file Logger.h
@@ -34,6 +36,16 @@ enum class LogLevel {
  */
 class Logger {
 public:
+    /*
+     * @struct LogEntry
+     * @brief Represents a single log entry for buffering and structured sinks.
+     */
+    struct LogEntry {
+        LogLevel level;
+        std::string message;
+        std::string component;
+    };
+
     /**
      * @brief Gets the global logger instance.
      * @return Unique reference to logger.
@@ -86,6 +98,15 @@ public:
     }
 
     /**
+     * @brief Gets a snapshot of recent buffered log entries.
+     * @return Vector of recent log entries.
+     */
+    std::vector<LogEntry> getBufferedLogsSnapshot() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return std::vector<LogEntry>(recent_logs_.begin(), recent_logs_.end());
+    }
+
+    /**
      * @brief Closes the active log file and clears configured path.
      */
     void closeLogFile() {
@@ -129,6 +150,11 @@ public:
             ss << " " << message;
 
             std::string log_line = ss.str();
+
+            recent_logs_.push_back(LogEntry{level, message, component});
+            if (recent_logs_.size() > max_buffered_logs_) {
+                recent_logs_.pop_front();
+            }
 
             // Output to console
             if (console_output_enabled_) {
@@ -236,6 +262,8 @@ private:
     std::string log_file_path_;
     bool console_output_enabled_ = true;
     std::function<void(LogLevel, const std::string&, const std::string&)> structured_sink_;
+    std::deque<LogEntry> recent_logs_;
+    static constexpr std::size_t max_buffered_logs_ = 256;
     std::mutex mutex_;
 };
 

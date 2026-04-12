@@ -164,6 +164,22 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
         emit_json(buildEventJson(event_name, payload, seq));
     };
 
+    const auto buffered_logs = logger.getBufferedLogsSnapshot();
+    for (const auto& entry : buffered_logs) {
+        emit_event("log", {
+            {"level", logLevelToString(entry.level)},
+            {"component", entry.component},
+            {"message", entry.message}
+        });
+        if (entry.level == LogLevel::ERR || entry.level == LogLevel::CRITICAL) {
+            emit_event("error", {
+                {"level", logLevelToString(entry.level)},
+                {"component", entry.component},
+                {"message", entry.message}
+            });
+        }
+    }
+
     const auto& simulation_config = ConfigManager::getInstance().getSimulationConfig();
     std::atomic<uint64_t> telemetry_interval_ticks{
         static_cast<uint64_t>(simulation_config.ipc_telemetry_interval_ticks)

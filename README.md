@@ -85,6 +85,8 @@ Important IPC semantics are also documented there:
 
 - `shutdown` releases engine resources but does not, by itself, terminate the `--ipc stdio` process.
 - For compatibility, command parsing accepts both `name`/`command` and `id`/`request_id`.
+- On IPC session start, recent logger history is replayed as IPC events (capped to `256` entries).
+- In IPC mode, plain console log lines are disabled to keep stdout JSON-only.
 
 ## Scripts (core workflow)
 
@@ -122,6 +124,7 @@ Main test coverage includes:
 - Full config reference: `docs/CONFIG_REFERENCE.md`
 - IPC protocol: `docs/IPC_PROTOCOL.md`
 - Plugin API: `docs/PLUGIN_API.md`
+- Structures module implementation: `docs/STRUCTURES_MODULE.md`
 - Known gaps: `docs/KNOWN_GAPS.md`
 - Doxygen style guide: `docs/DOCUMENTATION_STYLE_GUIDE.md`
 - Doxygen generated HTML: `docs/generated/html/index.html`

@@ -35,20 +35,16 @@ struct StructuralLimits {
 class StructuresModule {
 public:
     /**
-     * @brief Loads placeholder mass properties for Structures module.
+     * @brief Loads mass properties from JSON.
      *
      * @details
-     * The source for current mass, center of mass, and inertia is the
-     * main simulation buffer. While that integration is unavailable,
-     * loading from JSON is allowed as a temporary placeholder.
-     *
-     * Note: actuators are NOT taken from this JSON. The official source for
-     * actuators is the general configuration passed to plugin_configure().
+     * Supports initial mass/fuel mass, center of mass, and inertia tensor
+     * keys used by the current Structures module implementation.
      */
     bool loadMassPropertiesFromJson(const std::string& json_path);
 
     /**
-     * @brief Loads structural limits from CSV.
+     * @brief Loads structural limits from CSV key/value rows.
      */
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
 

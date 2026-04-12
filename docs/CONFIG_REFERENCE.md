@@ -85,6 +85,7 @@ Example parameters in default config:
 - `logging.console_output` (`boolean`)  
   If `true`, log messages are written to console/stdout.
   Currently integrated in core runtime through `Logger::setConsoleOutputEnabled(...)`.
+  In `--ipc stdio` mode, console output is forced off to keep stdout reserved for JSON IPC lines.
 
 - `logging.file_output` (`boolean`)  
   If `true`, log messages are written to configured log file.
@@ -110,6 +111,11 @@ Example parameters in default config:
   Emit `state_sample` IPC telemetry every N ticks.
 
 Both values must be positive integers.
+
+IPC runtime note:
+
+- On IPC session start, recent logger history is replayed as `log` events.
+- Replay history is bounded to the latest `256` accepted log entries.
 
 ---
 

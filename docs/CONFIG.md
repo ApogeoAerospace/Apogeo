@@ -59,6 +59,9 @@ Source: `data/defaults/default_config.json` + `ConfigManager`.
 
 - `Logger` supports an optional structured sink callback through `setStructuredSink(...)`.
 - The sink receives raw fields `(LogLevel, message, component)` for each accepted log event.
+- `Logger` keeps a bounded in-memory history of accepted log events for IPC startup replay.
+- Current replay history cap: `256` entries.
+- In `--ipc stdio` mode, console/stdout text logging is forcibly disabled to preserve JSON-line framing, regardless of `logging.console_output`.
 
 ---
 

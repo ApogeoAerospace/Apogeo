@@ -14,6 +14,7 @@ This directory contains the project's technical and functional documentation.
 - [Current architecture](./current/architecture.md)
 - [Current configuration](./current/config.md)
 - [Plugin API](./current/plugin-api.md)
+- [Structures module](./STRUCTURES_MODULE.md)
 - [Known gaps](./current/known-gaps.md)
 - [Doxygen style guide](./current/doxygen-style.md)
 
