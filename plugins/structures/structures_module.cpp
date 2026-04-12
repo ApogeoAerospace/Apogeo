@@ -68,27 +68,31 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
         return false;
     }
 
-    nlohmann::json j;
-    file >> j;
+    try {
+        nlohmann::json j;
+        file >> j;
 
-    initial_total_mass_kg_ = j.value("initial_total_mass_kg", initial_total_mass_kg_);
-    fuel_mass_kg_ = j.value("fuel_mass_kg", fuel_mass_kg_);
+        initial_total_mass_kg_ = j.value("initial_total_mass_kg", initial_total_mass_kg_);
+        fuel_mass_kg_ = j.value("fuel_mass_kg", fuel_mass_kg_);
 
-    if (j.contains("center_of_mass_m") && j["center_of_mass_m"].is_object()) {
-        const auto& cm = j["center_of_mass_m"];
-        center_of_mass_.x = cm.value("x", center_of_mass_.x);
-        center_of_mass_.y = cm.value("y", center_of_mass_.y);
-        center_of_mass_.z = cm.value("z", center_of_mass_.z);
-    }
+        if (j.contains("center_of_mass_m") && j["center_of_mass_m"].is_object()) {
+            const auto& cm = j["center_of_mass_m"];
+            center_of_mass_.x = cm.value("x", center_of_mass_.x);
+            center_of_mass_.y = cm.value("y", center_of_mass_.y);
+            center_of_mass_.z = cm.value("z", center_of_mass_.z);
+        }
 
-    if (j.contains("inertia_tensor_kg_m2") && j["inertia_tensor_kg_m2"].is_object()) {
-        const auto& it = j["inertia_tensor_kg_m2"];
-        inertia_tensor_.ixx = it.value("ixx", inertia_tensor_.ixx);
-        inertia_tensor_.iyy = it.value("iyy", inertia_tensor_.iyy);
-        inertia_tensor_.izz = it.value("izz", inertia_tensor_.izz);
-        inertia_tensor_.ixy = it.value("ixy", inertia_tensor_.ixy);
-        inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
-        inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
+        if (j.contains("inertia_tensor_kg_m2") && j["inertia_tensor_kg_m2"].is_object()) {
+            const auto& it = j["inertia_tensor_kg_m2"];
+            inertia_tensor_.ixx = it.value("ixx", inertia_tensor_.ixx);
+            inertia_tensor_.iyy = it.value("iyy", inertia_tensor_.iyy);
+            inertia_tensor_.izz = it.value("izz", inertia_tensor_.izz);
+            inertia_tensor_.ixy = it.value("ixy", inertia_tensor_.ixy);
+            inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
+            inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
+        }
+    } catch (...) {
+        return false;
     }
 
     return true;
