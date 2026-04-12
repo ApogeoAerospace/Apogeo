@@ -3,10 +3,7 @@
 #include "../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 
-#include <nlohmann/json.hpp>
-
 #include <string>
-#include <vector>
 
 namespace structures {
 
@@ -23,13 +20,6 @@ struct InertiaTensorData {
     double ixy = 0.0;
     double ixz = 0.0;
     double iyz = 0.0;
-};
-
-struct ActuatorControl {
-    std::string id;
-    double max_rate_deg_s = 0.0;
-    double range_deg = 0.0;
-    double current_command_deg = 0.0;
 };
 
 struct StructuralLimits {
@@ -51,32 +41,13 @@ public:
      * La fuente para masa actual, centro de masa e inercia es el
      * buffer principal de simulacion. Mientras esa integracion no exista,
      * se permite esta carga desde JSON como placeholder temporal.
-     *
-     * Nota: los actuadores NO se toman desde este JSON. La fuente oficial de
-     * actuadores es la configuracion general recibida en plugin_configure().
      */
     bool loadMassPropertiesFromJson(const std::string& json_path);
-
-    /**
-     * @brief API legacy de transicion para actuadores (compatibilidad temporal).
-     *
-     * @deprecated La autoridad funcional de actuadores migra al plugin
-     * Programming. Structures no aplica logica fisica basada en actuadores.
-     */
-    void setActuatorsFromJsonArray(const nlohmann::json& actuator_array);
 
     /**
      * @brief Carga limites estructurales desde CSV.
      */
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
-
-    /**
-     * @brief API de transicion para mapeo de actuadores.
-     *
-     * @deprecated Se mantiene para no romper compatibilidad de configuracion.
-     * No tiene efecto fisico en Structures.
-     */
-    void mapActuatorsPlaceholder();
 
     Vec3d getCenterOfMass() const;
     InertiaTensorData getInertiaTensor() const;
@@ -86,7 +57,22 @@ public:
      */
     bool checkStructuralIntegrity(double dynamic_pressure, double g_force) const;
 
+    /**
+     * @brief Calcula la fuerza estructural del tick actual.
+     *
+     * @warning La semantica final de salida de torque aun no esta
+     * validado formalmente. Esta salida
+     * se considera temporal y su lógica puede cambiar.
+     */
     PluginVector3 computeStructuralForce(const state_vector::GeneralState* state) const;
+
+    /**
+     * @brief Calcula el torque estructural del tick actual.
+     *
+     * @warning La semantica final de salida de torque aun no esta
+     * validado formalmente.
+     * Esta salida se considera temporal y su lógica puede cambiar.
+     */
     PluginVector3 computeStructuralTorque(const state_vector::GeneralState* state) const;
 
     double initialMassKg() const;
@@ -99,8 +85,6 @@ private:
     Vec3d center_of_mass_{};
     InertiaTensorData inertia_tensor_{};
     StructuralLimits limits_{};
-    // Compatibilidad temporal: datos crudos no usados en fisica de Structures.
-    std::vector<nlohmann::json> actuators_raw_;
 };
 
 } // namespace structures

@@ -9,9 +9,8 @@ Incluye:
 - Diferencia operativa entre plugins tipo 0 y tipo 1.
 - Uso de datos por tick (lectura/escritura) y contratos de API.
 - Que hace cada archivo `.h` y `.cpp` involucrado.
-- Cambios arquitectonicos clave (CMake, ConfigManager, deprecados, actuadores).
+- Cambios arquitectonicos clave (CMake, ConfigManager y deprecados).
 - Reglas de distribucion de responsabilidades entre plugins.
-- Plan de migracion recomendado para cierre de transicion de actuadores.
 
 ## 2. Flujo real del simulador y posicion de Structures
 
@@ -78,13 +77,10 @@ Structures usa el patron tipo 1: lee estado, calcula fuerza/torque estructurales
 
 - Carga masa/CoM/inercia desde JSON placeholder (`mass_properties.json`).
 - Carga limites estructurales desde CSV (`structural_limits.csv`).
-- En `plugin_tick` calcula:
-  - velocidad,
-  - aceleracion longitudinal aproximada,
-  - `g_force`,
-  - presion dinamica aproximada,
-  - chequeo de integridad estructural,
-  - fuerza y torque de amortiguamiento estructural.
+- En `plugin_tick`, en la fase actual, el plugin de este modo:
+  - no aplica logica fisica activa,
+  - entrega salida neutra `force=(0,0,0)` y `torque=(0,0,0)`,
+  - se mantiene para preservar compatibilidad del flujo de plugins tipo 1.
 
 ## 4.2 Ajuste de primer tick (warm-up)
 
@@ -93,19 +89,16 @@ Para evitar falsos picos de `g` en el primer tick:
 - No se evalua derivada de velocidad en tick 1.
 - La validacion de integridad con `g`/`q` se aplica desde tick >= 2.
 
-## 4.3 Cambios de actuadores (temporal)
+## 4.3 Alcance actual sobre actuadores
 
 Punto clave para futuros mantenedores:
 
-- En la arquitectura los, **actuadores deben pertenecer al plugin Programming**.
-- Structures **ya no depende funcionalmente** de `params["actuators"]` para su fisica, como se tenía inicialmente.
-- En `StructuresModule` se conserva API legacy:
-  - `setActuatorsFromJsonArray(...)`
-  - `mapActuatorsPlaceholder()`
-- Estas funciones quedan como compatibilidad transitoria/no-op fisico mientras se construye el plugin programming.
+- En esta fase, Structures no implementa logica de actuadores.
+- Structures no mantiene funciones legacy de actuadores.
+- Toda la logica de actuadores queda fuera del alcance funcional de este modulo.
 
 Consecuencia:
-- Configs antiguas con bloque de actuadores no deben romper, pero Structures no debe tomar decisiones fisicas basadas en ese bloque.
+- Este modulo se concentra en masa/inercia/limites/fuerza estructural sin procesar actuadores.
 
 ## 5. Responsabilidad por archivo (.h/.cpp)
 
@@ -119,16 +112,12 @@ Define dominio y contrato interno de Structures:
   - carga de masa/limites,
   - chequeo de integridad,
   - calculo de fuerza/torque.
-- Declara APIs de actuadores como **legacy/transicion**.
-- Almacena `actuators_raw_` solo para compatibilidad temporal.
 
 ### `plugins/temp/structures/structures_module.cpp`
 
 Implementacion del dominio Structures:
 - Parse JSON de masa/inercia placeholder.
 - Parse CSV de limites estructurales.
-- `setActuatorsFromJsonArray`: guarda JSON crudo (compatibilidad, sin efecto fisico).
-- `mapActuatorsPlaceholder`: no-op intencional para mantener compatibilidad de flujo.
 - `computeStructuralForce` y `computeStructuralTorque`: amortiguamiento simple basado en velocidad y velocidad angular.
 
 ### `plugins/temp/structures/structures.cpp`
@@ -137,8 +126,8 @@ Capa plugin/API (orquestacion):
 - Maneja ciclo de vida exportado (`create/configure/tick/destroy`).
 - Carga defaults al crear instancia.
 - En `plugin_configure` toma parametros estructurales (`mass_properties_path`, `structural_limits_path`, `debug_output`).
-- Ejecuta logica de tick tipo 1, incluyendo warm-up del primer tick.
-- Reporta warning cuando integridad excede limites y `debug_output == true`.
+- Ejecuta `plugin_tick` en modo template (salida neutra de fuerza/torque).
+- Mantiene compatibilidad de flujo con plugins tipo 1 sin aplicar fisica activa.
 
 ## 5.2 Archivos del core relevantes para Structures
 
@@ -179,7 +168,6 @@ Responsabilidad:
 - Define plugins activos, tipo y parametros.
 - Structures esta configurado como tipo 1.
 - Actualmente expone `debug_output` dentro de `plugins[].parameters`.
-- Existen datos de `vehicle_models.physical_limits.actuators`, pero ya no se inyectan automaticamente a Structures desde core.
 
 ### `CMakeLists.txt` (raiz)
 
@@ -215,7 +203,7 @@ Esta secuencia resume lo implementado en esta iteracion del modulo:
 6. Se ajusto CMake para integrar Structures en el flujo estandar de plugins (Option A).
 7. Se removio inyeccion especial desde `ConfigManager` para evitar parseo duplicado.
 8. Se dejo copia de implementacion anterior en deprecados.
-9. Se marco manejo de actuadores en Structures como transicional/compatibilidad, migrando autoridad a Programming.
+9. Se eliminaron referencias de actuadores en Structures para mantener el alcance del modulo enfocado en comportamiento estructural.
 
 ## 7. Deprecated 
 
@@ -228,21 +216,9 @@ Esta secuencia resume lo implementado en esta iteracion del modulo:
 
 ## 8. Distribucion correcta de responsabilidades entre plugins
 
-La separacion de responsabilidades se definio para evitar que un mismo dato de dominio se procese en multiples capas con reglas distintas. El plugin Programming es el unico responsable funcional del dominio de actuadores: recibe comandos, aplica validaciones y restricciones (saturacion por rango, limitacion por tasa, estados invalidos) y publica el resultado efectivo de actuacion en el estado compartido. Esto significa que Programming no solo "pasa" comandos, sino que normaliza y deja una salida canonica para que el resto del sistema consuma una unica fuente de verdad.
+La separacion de responsabilidades se definio para evitar que un mismo dato de dominio se procese en multiples capas con reglas distintas. En el estado actual, Structures se mantiene acotado al dominio estructural (propiedades de masa, limites y contribuciones de fuerza/torque), mientras que el Core conserva un rol neutral de parseo generico, carga de plugins y orquestacion del ciclo de simulacion.
 
-En concreto, Programming concentra estas decisiones:
-- Validacion de comandos de entrada.
-- Aplicacion de limites fisicos de actuacion.
-- Publicacion del estado aplicado de actuadores como salida canonica.
-
-Structures, por su parte, debe permanecer como consumidor estructural de ese estado ya resuelto. Su objetivo es solo evaluar consecuencias estructurales: cargas, limites, integridad y contribucion de fuerza/torque asociada al modelo estructural que le corresponda. Mientras la integracion completa de actuadores en buffer termina de consolidarse, Structures mantiene APIs legacy de compatibilidad para no romper configuraciones antiguas, pero esas APIs no deben volver a convertirse en una autoridad de logica fisica. De esta manera, lo que queremos es: Structures puede leer, interpreta, pero no redefinir reglas de actuacion que pertenecen a Programming.
-
-En otras palabras, en Structures:
-- Si se recibe configuracion legacy de actuadores, se tolera por compatibilidad.
-- Esa configuracion legacy no debe alterar decisiones fisicas nuevas.
-- La evaluacion estructural debe depender del estado compartido canonico.
-
-Segun los cambios, el ConfigManager debe parsear de forma generica y entregar `parameters` por plugin sin reinterpretar semantica de dominio. PluginManager debe cargar, configurar y ejecutar plugins respetando el ciclo de simulacion (fase secuencial tipo 0, fase paralela tipo 1, integracion), sin mezclar reglas de negocio de actuadores, estructuras, propulsion o aerodinamica. Cuando el Core absorbe semantica de un dominio especifico, se crea acoplamiento fuerte y duplicacion de parseo; por eso se elimino la inyeccion especial previa para Structures.
+Segun los cambios, el ConfigManager debe parsear de forma generica y entregar `parameters` por plugin sin reinterpretar semantica de dominio. PluginManager debe cargar, configurar y ejecutar plugins respetando el ciclo de simulacion (fase secuencial tipo 0, fase paralela tipo 1, integracion), sin mezclar reglas de negocio de estructuras, propulsion o aerodinamica.
 
 El Core debe limitarse a:
 - Parseo generico de configuracion.

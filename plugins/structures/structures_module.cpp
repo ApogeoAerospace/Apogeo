@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <nlohmann/json.hpp>
+
 namespace {
 
 static std::vector<std::string> splitCsvLine(const std::string& line) {
@@ -27,42 +29,39 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
         return false;
     }
 
-    nlohmann::json j;
-    file >> j;
+    try {
+        nlohmann::json j;
+        file >> j;
 
-    initial_total_mass_kg_ = j.value("initial_total_mass_kg", initial_total_mass_kg_);
-    fuel_mass_kg_ = j.value("fuel_mass_kg", fuel_mass_kg_);
+        initial_total_mass_kg_ = j.value("initial_total_mass_kg", initial_total_mass_kg_);
+        fuel_mass_kg_ = j.value("fuel_mass_kg", fuel_mass_kg_);
 
-    if (j.contains("center_of_mass_m") && j["center_of_mass_m"].is_object()) {
-        const auto& cm = j["center_of_mass_m"];
-        center_of_mass_.x = cm.value("x", center_of_mass_.x);
-        center_of_mass_.y = cm.value("y", center_of_mass_.y);
-        center_of_mass_.z = cm.value("z", center_of_mass_.z);
-    }
+        if (j.contains("center_of_mass_m") && j["center_of_mass_m"].is_object()) {
+            const auto& cm = j["center_of_mass_m"];
+            center_of_mass_.x = cm.value("x", center_of_mass_.x);
+            center_of_mass_.y = cm.value("y", center_of_mass_.y);
+            center_of_mass_.z = cm.value("z", center_of_mass_.z);
+        }
 
-    if (j.contains("inertia_tensor_kg_m2") && j["inertia_tensor_kg_m2"].is_object()) {
-        const auto& it = j["inertia_tensor_kg_m2"];
-        inertia_tensor_.ixx = it.value("ixx", inertia_tensor_.ixx);
-        inertia_tensor_.iyy = it.value("iyy", inertia_tensor_.iyy);
-        inertia_tensor_.izz = it.value("izz", inertia_tensor_.izz);
-        inertia_tensor_.ixy = it.value("ixy", inertia_tensor_.ixy);
-        inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
-        inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
+        if (j.contains("inertia_tensor_kg_m2") && j["inertia_tensor_kg_m2"].is_object()) {
+            const auto& it = j["inertia_tensor_kg_m2"];
+            inertia_tensor_.ixx = it.value("ixx", inertia_tensor_.ixx);
+            inertia_tensor_.iyy = it.value("iyy", inertia_tensor_.iyy);
+            inertia_tensor_.izz = it.value("izz", inertia_tensor_.izz);
+            inertia_tensor_.ixy = it.value("ixy", inertia_tensor_.ixy);
+            inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
+            inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
+        }
+    } catch (const std::exception& e) {
+        std::cout << "[Structures] Error parseando JSON de masa: " << json_path
+                  << " - " << e.what() << std::endl;
+        return false;
+    } catch (...) {
+        std::cout << "[Structures] Error parseando JSON de masa: " << json_path << std::endl;
+        return false;
     }
 
     return true;
-}
-
-void StructuresModule::setActuatorsFromJsonArray(const nlohmann::json& actuator_array) {
-    // Compatibilidad temporal: se conserva el parseo  para no romper
-    // configuraciones existentes, pero Structures no usa estos datos en fisica. (por el momento)
-    if (!actuator_array.is_array()) {
-        return;
-    }
-    actuators_raw_.clear();
-    for (const auto& actuator_json : actuator_array) {
-        actuators_raw_.push_back(actuator_json);
-    }
 }
 
 bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) {
@@ -108,11 +107,6 @@ bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) 
     }
 
     return true;
-}
-
-void StructuresModule::mapActuatorsPlaceholder() {
-    // La logica de actuadores migra a Programming.
-    // Se mantiene esta funcion para compatibilidad de llamadas existentes.
 }
 
 Vec3d StructuresModule::getCenterOfMass() const {
