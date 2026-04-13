@@ -21,6 +21,7 @@ namespace {
 
 constexpr const char* kDefaultMassPropsPath = "data/mass/mass_properties.json";
 constexpr const char* kDefaultStructuralLimitsPath = "data/limits/structural_limits.csv";
+constexpr uint32_t kSupportedHostServicesApiVersion = 1;
 
 using HostLogFn = void(*)(int32_t, const char*, const char*, void*);
 
@@ -32,6 +33,7 @@ struct StructuresPluginInstance {
 
 std::atomic<HostLogFn> g_host_log_fn{nullptr};
 std::atomic<void*> g_host_user_data{nullptr};
+std::atomic<bool> g_host_api_mismatch_warned{false};
 
 /**
  * @brief Emits plugin logs through host services when enabled.
@@ -57,6 +59,23 @@ extern "C" {
  */
 PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
     if (services != nullptr && services->log != nullptr) {
+        // If api_version mismatches, fallback to local plugin logging behavior.
+        if (services->api_version != kSupportedHostServicesApiVersion) {
+            g_host_log_fn.store(nullptr, std::memory_order_release);
+            g_host_user_data.store(nullptr, std::memory_order_relaxed);
+
+            bool expected = false;
+            if (g_host_api_mismatch_warned.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                std::cout << "[Structures] WARNING: Host services api_version mismatch (host="
+                          << services->api_version
+                          << ", plugin-supported="
+                          << kSupportedHostServicesApiVersion
+                          << "). Falling back to local plugin logging." << std::endl;
+            }
+            return;
+        }
+
+        g_host_api_mismatch_warned.store(false, std::memory_order_release);
         g_host_user_data.store(services->user_data, std::memory_order_relaxed);
         g_host_log_fn.store(services->log, std::memory_order_release);
         return;

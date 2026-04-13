@@ -83,6 +83,12 @@ If host services are provided via `plugin_set_host_services(...)`, plugin logs a
 
 Host injection is controlled by runtime plugin configuration (`use_host_logger` / host logger integration flag in plugin parameters).
 
+Compatibility behavior:
+
+- Structures validates `PluginHostServices.api_version` before enabling host logger callback usage.
+- Supported host-services API version: `1`.
+- On mismatch, Structures emits a warning and falls back to local plugin logging (host logger disabled for the plugin).
+
 ## Notes
 
 - `StructuresModule::computeStructuralForce(...)` and `computeStructuralTorque(...)` currently contain temporary damping templates in module code, but `plugin_tick` currently emits neutral outputs.

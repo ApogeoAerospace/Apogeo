@@ -10,8 +10,8 @@
   - `double delta_time`
   - `PluginVector3* output_force`
   - `PluginVector3* output_torque`
-  - `PluginVector3* force_out` (deprecated compatibility)
-  - `PluginVector3* torque_out` (deprecated compatibility)
+  - `PluginVector3* force_out`
+  - `PluginVector3* torque_out`
 - `PluginLogLevel`:
   - `PLUGIN_LOG_DEBUG`
   - `PLUGIN_LOG_INFO`
@@ -51,6 +51,8 @@
 - If a plugin does not implement `plugin_set_host_services`, it remains compatible.
 - If `use_host_logger` is not enabled for a plugin, no services are injected and plugin may use local fallback.
 - This integration preserves modular boundaries: C contract in `plugin_api.h` with no direct `Logger.h` dependency inside plugins.
+- Plugins should validate `PluginHostServices.api_version` before consuming host callbacks.
+- Current `structures` plugin behavior: if host `api_version` is incompatible, it emits a warning and falls back to local plugin logging (host services disabled for that plugin instance).
 
 ---
 
