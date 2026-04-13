@@ -21,6 +21,7 @@ Compatibility aliases are accepted:
 Notes:
 
 - The parser currently routes commands by `name`/`command` fields.
+- Every command must include a non-empty request identifier in `id` or `request_id`.
 - `type` is recommended to be `"command"` for forward compatibility, but is not strictly enforced by the current parser.
 
 ## Responses

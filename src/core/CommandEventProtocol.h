@@ -33,7 +33,26 @@ inline bool parseCommandJsonLine(const std::string& line, ParsedCommand& out, st
         }
 
         out.command = has_command ? json["command"].get<std::string>() : json["name"].get<std::string>();
-        out.request_id = json.value("request_id", json.value("id", ""));
+
+        // Request/response correlation requires a non-empty request identifier.
+        const bool has_request_id = json.contains("request_id");
+        const bool has_id = json.contains("id");
+        if (!has_request_id && !has_id) {
+            if (error) {
+                *error = "Missing required 'request_id' or 'id' field";
+            }
+            return false;
+        }
+
+        const auto& request_id_json = has_request_id ? json["request_id"] : json["id"];
+        if (!request_id_json.is_string() || request_id_json.get<std::string>().empty()) {
+            if (error) {
+                *error = "Field 'request_id' or 'id' must be a non-empty string";
+            }
+            return false;
+        }
+
+        out.request_id = request_id_json.get<std::string>();
         out.payload = json.value("payload", nlohmann::json::object());
 
         return true;

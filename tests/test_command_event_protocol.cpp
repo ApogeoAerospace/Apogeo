@@ -21,6 +21,14 @@ TEST(CommandEventProtocolTest, ParseCommandJsonLineValidAndInvalid) {
     EXPECT_TRUE(parseCommandJsonLine(compat, command, &error));
     EXPECT_EQ(command.command, "get_status");
     EXPECT_EQ(command.request_id, "req-3");
+
+    const std::string missing_request_id = R"({"type":"command","name":"get_status"})";
+    EXPECT_FALSE(parseCommandJsonLine(missing_request_id, command, &error));
+    EXPECT_FALSE(error.empty());
+
+    const std::string empty_request_id = R"({"type":"command","name":"get_status","id":""})";
+    EXPECT_FALSE(parseCommandJsonLine(empty_request_id, command, &error));
+    EXPECT_FALSE(error.empty());
 }
 
 TEST(CommandEventProtocolTest, BuildAckErrorAndEventJson) {
