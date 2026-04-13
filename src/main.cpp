@@ -122,8 +122,11 @@ int main(int argc, char* argv[]) {
 
     // Load configuration once during bootstrap.
     // `SimulationEngine::initialize_from_loaded_config()` consumes this loaded state.
+    // ConfigManager is data-focused (load/parse/validate) and does not own
+    // logger runtime bootstrap side effects on successful load.
     auto& config_manager = MoLab::ConfigManager::getInstance();
-    if (!config_manager.loadConfig(config_file)) {
+    const bool config_loaded = config_manager.loadConfig(config_file);
+    if (!config_loaded) {
         // Defaults are already applied by ConfigManager when file is missing/invalid.
     }
 
@@ -142,7 +145,14 @@ int main(int argc, char* argv[]) {
         log_level = sim_config.log_level;
     }
 
+    // Centralized logger bootstrap policy (single source of side effects).
     MoLab::applyLogLevel(logger, log_level);
+
+    if (config_loaded) {
+        LOG_INFO("Configuration loaded successfully", "Main");
+    } else {
+        LOG_WARNING("Configuration file missing/invalid. Using defaults.", "Main");
+    }
 
     try {
         MoLab::SimulationEngine engine;

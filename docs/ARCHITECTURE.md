@@ -16,6 +16,8 @@
 1. `main.cpp` processes command-line options.
 2. `main.cpp` loads configuration once through `ConfigManager::loadConfig()`.
 3. Logger bootstrap is applied from loaded config (level, file, `logging.console_output`, `logging.file_output`).
+   - Ownership is in `main.cpp` (single source of runtime side effects).
+   - `ConfigManager` remains focused on config data loading/validation.
 4. `SimulationEngine::initialize_with_config()` consumes preloaded config.
 5. `ConfigManager` parses:
    - `simulation`
@@ -51,3 +53,5 @@ Optional control path:
 - `Logger` provides an optional structured sink callback via `setStructuredSink(...)`.
   - The callback receives `(LogLevel, message, component)` for each emitted log event.
   - If no sink is configured, console/file logging only is used.
+- `ConfigManager::logLoadFailure(...)` is a deliberate failure-path diagnostic exception,
+  used to surface config load errors when bootstrap cannot rely on loaded settings.

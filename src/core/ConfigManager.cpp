@@ -69,16 +69,9 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
         }
 
         config_loaded_ = true;
-        auto& logger = Logger::getInstance();
-        logger.setConsoleOutputEnabled(simulation_config_.console_output);
-        if (simulation_config_.file_output) {
-            if (!simulation_config_.log_file.empty()) {
-                logger.setLogFile(simulation_config_.log_file);
-            }
-        } else {
-            logger.closeLogFile();
-        }
-        LOG_INFO("Configuration loaded successfully", "ConfigManager");
+        // Intentionally no runtime side effects here.
+        // Logger bootstrap (console/file/level) is owned by main.cpp so
+        // ConfigManager stays focused on load/parse/validate responsibilities.
         return true;
 
     } catch (const std::exception& e) {

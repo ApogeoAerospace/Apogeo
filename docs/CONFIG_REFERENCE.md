@@ -4,7 +4,9 @@ This document defines the intended behavior of each configuration variable in
 `data/defaults/default_config.json`.
 
 Configuration is loaded once during bootstrap in `main.cpp` and then consumed by runtime components through `ConfigManager`.
-`ConfigManager` remains silent until load success. If loading fails, it forces full logging and emits detailed diagnostics.
+`ConfigManager` is responsible for loading/parsing/validation and exposing config data.
+Logger runtime bootstrap policy is applied in `main.cpp` from loaded values.
+If loading fails, `ConfigManager` falls back to defaults and emits detailed failure diagnostics.
 Parse/validation errors include detailed failure reasons.
 
 ## Root Structure

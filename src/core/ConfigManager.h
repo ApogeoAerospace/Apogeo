@@ -47,6 +47,9 @@ struct SimulationConfig {
  *
  * Implements a singleton pattern to load, validate, and expose
  * simulation parameters, plugins, and auxiliary paths.
+ *
+ * Runtime bootstrap side effects (for example logger setup) are handled
+ * outside this class by the application entrypoint.
  */
 class ConfigManager {
 public:
