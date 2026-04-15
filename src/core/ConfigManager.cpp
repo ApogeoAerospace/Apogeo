@@ -1,40 +1,53 @@
 #include "ConfigManager.h"
+#include "ConfigManager.h"
 #include "Logger.h"
 #include <fstream>
 #include <iostream>
 
 /**
  * @file ConfigManager.cpp
- * @brief Implementación del gestor de configuración de MoLab.
+ * @brief Implementation of the MoLab configuration manager.
  */
 
 namespace MoLab {
+
+ConfigManager::ConfigManager() {
+    setDefaults();
+    config_loaded_ = false;
+}
 
 bool ConfigManager::loadConfig(const std::string& config_file) {
     try {
         std::ifstream file(config_file);
         if (!file.is_open()) {
-            // Archivo inexistente: usar valores por defecto y continuar
-            LOG_WARNING("Config file not found, using defaults: " + config_file, "ConfigManager");
+            // Use default values.
             setDefaults();
-            return false; // Se aplican defaults, pero no se cargó archivo
+            config_loaded_ = false;
+            logLoadFailure("Config file not found, using defaults: " + config_file);
+            return false; // Defaults are applied, but no file was loaded
         }
 
         nlohmann::json config_json;
         file >> config_json;
         file.close();
 
-        LOG_INFO("Loading configuration from: " + config_file, "ConfigManager");
+        std::string error_detail;
 
-        // Parsear secciones principales
-        if (!parseSimulationConfig(config_json)) {
+        // Parse main sections
+        if (!parseSimulationConfig(config_json, error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Failed to parse simulation config: " + error_detail + ". Using defaults");
             return false;
         }
-        if (!parsePluginConfigs(config_json)) {
+        if (!parsePluginConfigs(config_json, error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Failed to parse plugin config: " + error_detail + ". Using defaults");
             return false;
         }
 
-        // Rutas de archivos
+        // File paths
         if (config_json.contains("initial_state_file")) {
             initial_state_file_ = config_json["initial_state_file"];
         } else {
@@ -47,19 +60,25 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             output_directory_ = "output/";
         }
 
-        // Validar coherencia general
-        if (!validateConfig()) {
-            LOG_ERROR("Configuration validation failed", "ConfigManager");
+        // Validate overall consistency
+        if (!validateConfig(error_detail)) {
+            setDefaults();
+            config_loaded_ = false;
+            logLoadFailure("Configuration validation failed: " + error_detail + ". Using defaults");
             return false;
         }
 
-        LOG_INFO("Configuration loaded successfully", "ConfigManager");
+        config_loaded_ = true;
+        // Intentionally no runtime side effects here.
+        // Logger bootstrap (console/file/level) is owned by main.cpp so
+        // ConfigManager stays focused on load/parse/validate responsibilities.
         return true;
 
     } catch (const std::exception& e) {
-        // Falla al leer o parsear: usar defaults como fallback
-        LOG_ERROR("Error loading config: " + std::string(e.what()), "ConfigManager");
+        // Read/parse failure: use defaults as fallback
         setDefaults();
+        config_loaded_ = false;
+        logLoadFailure("Error loading config: " + std::string(e.what()));
         return false;
     }
 }
@@ -68,14 +87,18 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
     try {
         nlohmann::json config_json;
 
-        // Configuración de simulación
+        // Simulation configuration
         config_json["simulation"]["duration"] = simulation_config_.simulation_duration;
         config_json["simulation"]["max_iterations"] = simulation_config_.max_iterations;
         config_json["simulation"]["enable_logging"] = simulation_config_.enable_logging;
         config_json["simulation"]["log_file"] = simulation_config_.log_file;
         config_json["simulation"]["log_level"] = simulation_config_.log_level;
+        config_json["ipc"]["tick_event_interval"] = simulation_config_.ipc_tick_event_interval;
+        config_json["ipc"]["telemetry_interval_ticks"] = simulation_config_.ipc_telemetry_interval_ticks;
+        config_json["logging"]["console_output"] = simulation_config_.console_output;
+        config_json["logging"]["file_output"] = simulation_config_.file_output;
 
-        // Configuración de plugins
+        // Plugin configuration
         for (const auto& plugin : plugin_configs_) {
             nlohmann::json plugin_json;
             plugin_json["name"] = plugin.name;
@@ -86,7 +109,7 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
             config_json["plugins"].push_back(plugin_json);
         }
 
-        // Rutas de archivos
+        // File paths
         config_json["initial_state_file"] = initial_state_file_;
         config_json["output_directory"] = output_directory_;
 
@@ -109,24 +132,28 @@ bool ConfigManager::saveConfig(const std::string& config_file) const {
 }
 
 void ConfigManager::setDefaults() {
-    // Valores por defecto de simulación
+    // Default simulation values
     simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
     simulation_config_.log_file = "logs/molab.log";
     simulation_config_.log_level = "INFO";
+    simulation_config_.console_output = true;
+    simulation_config_.file_output = true;
+    simulation_config_.ipc_tick_event_interval = 50;
+    simulation_config_.ipc_telemetry_interval_ticks = 5;
 
-    // Limpiar configuración de plugins
+    // Clear plugin configuration
     plugin_configs_.clear();
 
-    // Rutas por defecto
+    // Default paths
     initial_state_file_ = "data/default_state.json";
     output_directory_ = "output/";
 
-    LOG_INFO("Using default configuration", "ConfigManager");
+    // No ConfigManager logs before load.
 }
 
-bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
+bool ConfigManager::parseSimulationConfig(const nlohmann::json& json, std::string& error_detail) {
     try {
         if (json.contains("simulation")) {
             const auto& sim = json["simulation"];
@@ -136,21 +163,38 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json) {
             simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
-            // Si no hay sección, usar defaults
+            // If section is missing, use defaults
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
             simulation_config_.log_file = "logs/molab.log";
             simulation_config_.log_level = "INFO";
         }
+
+        if (json.contains("logging") && json["logging"].is_object()) {
+            simulation_config_.console_output = json["logging"].value("console_output", true);
+            simulation_config_.file_output = json["logging"].value("file_output", true);
+        } else {
+            simulation_config_.console_output = true;
+            simulation_config_.file_output = true;
+        }
+
+        if (json.contains("ipc") && json["ipc"].is_object()) {
+            simulation_config_.ipc_tick_event_interval = json["ipc"].value("tick_event_interval", 50);
+            simulation_config_.ipc_telemetry_interval_ticks = json["ipc"].value("telemetry_interval_ticks", 5);
+        } else {
+            simulation_config_.ipc_tick_event_interval = 50;
+            simulation_config_.ipc_telemetry_interval_ticks = 5;
+        }
+
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing simulation config: " + std::string(e.what()), "ConfigManager");
+        error_detail = e.what();
         return false;
     }
 }
 
-bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
+bool ConfigManager::parsePluginConfigs(const nlohmann::json& json, std::string& error_detail) {
     try {
         plugin_configs_.clear();
 
@@ -166,7 +210,7 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
                     plugin.parameters = plugin_json["parameters"];
                 }
 
-                // Solo agregar si hay nombre y ruta válida
+                // Add only if name and valid path are present
                 if (!plugin.name.empty() && !plugin.library_path.empty()) {
                     plugin_configs_.push_back(plugin);
                 }
@@ -175,42 +219,66 @@ bool ConfigManager::parsePluginConfigs(const nlohmann::json& json) {
 
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR("Error parsing plugin configs: " + std::string(e.what()), "ConfigManager");
+        error_detail = e.what();
         return false;
     }
 }
 
-bool ConfigManager::validateConfig() const {
-    // Validación básica de simulación
+bool ConfigManager::validateConfig(std::string& error_detail) const {
+    // Basic simulation validation
     if (simulation_config_.simulation_duration <= 0) {
-        LOG_ERROR("Invalid simulation duration: must be positive", "ConfigManager");
+        error_detail = "simulation.duration must be positive (got " + std::to_string(simulation_config_.simulation_duration) + ")";
         return false;
     }
 
     if (simulation_config_.max_iterations <= 0) {
-        LOG_ERROR("Invalid max iterations: must be positive", "ConfigManager");
+        error_detail = "simulation.max_iterations must be positive (got " + std::to_string(simulation_config_.max_iterations) + ")";
         return false;
     }
 
-    // Validación de plugins
+    if (simulation_config_.ipc_tick_event_interval <= 0) {
+        error_detail = "ipc.tick_event_interval must be positive (got " + std::to_string(simulation_config_.ipc_tick_event_interval) + ")";
+        return false;
+    }
+
+    if (simulation_config_.ipc_telemetry_interval_ticks <= 0) {
+        error_detail = "ipc.telemetry_interval_ticks must be positive (got " + std::to_string(simulation_config_.ipc_telemetry_interval_ticks) + ")";
+        return false;
+    }
+
+    // Plugin validation
     for (const auto& plugin : plugin_configs_) {
         if (plugin.name.empty()) {
-            LOG_ERROR("Plugin name cannot be empty", "ConfigManager");
+            error_detail = "plugin name cannot be empty";
             return false;
         }
 
         if (plugin.library_path.empty()) {
-            LOG_ERROR("Plugin library path cannot be empty for: " + plugin.name, "ConfigManager");
+            error_detail = "plugin library_path cannot be empty";
             return false;
         }
 
         if (plugin.type < 0 || plugin.type > 1) {
-            LOG_ERROR("Invalid plugin type for " + plugin.name + ": must be 0 or 1", "ConfigManager");
+            error_detail = "plugin type must be 0 or 1 (got " + std::to_string(plugin.type) + ")";
             return false;
         }
     }
 
     return true;
+}
+
+void ConfigManager::logLoadFailure(const std::string& message) {
+    auto& logger = Logger::getInstance();
+
+    // On configuration load failure, force full logger visibility so diagnostics
+    // are not lost even if console output was disabled in previous runtime state.
+    logger.setConsoleOutputEnabled(true);
+    logger.setLogLevel(LogLevel::DEBUG);
+    if (!simulation_config_.log_file.empty()) {
+        logger.setLogFile(simulation_config_.log_file);
+    }
+
+    logger.error(message, "ConfigManager");
 }
 
 } // namespace MoLab

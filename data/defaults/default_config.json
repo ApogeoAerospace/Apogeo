@@ -10,9 +10,10 @@
         {
             "name": "example_plugin",
             "type": 0,
-            "library_path": "build/lib/example_plugin",
-            "enabled": true,
+            "library_path": "plugins/example_plugin",
+            "enabled": false,
             "parameters": {
+                "use_host_logger": false,
                 "step_size": 1.0,
                 "debug_output": false
             }
@@ -20,9 +21,10 @@
         {
             "name": "structures",
             "type": 1,
-            "library_path": "structures",
+            "library_path": "plugins/structures",
             "enabled": true,
             "parameters": {
+                "use_host_logger": true,
                 "debug_output": true
             }
         }
@@ -35,6 +37,10 @@
         "log_rotation": true,
         "max_file_size_mb": 100,
         "max_files": 5
+    },
+    "ipc": {
+        "tick_event_interval": 50,
+        "telemetry_interval_ticks": 5
     },
     "performance": {
         "enable_metrics": true,

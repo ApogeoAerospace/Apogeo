@@ -1,5 +1,5 @@
 ---
-# Configuración de clang-tidy para MoLab
+# clang-tidy configuration for MoLab
 Checks: >
   -*,
   bugprone-*,

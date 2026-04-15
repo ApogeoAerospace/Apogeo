@@ -5,7 +5,7 @@
 
 /**
  * @file test_time_manager.cpp
- * @brief Pruebas unitarias para `TimeManager`.
+ * @brief Unit tests for `TimeManager`.
  */
 
 using namespace MoLab;
@@ -19,7 +19,7 @@ protected:
     }
 
     void TearDown() override {
-        // Resetear después de cada test
+    // Reset after each test
         auto& tm = TimeManager::getInstance();
         tm.reset();
     }
@@ -29,14 +29,14 @@ TEST_F(TimeManagerTest, GetSingletonInstance) {
     auto& tm1 = TimeManager::getInstance();
     auto& tm2 = TimeManager::getInstance();
 
-    // Ambas referencias deben apuntar al mismo objeto
+    // Both references should point to the same object
     EXPECT_EQ(&tm1, &tm2);
 }
 
 TEST_F(TimeManagerTest, InitialSimulationTime) {
     auto& time_manager = TimeManager::getInstance();
 
-    // El tiempo de simulación inicial debe ser 0 después del reset
+    // Initial simulation time should be 0 after reset
     double sim_time = time_manager.getSimulationTime();
     EXPECT_DOUBLE_EQ(sim_time, 0.0);
 }
@@ -44,7 +44,7 @@ TEST_F(TimeManagerTest, InitialSimulationTime) {
 TEST_F(TimeManagerTest, UpdateSimulationTime) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Avanzar el tiempo de simulación
+    // Advance simulation time
     double dt = 0.01;
     time_manager.updateSimulationTime(dt);
 
@@ -55,7 +55,7 @@ TEST_F(TimeManagerTest, UpdateSimulationTime) {
 TEST_F(TimeManagerTest, MultipleUpdates) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Múltiples avances de tiempo
+    // Multiple time advances
     double dt = 0.01;
     for (int i = 0; i < 100; ++i) {
         time_manager.updateSimulationTime(dt);
@@ -68,7 +68,7 @@ TEST_F(TimeManagerTest, MultipleUpdates) {
 TEST_F(TimeManagerTest, ResetTime) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Avanzar y luego resetear
+    // Advance and then reset
     time_manager.updateSimulationTime(10.0);
     time_manager.reset();
 
@@ -79,7 +79,7 @@ TEST_F(TimeManagerTest, ResetTime) {
 TEST_F(TimeManagerTest, SetSimulationTime) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Establecer tiempo directamente
+    // Set time directly
     time_manager.setSimulationTime(5.5);
 
     double sim_time = time_manager.getSimulationTime();
@@ -89,7 +89,7 @@ TEST_F(TimeManagerTest, SetSimulationTime) {
 TEST_F(TimeManagerTest, TimeStepConsistency) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Verificar consistencia en múltiples pasos
+    // Verify consistency across multiple steps
     double dt = 0.02;
     double expected_time = 0.0;
 
@@ -105,7 +105,7 @@ TEST_F(TimeManagerTest, TimeStepConsistency) {
 TEST_F(TimeManagerTest, InitializeWithCustomTime) {
     auto& time_manager = TimeManager::getInstance();
 
-    // Inicializar con tiempo UTC personalizado
+    // Initialize with custom UTC time
     double custom_utc = 1000.0;
     double custom_sim = 0.0;
     time_manager.initialize(custom_utc, custom_sim);
@@ -118,10 +118,10 @@ TEST_F(TimeManagerTest, GetCurrentUTC) {
     auto& time_manager = TimeManager::getInstance();
     time_manager.initialize();
 
-    // Avanzar simulación
+    // Advance simulation
     time_manager.updateSimulationTime(10.0);
 
-    // UTC actual debe ser UTC inicial + tiempo de simulación
+    // Current UTC should be initial UTC + simulation time
     double expected_utc = time_manager.getStartUTC() + 10.0;
     EXPECT_NEAR(time_manager.getCurrentUTC(), expected_utc, 0.001);
 }
@@ -130,7 +130,7 @@ TEST_F(TimeManagerTest, SimulationTimeToUTC) {
     auto& time_manager = TimeManager::getInstance();
     time_manager.initialize(1000.0, 0.0);
 
-    // Convertir tiempo de simulación a UTC
+    // Convert simulation time to UTC
     double sim_time = 50.0;
     double utc_time = time_manager.simulationTimeToUTC(sim_time);
 
@@ -141,7 +141,7 @@ TEST_F(TimeManagerTest, UTCToSimulationTime) {
     auto& time_manager = TimeManager::getInstance();
     time_manager.initialize(1000.0, 0.0);
 
-    // Convertir UTC a tiempo de simulación
+    // Convert UTC to simulation time
     double utc_time = 1050.0;
     double sim_time = time_manager.utcToSimulationTime(utc_time);
 
@@ -152,7 +152,7 @@ TEST_F(TimeManagerTest, GetCurrentUTCString) {
     auto& time_manager = TimeManager::getInstance();
     time_manager.initialize();
 
-    // Debe retornar un string no vacío
+    // Should return a non-empty string
     std::string utc_string = time_manager.getCurrentUTCString();
     EXPECT_FALSE(utc_string.empty());
 }

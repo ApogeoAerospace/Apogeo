@@ -1,16 +1,16 @@
-# Pruebas unitarias
+# Unit tests
 
-Este directorio contiene pruebas unitarias del proyecto, implementadas con Google Test.
+This directory contains project unit tests implemented with Google Test.
 
-## Objetivo
+## Objective
 
-- Validar comportamiento del núcleo (`core`).
-- Detectar regresiones funcionales en cambios de código.
-- Facilitar validación automática en CI.
+- Validate core (`core`) behavior.
+- Detect functional regressions across code changes.
+- Support automated CI validation.
 
-## Alcance
+## Scope
 
-Actualmente existen pruebas para componentes como:
+Tests currently cover components such as:
 
 - `ConfigManager`
 - `InitialStateLoader`
@@ -20,7 +20,7 @@ Actualmente existen pruebas para componentes como:
 - `SimulationEngine`
 - `TimeManager`
 
-## Ejecución local
+## Local execution
 
 ```bash
 cmake -B build -S . \
@@ -32,7 +32,7 @@ cd build
 ctest --output-on-failure --verbose
 ```
 
-## Ejecución de un grupo específico
+## Running a specific group
 
 ```bash
 ./bin/core_tests --gtest_filter=ConfigManagerTest.*
@@ -40,14 +40,14 @@ ctest --output-on-failure --verbose
 ./bin/core_tests --gtest_filter=TimeManagerTest.*
 ```
 
-## Buenas prácticas
+## Best practices
 
-- Usar el patrón `Arrange-Act-Assert`.
-- Mantener pruebas deterministas y aisladas.
-- Evitar dependencias de estado compartido sin reinicio explícito.
-- Preferir nombres de test descriptivos y orientados a comportamiento.
+- Use the `Arrange-Act-Assert` pattern.
+- Keep tests deterministic and isolated.
+- Avoid shared-state dependencies without explicit reset.
+- Prefer descriptive, behavior-oriented test names.
 
-## Documentos relacionados
+## Related documents
 
 - `tests/TESTING_BEST_PRACTICES.md`
-- `.github/workflows/` (ejecución automática en CI)
+- `.github/workflows/` (automatic CI execution)

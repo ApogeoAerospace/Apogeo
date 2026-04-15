@@ -1,15 +1,15 @@
-# 📊 Resumen Visual del CI Pipeline
+# 📊 Visual CI Pipeline Summary
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    MoLab CI Pipeline                            │
-│                  (6 Jobs en Paralelo)                           │
+│                    (6 Jobs in Parallel)                         │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
 │  build-and-test  │  │  code-quality    │  │  unit-tests      │
 │                  │  │                  │  │                  │
-│ • Ubuntu         │  │ • Formato        │  │ • Google Test    │
+│ • Ubuntu         │  │ • Formatting     │  │ • Google Test    │
 │ • macOS          │  │ • JSON           │  │ • CTest          │
 │ • C++17          │  │ • FlatBuffers    │  │ • 3 test suites  │
 │ • vcpkg          │  │                  │  │                  │
@@ -22,45 +22,45 @@
 ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
 │ integration-test │  │  code-coverage   │  │ static-analysis  │
 │                  │  │                  │  │                  │
-│ • Simulación     │  │ • lcov           │  │ • clang-tidy     │
-│ • basic_config   │  │ • genhtml        │  │ • 7 categorías   │
+│ • Simulation     │  │ • lcov           │  │ • clang-tidy     │
+│ • basic_config   │  │ • genhtml        │  │ • 7 categorias   │
 │ • 10 ticks       │  │ • HTML report    │  │ • compile_cmds   │
-│ • Output verify  │  │ • 30 días        │  │ • Error detect   │
+│ • Output verify  │  │ • 30 days        │  │ • Error detect   │
 └──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
-## 🎯 Flujo de Ejecución
+## 🎯 Execution Flow
 
-### Fase 1: Compilación y Validación Básica (Paralelo)
+### Phase 1: Build and Basic Validation (Parallel)
 ```
 [build-and-test] ──┐
-                   ├──> Artefactos: binarios
+                   ├──> Artifacts: binaries
 [code-quality]  ───┤
-                   └──> Validación: formato, JSON
+                   └──> Validation: formatting, JSON
 [unit-tests]    ───┐
                    └──> Tests: Google Test
 ```
 
-### Fase 2: Tests Avanzados (Paralelo, algunos dependen de Fase 1)
+### Phase 2: Advanced Tests (Parallel, some depend on Phase 1)
 ```
-[integration-test] ──> Usa artefactos de build-and-test
-[code-coverage]    ──> Independiente, genera reporte HTML
-[static-analysis]  ──> Independiente, genera reporte TXT
+[integration-test] ──> Uses build-and-test artifacts
+[code-coverage]    ──> Independent, generates HTML report
+[static-analysis]  ──> Independent, generates TXT report
 ```
 
-## 📦 Artefactos Generados
+## 📦 Generated Artifacts
 
-| Artefacto | Job | Retención | Contenido |
+| Artifact | Job | Retention | Content |
 |-----------|-----|-----------|-----------|
-| `molab-build-ubuntu-latest` | build-and-test | 7 días | Binarios Linux |
-| `molab-build-macos-latest` | build-and-test | 7 días | Binarios macOS |
-| `test-results` | unit-tests | 7 días | Resultados XML de tests |
-| `coverage-report` | code-coverage | 30 días | Reporte HTML de cobertura |
-| `static-analysis-report` | static-analysis | 30 días | Reporte TXT de clang-tidy |
+| `molab-build-ubuntu-latest` | build-and-test | 7 days | Linux binaries |
+| `molab-build-macos-latest` | build-and-test | 7 days | macOS binaries |
+| `test-results` | unit-tests | 7 days | XML test results |
+| `coverage-report` | code-coverage | 30 days | HTML coverage report |
+| `static-analysis-report` | static-analysis | 30 days | clang-tidy TXT report |
 
-## ⏱️ Tiempo Estimado de Ejecución
+## ⏱️ Estimated Execution Time
 
-| Job | Duración Aproximada |
+| Job | Approximate Duration |
 |-----|---------------------|
 | build-and-test (Ubuntu) | ~8-12 min |
 | build-and-test (macOS) | ~10-15 min |
@@ -70,90 +70,90 @@
 | code-coverage | ~8-10 min |
 | static-analysis | ~5-7 min |
 
-**Total (paralelo)**: ~15-20 minutos
+**Total (parallel)**: ~15-20 minutes
 
-## 🔍 Qué se Valida en Cada Job
+## 🔍 What Is Validated in Each Job
 
 ### ✅ build-and-test
-- [x] Compilación exitosa en Ubuntu y macOS
-- [x] Generación de binario `simulator`
-- [x] Compilación de 6 plugins dinámicos
-- [x] Generación de FlatBuffers schemas
-- [x] Sintaxis de scripts Python
+- [x] Successful build on Ubuntu and macOS
+- [x] `simulator` binary generation
+- [x] Build of 6 dynamic plugins
+- [x] FlatBuffers schema generation
+- [x] Python script syntax validation
 
 ### ✅ code-quality
-- [x] Sin espacios en blanco al final de líneas
-- [x] Todos los JSON bien formados
-- [x] Esquemas FlatBuffers presentes
+- [x] No trailing whitespace at end of lines
+- [x] All JSON files well-formed
+- [x] FlatBuffers schemas present
 
 ### ✅ integration-test
-- [x] Simulación ejecutable con config real
-- [x] Generación de archivos de output
-- [x] Generación de logs
+- [x] Executable simulation with real config
+- [x] Output file generation
+- [x] Log generation
 
 ### ✅ unit-tests
 - [x] ConfigManager: 5 tests
 - [x] PhysicsIntegrator: 5 tests
 - [x] TimeManager: 6 tests
-- [x] Total: 16 tests unitarios
+- [x] Total: 16 unit tests
 
 ### ✅ code-coverage
-- [x] Cobertura de líneas
-- [x] Cobertura de funciones
-- [x] Cobertura de branches
-- [x] Reporte HTML navegable
+- [x] Line coverage
+- [x] Function coverage
+- [x] Branch coverage
+- [x] Navigable HTML report
 
 ### ✅ static-analysis
-- [x] Detección de bugs potenciales
-- [x] Violaciones de C++ Core Guidelines
+- [x] Potential bug detection
+- [x] C++ Core Guidelines violations
 - [x] Code smells
-- [x] Sugerencias de modernización
-- [x] Problemas de rendimiento
+- [x] Modernization suggestions
+- [x] Performance issues
 
-## 🚦 Criterios de Éxito
+## 🚦 Success Criteria
 
-El pipeline **PASA** si:
-- ✅ Todos los builds compilan sin errores
-- ✅ Todos los tests unitarios pasan
-- ✅ No hay errores críticos en análisis estático
-- ✅ Archivos JSON son válidos
-- ✅ Simulación de integración se ejecuta
+The pipeline **PASSES** if:
+- ✅ All builds compile without errors
+- ✅ All unit tests pass
+- ✅ No critical errors in static analysis
+- ✅ JSON files are valid
+- ✅ Integration simulation runs
 
-El pipeline **FALLA** si:
-- ❌ Falla compilación en cualquier plataforma
-- ❌ Algún test unitario falla
-- ❌ clang-tidy reporta errores críticos
-- ❌ JSON malformados
-- ❌ Espacios en blanco al final de líneas
+The pipeline **FAILS** if:
+- ❌ Build fails on any platform
+- ❌ Any unit test fails
+- ❌ clang-tidy reports critical errors
+- ❌ Malformed JSON files
+- ❌ Trailing whitespace is found
 
-## 📈 Métricas de Calidad
+## 📈 Quality Metrics
 
-### Cobertura de Código (Objetivo)
-- **Líneas**: ≥ 70%
-- **Funciones**: ≥ 75%
+### Code Coverage (Target)
+- **Lines**: ≥ 70%
+- **Functions**: ≥ 75%
 - **Branches**: ≥ 60%
 
-### Complejidad (Límites)
-- **Complejidad ciclomática**: ≤ 15 por función
-- **Complejidad cognitiva**: ≤ 50 por función
-- **Líneas por función**: ≤ 100
+### Complexity (Limits)
+- **Cyclomatic complexity**: ≤ 15 per function
+- **Cognitive complexity**: ≤ 50 per function
+- **Lines per function**: ≤ 100
 
-### Análisis Estático
-- **Errores críticos**: 0
-- **Advertencias**: Minimizar
-- **Code smells**: Revisar y corregir
+### Static Analysis
+- **Critical errors**: 0
+- **Warnings**: Minimize
+- **Code smells**: Review and fix
 
-## 🔧 Comandos Rápidos
+## 🔧 Quick Commands
 
-### Ver estado del CI:
+### View CI status:
 ```bash
-# En GitHub
+# On GitHub
 https://github.com/tu-usuario/MoLab/actions
 ```
 
-### Ejecutar localmente (equivalente al CI):
+### Run locally (CI equivalent):
 ```bash
-# Build completo
+# Full build
 cmake -B build -S . \
   -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake \
   -DENABLE_TESTING=ON \
@@ -165,25 +165,25 @@ cmake --build build --parallel
 # Tests
 cd build && ctest --output-on-failure
 
-# Cobertura
+# Coverage
 lcov --capture --directory . --output-file coverage.info
 lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' -o coverage_filtered.info
 genhtml coverage_filtered.info -o coverage_html
 
-# Análisis estático
+# Static analysis
 find core src -name '*.cpp' | xargs clang-tidy -p build
 ```
 
-## 📊 Dashboard de CI
+## 📊 CI Dashboard
 
-Después de cada ejecución, revisa:
+After each execution, review:
 
-1. **Actions Tab** → Estado general
-2. **Artifacts** → Descarga reportes
-3. **Coverage Report** → Visualiza cobertura
-4. **Static Analysis** → Revisa advertencias
+1. **Actions Tab** → Overall status
+2. **Artifacts** → Download reports
+3. **Coverage Report** → Review coverage
+4. **Static Analysis** → Review warnings
 
-## 🎓 Recursos
+## 🎓 Resources
 
 - [GitHub Actions Docs](https://docs.github.com/en/actions)
 - [Google Test Docs](https://google.github.io/googletest/)

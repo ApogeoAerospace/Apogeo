@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../src/api/plugin_api.h"
+#include "plugin_api.h"
 #include "state_vector_generated.h"
 
 #include <string>
@@ -30,22 +30,21 @@ struct StructuralLimits {
 };
 
 /**
- * @brief Dominio del modulo Structures: datos de masa, limites y calculo estructural.
+ * @brief Structures module domain: mass data, limits, and structural calculations.
  */
 class StructuresModule {
 public:
     /**
-     * @brief Carga propiedades de masa placeholder para el modulo Structures.
+     * @brief Loads mass properties from JSON.
      *
      * @details
-     * La fuente para masa actual, centro de masa e inercia es el
-     * buffer principal de simulacion. Mientras esa integracion no exista,
-     * se permite esta carga desde JSON como placeholder temporal.
+     * Supports initial mass/fuel mass, center of mass, and inertia tensor
+     * keys used by the current Structures module implementation.
      */
     bool loadMassPropertiesFromJson(const std::string& json_path);
 
     /**
-     * @brief Carga limites estructurales desde CSV.
+     * @brief Loads structural limits from CSV key/value rows.
      */
     bool loadStructuralLimitsFromCsv(const std::string& csv_path);
 
@@ -53,25 +52,25 @@ public:
     InertiaTensorData getInertiaTensor() const;
 
     /**
-     * @brief Verifica limites maximos de integridad estructural.
+     * @brief Checks maximum structural integrity limits.
      */
     bool checkStructuralIntegrity(double dynamic_pressure, double g_force) const;
 
     /**
-     * @brief Calcula la fuerza estructural del tick actual.
+     * @brief Calculates the structural force of the current tick.
      *
-     * @warning La semantica final de salida de torque aun no esta
-     * validado formalmente. Esta salida
-     * se considera temporal y su lógica puede cambiar.
+     * @warning The final semantics of the torque output have not yet been
+     * formally validated. This output
+     * is considered temporary and its logic may change.
      */
     PluginVector3 computeStructuralForce(const state_vector::GeneralState* state) const;
 
     /**
-     * @brief Calcula el torque estructural del tick actual.
+     * @brief Calculates the structural torque of the current tick.
      *
-     * @warning La semantica final de salida de torque aun no esta
-     * validado formalmente.
-     * Esta salida se considera temporal y su lógica puede cambiar.
+     * @warning The final semantics of the torque output have not yet been
+     * formally validated.
+     * This output is considered temporary and its logic may change.
      */
     PluginVector3 computeStructuralTorque(const state_vector::GeneralState* state) const;
 

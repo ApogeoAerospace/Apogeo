@@ -1,19 +1,20 @@
 #include <iostream>
 #include <string>
-#include <filesystem>
+#include <iostream>
 #include "../core/SimulationEngine.h"
 #include "../core/Logger.h"
 #include "../core/ConfigManager.h"
+#include "ipc/IpcSession.h"
 
 /**
  * @file main.cpp
- * @brief Punto de entrada de la aplicación MoLab.
+ * @brief Entry point for the MoLab application.
  */
 
 /**
- * @brief Imprime la ayuda de uso en consola.
+ * @brief Prints usage help to console.
  *
- * @param program_name Nombre del ejecutable invocado.
+ * @param program_name Invoked executable name.
  */
 void print_usage(const char* program_name) {
     std::cout << "Usage: " << program_name << " [options]\n";
@@ -22,6 +23,7 @@ void print_usage(const char* program_name) {
     std::cout << "  -s, --state <file>      Use specified initial state file\n";
     std::cout << "  -t, --ticks <number>    Run specified number of ticks (default: full simulation)\n";
     std::cout << "  -l, --log-level <level> Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) (default: INFO)\n";
+    std::cout << "  --ipc stdio             Enable JSON line IPC mode over stdin/stdout\n";
     std::cout << "  -h, --help              Show this help message\n";
     std::cout << "  --version               Show version information\n";
     std::cout << "\nExamples:\n";
@@ -30,7 +32,7 @@ void print_usage(const char* program_name) {
 }
 
 /**
- * @brief Imprime la versión actual del simulador.
+ * @brief Prints current simulator version.
  */
 void print_version() {
     std::cout << "MoLab Aerospace Simulator v1.0.0\n";
@@ -39,17 +41,19 @@ void print_version() {
 }
 
 /**
- * @brief Ejecuta la inicialización y el ciclo principal del simulador.
+ * @brief Runs simulator initialization and main loop.
  *
- * @param argc Número de argumentos de línea de comandos.
- * @param argv Valores de los argumentos de línea de comandos.
- * @return `0` si la ejecución finaliza correctamente, `1` en caso de error.
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument values.
+ * @return `0` on successful execution, `1` on error.
  */
 int main(int argc, char* argv[]) {
     // Parse command line arguments
     std::string config_file = "data/default_config.json";
     int tick_count = -1; // -1 means run full simulation
     std::string log_level = "INFO";
+    bool log_level_overridden = false;
+    bool ipc_stdio_mode = false;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -86,8 +90,22 @@ int main(int argc, char* argv[]) {
         } else if (arg == "-l" || arg == "--log-level") {
             if (i + 1 < argc) {
                 log_level = argv[++i];
+                log_level_overridden = true;
             } else {
                 std::cerr << "Error: --log-level requires a level\n";
+                return 1;
+            }
+        } else if (arg == "--ipc") {
+            if (i + 1 < argc) {
+                std::string transport = argv[++i];
+                if (transport == "stdio") {
+                    ipc_stdio_mode = true;
+                } else {
+                    std::cerr << "Error: unsupported IPC transport '" << transport << "'\n";
+                    return 1;
+                }
+            } else {
+                std::cerr << "Error: --ipc requires a transport (e.g., stdio)\n";
                 return 1;
             }
         } else {
@@ -97,35 +115,57 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Initialize logging
     auto& logger = MoLab::Logger::getInstance();
-    if (log_level == "DEBUG") {
-        logger.setLogLevel(MoLab::LogLevel::DEBUG);
-    } else if (log_level == "INFO") {
-        logger.setLogLevel(MoLab::LogLevel::INFO);
-    } else if (log_level == "WARNING") {
-        logger.setLogLevel(MoLab::LogLevel::WARNING);
-    } else if (log_level == "ERROR") {
-        logger.setLogLevel(MoLab::LogLevel::ERR);
-    } else if (log_level == "CRITICAL") {
-        logger.setLogLevel(MoLab::LogLevel::CRITICAL);
+    if (ipc_stdio_mode) {
+        logger.setConsoleOutputEnabled(false);
     }
 
-    LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
-    LOG_INFO("Configuration file: " + config_file, "Main");
+    // Load configuration once during bootstrap.
+    // `SimulationEngine::initialize_from_loaded_config()` consumes this loaded state.
+    // ConfigManager is data-focused (load/parse/validate) and does not own
+    // logger runtime bootstrap side effects on successful load.
+    auto& config_manager = MoLab::ConfigManager::getInstance();
+    const bool config_loaded = config_manager.loadConfig(config_file);
+    if (!config_loaded) {
+        // Defaults are already applied by ConfigManager when file is missing/invalid.
+    }
 
-    // Check if config file exists
-    if (!std::filesystem::exists(config_file)) {
-        LOG_WARNING("Configuration file not found: " + config_file, "Main");
-        LOG_INFO("Using default configuration", "Main");
+    const auto& sim_config = config_manager.getSimulationConfig();
+
+    // Initialize logging from loaded config (if ipc mode, disable console output)
+    logger.setConsoleOutputEnabled(ipc_stdio_mode ? false : sim_config.console_output);
+
+    if (sim_config.file_output && !sim_config.log_file.empty()) {
+        logger.setLogFile(sim_config.log_file);
+    } else if (!sim_config.file_output) {
+        logger.closeLogFile();
+    }
+
+    if (!log_level_overridden) {
+        log_level = sim_config.log_level;
+    }
+
+    // Centralized logger bootstrap policy (single source of side effects).
+    MoLab::applyLogLevel(logger, log_level);
+
+    if (config_loaded) {
+        LOG_INFO("Configuration loaded successfully", "Main");
+    } else {
+        LOG_WARNING("Configuration file missing/invalid. Using defaults.", "Main");
     }
 
     try {
-        // Initialize simulation engine
         MoLab::SimulationEngine engine;
 
-        // Initialize with configuration
-        bool init_success = engine.initialize_with_config(config_file);
+        if (ipc_stdio_mode) {
+            return MoLab::runIpcStdioSession(engine, logger);
+        }
+
+        LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
+        LOG_INFO("Configuration file: " + config_file, "Main");
+
+        // Initialize from already loaded configuration
+        bool init_success = engine.initialize_from_loaded_config();
 
         if (!init_success) {
             LOG_CRITICAL("Failed to initialize simulation engine", "Main");
@@ -138,23 +178,25 @@ int main(int argc, char* argv[]) {
         if (tick_count > 0) {
             LOG_INFO("Running " + std::to_string(tick_count) + " simulation ticks", "Main");
 
-            // Determinar frecuencia de progreso basada en total de ticks
-            // Más frecuente para simulaciones largas, menos para cortas
-            int progress_interval;
-            if (tick_count <= 100) {
-                progress_interval = 10;      // Cada 10 ticks para sims cortas
-            } else if (tick_count <= 1000) {
-                progress_interval = 50;      // Cada 50 ticks para sims medianas
-            } else if (tick_count <= 5000) {
-                progress_interval = 100;     // Cada 100 ticks para sims largas
-            } else {
-                progress_interval = 250;     // Cada 250 ticks para sims muy largas
+            const bool debug_progress_logging = (log_level == "DEBUG");
+            int progress_interval = tick_count;
+            if (debug_progress_logging) {
+                // Determine progress frequency based on total ticks
+                // More frequent for long runs, less frequent for short ones
+                if (tick_count <= 100) {
+                    progress_interval = 10;      // Every 10 ticks for short runs
+                } else if (tick_count <= 1000) {
+                    progress_interval = 50;      // Every 50 ticks for medium runs
+                } else if (tick_count <= 5000) {
+                    progress_interval = 100;     // Every 100 ticks for long runs
+                } else {
+                    progress_interval = 250;     // Every 250 ticks for very long runs
+                }
             }
 
             for (int i = 0; i < tick_count; ++i) {
-                // LOGGING DE PROGRESO: Frecuente y simple para interfaz externa
-                if (i % progress_interval == 0 || i == tick_count - 1) {
-                    LOG_INFO("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
+                if (debug_progress_logging && (i % progress_interval == 0 || i == tick_count - 1)) {
+                    LOG_DEBUG("Executing tick " + std::to_string(i + 1) + " of " + std::to_string(tick_count), "Main");
                 }
                 engine.run_tick();
             }

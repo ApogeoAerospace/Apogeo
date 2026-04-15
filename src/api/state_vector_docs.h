@@ -3,23 +3,23 @@
 
 /**
  * @file state_vector_docs.h
- * @brief Documentación Doxygen del modelo de estado serializado con FlatBuffers.
+ * @brief Doxygen documentation for the FlatBuffers-serialized state model.
  */
 
 /**
- * @defgroup StateVectorModel Modelo de Vector de Estado
- * @brief Modelo de datos de estado de simulación serializado con FlatBuffers.
+ * @defgroup StateVectorModel State Vector Model
+ * @brief Simulation-state data model serialized with FlatBuffers.
  *
- * Este grupo documenta los tipos generados desde `src/schemas/state_vector.fbs`
- * y su semántica funcional dentro del núcleo de simulación.
+ * This group documents types generated from `src/schemas/state_vector.fbs`
+ * and their functional semantics inside the simulation core.
  */
 
 /**
  * @namespace state_vector
- * @brief Tipos FlatBuffers que representan el estado global de simulación.
+ * @brief FlatBuffers types representing global simulation state.
  *
- * Este namespace es generado a partir del schema `src/schemas/state_vector.fbs`.
- * Contiene estructuras matemáticas básicas y la tabla raíz `GeneralState`.
+ * This namespace is generated from schema `src/schemas/state_vector.fbs`.
+ * It contains basic mathematical structures and root table `GeneralState`.
  *
  * @ingroup StateVectorModel
  */
@@ -33,36 +33,36 @@ struct Vec3;
 
 /**
  * @struct Quaternion
- * @brief Cuaternión de orientación (x, y, z, w).
+ * @brief Orientation quaternion (x, y, z, w).
  */
 struct Quaternion;
 
 /**
  * @struct InertiaTensor
- * @brief Tensor de inercia del vehículo en su marco de referencia.
+ * @brief Vehicle inertia tensor in its local reference frame.
  */
 struct InertiaTensor;
 
 /**
  * @struct EngineCmd
- * @brief Comando por motor: nivel de aceleración y ángulos TVC.
+ * @brief Per-engine command: throttle level and TVC angles.
  */
 struct EngineCmd;
 
 /**
  * @struct GeneralState
- * @brief Tabla raíz con el estado completo de simulación.
+ * @brief Root table with complete simulation state.
  *
- * Incluye cinemática, dinámica, propiedades aerodinámicas,
- * entorno atmosférico y comandos de actuadores.
+ * Includes kinematics, dynamics, aerodynamic properties,
+ * atmospheric environment, and actuator commands.
  *
- * Campos por sección:
- * - Tiempo e integración: `sim_time`, `dt`
- * - Cinemática: `position`, `velocity`, `orientation`, `angular_velocity`
- * - Dinámica: `total_mass`, `cg_location`, `inertia_tensor`, `propellant_masses`
- * - Aerodinámica: `mach_number`, `dynamic_pressure`, `angle_of_attack`, `sideslip_angle`
- * - Entorno: `atm_density`, `atm_pressure`, `atm_temperature`, `wind_velocity`, `gravity`
- * - Control/actuación: `engines`, `surface_deflections`
+ * Fields by section:
+ * - Time and integration: `sim_time`, `dt`
+ * - Kinematics: `position`, `velocity`, `orientation`, `angular_velocity`
+ * - Dynamics: `total_mass`, `cg_location`, `inertia_tensor`, `propellant_masses`
+ * - Aerodynamics: `mach_number`, `dynamic_pressure`, `angle_of_attack`, `sideslip_angle`
+ * - Environment: `atm_density`, `atm_pressure`, `atm_temperature`, `wind_velocity`, `gravity`
+ * - Control/actuation: `engines`, `surface_deflections`
  */
 struct GeneralState;
 

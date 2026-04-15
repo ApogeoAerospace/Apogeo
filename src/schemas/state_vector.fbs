@@ -1,7 +1,7 @@
 namespace state_vector;
 
 // -----------------------------------------------------------------------
-// Estructuras Auxiliares
+// Auxiliary Structures
 // -----------------------------------------------------------------------
 
 struct Vec3 { 
@@ -27,62 +27,62 @@ struct InertiaTensor {
 }
 
 struct EngineCmd {
-  throttle:float;    // Nivel de empuje
-  tvc_angles:Vec3;   // Ángulos de vectorización local del motor
+  throttle:float;    // Thrust level
+  tvc_angles:Vec3;   // Local engine thrust vectoring angles
 }
 
 // -----------------------------------------------------------------------
-// Tabla Principal
+// Main Table
 // -----------------------------------------------------------------------
 
 table GeneralState {
   // -----------------------------------------------------------------------
-  // 2.1. Estado del Vehículo (Cinemática y Dinámica)
+  // 2.1. Vehicle State (Kinematics and Dynamics)
   // -----------------------------------------------------------------------
   
-  sim_time:float;           // Tiempo actual de la misión
-  dt:float;                 // Paso de tiempo del integrador
+  sim_time:float;           // Current mission time
+  dt:float;                 // Integrator time step
 
-  position:Vec3;            // Coordenadas inerciales
-  velocity:Vec3;            // Vector velocidad lineal
+  position:Vec3;            // Inertial coordinates
+  velocity:Vec3;            // Linear velocity vector
   
-  orientation:Quaternion;   // Actitud
-  angular_velocity:Vec3;    // Tasas de rotación (P, Q, R)
+  orientation:Quaternion;   // Attitude
+  angular_velocity:Vec3;    // Rotation rates (P, Q, R)
 
-  total_mass:float;         // Masa total instantánea
-  cg_location:Vec3;         // Ubicación del Centro de Gravedad
-  inertia_tensor:InertiaTensor; // Tensor de Inercia
+  total_mass:float;         // Instantaneous total mass
+  cg_location:Vec3;         // Center of gravity location
+  inertia_tensor:InertiaTensor; // Inertia tensor
 
-  // Masa de combustible en cada tanque
+  // Fuel mass in each tank
   propellant_masses:[float]; 
 
   // -----------------------------------------------------------------------
-  // 2.2. Estado Aerodinámico (Air Data)
+  // 2.2. Aerodynamic State (Air Data)
   // -----------------------------------------------------------------------
 
-  mach_number:float;        // Número de Mach
-  dynamic_pressure:float;   // Presión dinámica
+  mach_number:float;        // Mach number
+  dynamic_pressure:float;   // Dynamic pressure
 
   angle_of_attack:float;    // Alpha
   sideslip_angle:float;     // Beta
 
   // -----------------------------------------------------------------------
-  // 2.3. Entorno y Control
+  // 2.3. Environment and Control
   // -----------------------------------------------------------------------
 
-  atm_density:float;        // Densidad
-  atm_pressure:float;       // Presión estática
-  atm_temperature:float;    // Temperatura
+  atm_density:float;        // Density
+  atm_pressure:float;       // Static pressure
+  atm_temperature:float;    // Temperature
 
-  wind_velocity:Vec3;       // Vector viento atmosférico
-  gravity:Vec3;             // Vector gravedad local
+  wind_velocity:Vec3;       // Atmospheric wind vector
+  gravity:Vec3;             // Local gravity vector
 
-  // Comandos de Propulsión por motor
-  // Lista de motores, cada uno con su throttle y TVC propio
+  // Propulsion commands per engine
+  // Engine list, each with its own throttle and TVC
   engines:[EngineCmd]; 
 
-  // Deflexión de Superficies de Control
-  // Vector para N superficies
+  // Control surface deflection
+  // Vector for N surfaces
   surface_deflections:[float]; 
 }
 

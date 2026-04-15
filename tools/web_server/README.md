@@ -1,14 +1,14 @@
-# Servidor web de MoLab
+﻿# MoLab Web Server
 
-Módulo backend/frontend para ejecutar simulaciones y visualizar resultados desde navegador.
+Backend/frontend module to run simulations and visualize results from a browser.
 
-## Propósito
+## Purpose
 
-- Exponer endpoints HTTP para control de simulación.
-- Servir interfaz web estática.
-- Consultar estado, progreso y resultados de ejecuciones.
+- Expose HTTP endpoints for simulation control.
+- Serve static web interface assets.
+- Query status, progress, and execution results.
 
-## Estructura
+## Structure
 
 ```text
 tools/web_server/
@@ -28,15 +28,15 @@ tools/web_server/
     └── js/
 ```
 
-## Ejecución
+## Execution
 
-Desde la raíz del repositorio:
+Desde la raiz del repositorio:
 
 ```bash
 python tools/molab_web_gui_v2.py
 ```
 
-Opciones comunes:
+Common options:
 
 ```bash
 python tools/molab_web_gui_v2.py --port 8080
@@ -44,7 +44,7 @@ python tools/molab_web_gui_v2.py --no-browser
 python tools/molab_web_gui_v2.py --verbose
 ```
 
-## Endpoints principales
+## Main endpoints
 
 - `GET /api/status`
 - `GET /api/plugins`
@@ -54,8 +54,8 @@ python tools/molab_web_gui_v2.py --verbose
 - `GET /api/results`
 - `GET /api/results/{filename}`
 
-## Notas de mantenimiento
+## Maintenance notes
 
-- Mantener separación clara entre handlers, lógica de simulación y frontend estático.
-- Evitar lógica de negocio en capas de presentación.
-- Priorizar manejo explícito de errores y mensajes de log útiles.
+- Keep clear separation between handlers, simulation logic, and static frontend.
+- Avoid business logic in presentation layers.
+- Prioritize explicit error handling and actionable log messages.

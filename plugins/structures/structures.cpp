@@ -1,18 +1,17 @@
 /*
- * Structures Plugin - Modulo de propiedades inerciales y limites fisicos.
+ * Structures Plugin - Inertial properties and physical limits module.
  *
- * Este plugin mantiene una estructura similar a los plugins de aerodinamica
- * y propulsion: crea instancia, configura, procesa tick y destruye.
+ * This plugin keeps a similar structure to the aerodynamics and propulsion plugins:
+ * create instance, configure, process tick, and destroy.
  *
- * Salida del plugin por tick: solo fuerza y torque.
+ * Plugin output per tick: force and torque only.
  */
 
-#include "../../src/api/plugin_api.h"
+#include "plugin_api.h"
 #include "structures_module.h"
 #include "state_vector_generated.h"
 
-#include <algorithm>
-#include <cmath>
+#include <atomic>
 #include <iostream>
 #include <string>
 
@@ -20,28 +19,74 @@
 
 namespace {
 
-constexpr double kStandardGravity = 9.80665;
-constexpr double kEarthRadiusM = 6371000.0;
-constexpr double kSeaLevelDensity = 1.225;
-constexpr double kScaleHeight = 8400.0;
-
 constexpr const char* kDefaultMassPropsPath = "data/mass/mass_properties.json";
 constexpr const char* kDefaultStructuralLimitsPath = "data/limits/structural_limits.csv";
+constexpr uint32_t kSupportedHostServicesApiVersion = 1;
+
+using HostLogFn = void(*)(int32_t, const char*, const char*, void*);
 
 struct StructuresPluginInstance {
     structures::StructuresModule module;
     bool initialized = false;
     bool debug_output = false;
-    double previous_speed_m_s = 0.0;
-    bool speed_initialized = false;
 };
+
+std::atomic<HostLogFn> g_host_log_fn{nullptr};
+std::atomic<void*> g_host_user_data{nullptr};
+std::atomic<bool> g_host_api_mismatch_warned{false};
+
+/**
+ * @brief Emits plugin logs through host services when enabled.
+ */
+void plugin_log(int32_t level, const char* component, const std::string& message) {
+    HostLogFn host_log = g_host_log_fn.load(std::memory_order_acquire);
+    if (host_log != nullptr) {
+        void* user_data = g_host_user_data.load(std::memory_order_relaxed);
+        host_log(level, component, message.c_str(), user_data);
+        return;
+    }
+
+    // Fallback for isolated plugin tests without host.
+    std::cout << "[" << (component ? component : "Plugin") << "] " << message << std::endl;
+}
 
 } // namespace
 
 extern "C" {
 
 /**
- * @brief Crea la instancia del plugin Structures y carga placeholders iniciales.
+ * @brief Receives optional host services (includes shared logger).
+ */
+PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
+    if (services != nullptr && services->log != nullptr) {
+        // If api_version mismatches, fallback to local plugin logging behavior.
+        if (services->api_version != kSupportedHostServicesApiVersion) {
+            g_host_log_fn.store(nullptr, std::memory_order_release);
+            g_host_user_data.store(nullptr, std::memory_order_relaxed);
+
+            bool expected = false;
+            if (g_host_api_mismatch_warned.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                std::cout << "[Structures] WARNING: Host services api_version mismatch (host="
+                          << services->api_version
+                          << ", plugin-supported="
+                          << kSupportedHostServicesApiVersion
+                          << "). Falling back to local plugin logging." << std::endl;
+            }
+            return;
+        }
+
+        g_host_api_mismatch_warned.store(false, std::memory_order_release);
+        g_host_user_data.store(services->user_data, std::memory_order_relaxed);
+        g_host_log_fn.store(services->log, std::memory_order_release);
+        return;
+    }
+
+    g_host_log_fn.store(nullptr, std::memory_order_release);
+    g_host_user_data.store(nullptr, std::memory_order_relaxed);
+}
+
+/**
+ * @brief Creates Structures plugin instance and loads initial placeholders.
  */
 PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     auto* instance = new StructuresPluginInstance();
@@ -49,25 +94,20 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     const bool mass_loaded = instance->module.loadMassPropertiesFromJson(kDefaultMassPropsPath);
     const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(kDefaultStructuralLimitsPath);
     if (!mass_loaded || !limits_loaded) {
-        std::cout << "[Structures] Error: no se pudo inicializar con datos por defecto."
-                  << " mass_loaded=" << mass_loaded
-                  << " limits_loaded=" << limits_loaded << std::endl;
+        plugin_log(PLUGIN_LOG_ERROR, "Structures", "Failed to initialize default structural sources."
+            " mass_loaded=" + std::to_string(mass_loaded)
+            + " limits_loaded=" + std::to_string(limits_loaded));
         delete instance;
         return nullptr;
     }
-    instance->initialized = true;
 
-    std::cout << "[Structures] Instancia creada." << std::endl;
-    std::cout << "[Structures] Masa inicial (kg): " << instance->module.initialMassKg() << std::endl;
-    std::cout << "[Structures] Limite G warning/max: "
-              << instance->module.warningGLoad() << " / "
-              << instance->module.maxGLoad() << std::endl;
+    instance->initialized = true;
 
     return reinterpret_cast<PluginHandle>(instance);
 }
 
 /**
- * @brief Configura rutas de datos estructurales desde configuracion general. (No actuadores)
+ * @brief Configures structural data paths from general configuration. (No actuators)
  */
 PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params) {
     if (!handle || !json_params) {
@@ -95,17 +135,20 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
             instance->debug_output = params["debug_output"].get<bool>();
         }
 
-        // Masa/CoM/inercia se mantienen temporalmente en JSON placeholder.
+        // Mass/CoM/inertia are temporarily kept in JSON placeholders.
         const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
         const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
+
         if (!mass_loaded || !limits_loaded) {
-            if (instance->debug_output) {
-                std::cout << "[Structures] Error: configuracion invalida de fuentes estructurales."
-                          << " mass_loaded=" << mass_loaded
-                          << " limits_loaded=" << limits_loaded << std::endl;
+            if (!mass_loaded) {
+                plugin_log(PLUGIN_LOG_ERROR, "Structures", "Failed to open JSON file: " + mass_json_path);
+            }
+            if (!limits_loaded) {
+                plugin_log(PLUGIN_LOG_ERROR, "Structures", "Failed to open CSV file: " + limits_csv_path);
             }
             return -4;
         }
+
         return 0;
     } catch (...) {
         return -3;
@@ -113,10 +156,10 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
 }
 
 /**
- * @brief Ejecuta un tick estructural tipo 1 (solo lectura de estado, salida fuerza/torque).
+ * @brief Executes a type-1 structural tick (state read-only, force/torque output).
  *
- * @warning Implementacion donde no se aplica logica fisica activa.
- * Devuelve salida neutra (cero) para preservar compatibilidad del flujo.
+ * @warning This implementation intentionally does not apply active physics.
+ * It returns neutral output (zeros) to preserve flow compatibility.
  */
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
     if (!handle || !data || !data->state_buffer) {
@@ -139,7 +182,6 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
         return -3;
     }
 
-    // No hay salida fisica activa por ahora, estilo template
     force_output->x = 0.0f;
     force_output->y = 0.0f;
     force_output->z = 0.0f;
@@ -154,7 +196,7 @@ PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
 }
 
 /**
- * @brief Libera la instancia del plugin Structures.
+ * @brief Releases Structures plugin instance.
  */
 PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
     if (!handle) {

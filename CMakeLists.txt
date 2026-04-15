@@ -1,24 +1,24 @@
-# CMake versión 3.20 mínima
+# Minimum CMake version 3.20
 cmake_minimum_required(VERSION 3.20)
 project(Molab VERSION 0.0.0 LANGUAGES CXX)
 include(FetchContent)
 
-# C++ 17
+# C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Organización del output
+# Output directory layout
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# Dependencias
-find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers para serialización y deserialización de datos
-find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json para manejo de JSON
-find_package(Boost REQUIRED) # Boost (header-only, para Odeint)
+# Dependencies
+find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers for data serialization/deserialization
+find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json for JSON handling
+find_package(Boost REQUIRED) # Boost (header-only, used by Odeint)
 
-# Directorios con los esquemas de FlatBuffers y archivos generados
+# Directories for FlatBuffers schemas and generated files
 set(SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/schemas")
 set(GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 
@@ -27,7 +27,7 @@ set(GENERATED_HEADER "${GENERATED_DIR}/state_vector_generated.h")
 
 find_program(FLATC_EXECUTABLE flatc REQUIRED)
 
-# Comando para generar los archivos de FlatBuffers
+# Command to generate FlatBuffers files
 add_custom_command(
   OUTPUT ${GENERATED_HEADER}
   COMMAND ${FLATC_EXECUTABLE} -c --gen-mutable -o ${GENERATED_DIR} ${SCHEMA_FILE}
@@ -35,7 +35,7 @@ add_custom_command(
   COMMENT "Generating C++ sources from FlatBuffers schema..."
 )
 
-# Se asegura de que los encabezados generados estén disponibles para los targets que los requieren.
+# Ensures generated headers are available for targets that require them.
 add_custom_target(
   generate_flatbuffers ALL
   DEPENDS ${GENERATED_HEADER}
@@ -54,14 +54,14 @@ if(NOT eigen_POPULATED)
     FetchContent_Populate(Eigen)
 endif()
 
-# Crear target header-only manualmente (sin add_subdirectory).
-# Esto evita por completo que Eigen registre tests, docs o demos.
+# Create header-only target manually (without add_subdirectory).
+# This avoids Eigen registering tests, docs, or demos.
 add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
 set_target_properties(Eigen3::Eigen PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
 )
 
-# --- Configuración del núcleo ---
+# --- Core configuration ---
 set(CORE_SOURCES
     src/core/SimulationEngine.cpp
     src/core/PluginManager.cpp
@@ -72,10 +72,10 @@ set(CORE_SOURCES
     src/core/TimeManager.cpp
 )
 
-# Crear la biblioteca del núcleo
+# Create core library
 add_library(core STATIC ${CORE_SOURCES})
 
-# Configurar includes
+# Configure include directories
 target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
@@ -83,7 +83,7 @@ target_include_directories(core PUBLIC
     ${GENERATED_DIR}
 )
 
-# Vincular dependencias
+# Link dependencies
 target_link_libraries(core PUBLIC
     flatbuffers::flatbuffers
     nlohmann_json::nlohmann_json
@@ -96,33 +96,49 @@ target_include_directories(core PUBLIC
 
 add_dependencies(core generate_flatbuffers)
 
-# --- Configuración del ejecutable principal ---
+# --- Main executable configuration ---
 # Main executable
-add_executable(simulator src/main.cpp)
+add_executable(simulator
+    src/main.cpp
+    src/ipc/IpcSession.cpp
+)
 target_link_libraries(simulator core ${CMAKE_DL_LIBS})
 target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Crear directorios necesarios y copiar archivos de datos
+# Create required directories and copy runtime data files
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/mass"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/limits"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/output"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_state.json # Hardcoded initial state file
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_state.json
             "$<TARGET_FILE_DIR:simulator>/data"
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_config.json # Hardcoded config file
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/defaults/default_config.json
             "$<TARGET_FILE_DIR:simulator>/data"
-    COMMENT "Copiando archivos de configuración y creando directorios..."
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/mass/mass_properties.json
+            "$<TARGET_FILE_DIR:simulator>/data/mass"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/limits/structural_limits.csv
+            "$<TARGET_FILE_DIR:simulator>/data/limits"
+    COMMENT "Copying runtime configuration and data files..."
 )
 
 # --- Plugins ---
 
 set(PLUGIN_NAMES
-    example_plugin
     structures
 )
+
+# Standardized plugin output layout:
+# - Plugin runtime binaries (.dll/.so/.dylib) -> bin/plugins
+# - Archive/import libraries (.lib/.a)        -> lib/plugins
+set(PLUGIN_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+set(PLUGIN_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/plugins")
 
 foreach(_plugin_name IN LISTS PLUGIN_NAMES)
 
@@ -130,18 +146,28 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         plugins/${_plugin_name}/${_plugin_name}.cpp
     )
 
+    set(_plugin_private_libs
+        flatbuffers::flatbuffers
+    )
+
     if(_plugin_name STREQUAL "structures")
-        set(_plugin_sources
-            "plugins/structures/structures.cpp"
+        list(APPEND _plugin_sources
             "plugins/structures/structures_module.cpp"
+        )
+        list(APPEND _plugin_private_libs
+            nlohmann_json::nlohmann_json
         )
     endif()
 
-    # Crea la librería compartida
     add_library(${_plugin_name} SHARED ${_plugin_sources})
-
-    # Establece las dependencias y directorios de inclusión
     add_dependencies(${_plugin_name} generate_flatbuffers)
+
+    # Keep plugin binary output path consistent across platforms/configurations
+    set_target_properties(${_plugin_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        LIBRARY_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${PLUGIN_ARCHIVE_OUTPUT_DIRECTORY}"
+    )
 
     target_include_directories(${_plugin_name} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
@@ -154,23 +180,18 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         )
     endif()
 
-    # Enlaza las librerías necesarias
-    target_link_libraries(${_plugin_name} PRIVATE flatbuffers::flatbuffers)
-    list(APPEND PLUGIN_NAMES ${_plugin_name})
-
-    if(_plugin_name STREQUAL "structures")
-        target_link_libraries(${_plugin_name} PRIVATE nlohmann_json::nlohmann_json)
-    endif()
+    target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
 
 endforeach()
 
-message(STATUS "Plugins configurados: ${PLUGIN_NAMES}")
+message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
+message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")
 
-# --- Opciones de compilación para cobertura y análisis ---
+# --- Build options for coverage and analysis ---
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 option(ENABLE_TESTING "Enable unit tests" ON)
 
-# Configuración de cobertura de código
+# Code coverage configuration
 if(ENABLE_COVERAGE)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(STATUS "Code coverage enabled")
@@ -181,14 +202,14 @@ if(ENABLE_COVERAGE)
     endif()
 endif()
 
-# --- Tests Unitarios ---
+# --- Unit tests ---
 if(ENABLE_TESTING)
     enable_testing()
 
-    # Buscar Google Test
+    # Find Google Test
     find_package(GTest CONFIG REQUIRED)
 
-    # Tests del núcleo
+    # Core tests
     add_executable(core_tests
         tests/test_config_manager.cpp
         tests/test_physics_integrator.cpp
@@ -197,6 +218,9 @@ if(ENABLE_TESTING)
         tests/test_output_manager.cpp
         tests/test_simulation_engine.cpp
         tests/test_initial_state_loader.cpp
+        tests/test_command_event_protocol.cpp
+        tests/test_ipc_session.cpp
+        src/ipc/IpcSession.cpp
     )
 
     target_link_libraries(core_tests PRIVATE
@@ -207,12 +231,13 @@ if(ENABLE_TESTING)
 
     target_include_directories(core_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
         ${GENERATED_DIR}
     )
 
-    # Registrar tests con CTest
+    # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(core_tests)
 

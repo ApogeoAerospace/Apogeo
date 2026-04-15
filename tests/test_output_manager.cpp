@@ -6,10 +6,11 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <atomic>
 
 /**
  * @file test_output_manager.cpp
- * @brief Pruebas unitarias para `OutputManager`.
+ * @brief Unit tests for `OutputManager`.
  */
 
 using namespace MoLab;
@@ -191,4 +192,26 @@ TEST_F(OutputManagerTest, JSONContainsBufferFieldsDirectly) {
   EXPECT_NE(json_str.find("288.15"), std::string::npos);
   EXPECT_NE(json_str.find("-9.81"), std::string::npos);
   EXPECT_NE(json_str.find("5"), std::string::npos);
+}
+
+TEST_F(OutputManagerTest, RealtimeTelemetryCallbackReceivesRecordedPoint) {
+  auto& om = OutputManager::getInstance();
+  std::atomic<int> callback_count{0};
+
+  om.setRealtimeTelemetryCallback([&](const SimulationDataPoint&, int tick) {
+    if (tick == 4) {
+      callback_count.fetch_add(1);
+    }
+  });
+
+  auto buffer = make_state_buffer();
+  const auto* state = state_vector::GetGeneralState(buffer.data());
+  ASSERT_NE(state, nullptr);
+
+  om.recordState(state, 0.04, TimeManager::getInstance().getCurrentRealTimeUTC(), 4);
+  om.finalizeOutput();
+
+  EXPECT_GE(callback_count.load(), 1);
+
+  om.setRealtimeTelemetryCallback(nullptr);
 }

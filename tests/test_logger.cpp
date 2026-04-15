@@ -7,7 +7,7 @@
 
 /**
  * @file test_logger.cpp
- * @brief Pruebas unitarias para `Logger`.
+ * @brief Unit tests for `Logger`.
  */
 
 using namespace MoLab;

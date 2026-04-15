@@ -11,7 +11,7 @@
 
 /**
  * @file OutputManager.cpp
- * @brief Implementación de exportación y escritura asíncrona de resultados.
+ * @brief Implementation of result export and asynchronous output writing.
  */
 
 using namespace MoLab;
@@ -27,7 +27,7 @@ OutputManager::~OutputManager() noexcept {
       finalizeOutput();
     }
   } catch (const std::exception&) {
-    // Destructor no debe lanzar error
+    // Destructor must not throw
   }
 }
 
@@ -52,7 +52,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
 
   std::lock_guard<std::mutex> lock(data_mutex_);
 
-  // Construir nombre de ejecución con timestamp UTC
+  // Build run name with UTC timestamp
   auto& time_manager = TimeManager::getInstance();
   double current_utc = time_manager.getCurrentRealTimeUTC();
   std::time_t time_t_val = static_cast<std::time_t>(current_utc);
@@ -113,7 +113,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
     }
   }
 
-  // Binario
+  // Binary
   if (output_binary_) {
     std::string binary_path = output_dir_ + "/" + run_name_ + ".bin";
     binary_file_ = std::make_unique<std::ofstream>(binary_path, std::ios::binary);
@@ -126,7 +126,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
 
   data_points_.clear();
 
-  // Pre-reserva de memoria según duración esperada
+  // Pre-reserva de memoria segun duracion esperada
   try {
     auto& config = ConfigManager::getInstance().getSimulationConfig();
     double simulation_duration = config.simulation_duration;
@@ -256,12 +256,12 @@ void OutputManager::printSummary() {
   const auto& first = data_points_.front();
   const auto& last = data_points_.back();
 
-  LOG_INFO("=== RESUMEN DE RESULTADOS ===", "OutputManager");
+  LOG_INFO("=== RESULTS SUMMARY ===", "OutputManager");
   LOG_INFO("Total data points: " + std::to_string(data_points_.size()), "OutputManager");
   LOG_INFO("Simulation time: " + std::to_string(first.time) + "s to " + std::to_string(last.time) + "s", "OutputManager");
 
-  // POSICIÓN
-  LOG_INFO("=== TRAYECTORIA (POSICIÓN) ===", "OutputManager");
+  // POSITION
+  LOG_INFO("=== TRAJECTORY (POSITION) ===", "OutputManager");
   LOG_INFO("Initial position: (" +
            std::to_string(first.position_x) + ", " +
            std::to_string(first.position_y) + ", " +
@@ -279,8 +279,8 @@ void OutputManager::printSummary() {
   );
   LOG_INFO("Distance traveled: " + std::to_string(distance) + " units", "OutputManager");
 
-  // VELOCIDAD
-  LOG_INFO("=== VELOCIDAD ===", "OutputManager");
+  // VELOCITY
+  LOG_INFO("=== VELOCITY ===", "OutputManager");
   LOG_INFO("Initial velocity: (" +
            std::to_string(first.velocity_x) + ", " +
            std::to_string(first.velocity_y) + ", " +
@@ -294,26 +294,31 @@ void OutputManager::printSummary() {
   LOG_INFO("Output files saved in: " + output_dir_, "OutputManager");
 }
 
+void OutputManager::setRealtimeTelemetryCallback(std::function<void(const SimulationDataPoint&, int)> callback) {
+  std::lock_guard<std::mutex> lock(data_mutex_);
+  realtime_telemetry_callback_ = std::move(callback);
+}
+
 SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralState* state, double time, double utc_time, int tick) {
   SimulationDataPoint point;
   point.time = time;
   point.utc_time = utc_time;
 
-  // Posición
+  // Position
   if (state->position()) {
     point.position_x = state->position()->x();
     point.position_y = state->position()->y();
     point.position_z = state->position()->z();
   }
 
-  // Velocidad
+  // Velocity
   if (state->velocity()) {
     point.velocity_x = state->velocity()->x();
     point.velocity_y = state->velocity()->y();
     point.velocity_z = state->velocity()->z();
   }
 
-  // Orientación (cuaternión)
+  // Orientation (quaternion)
   if (state->orientation()) {
     point.orientation_x = state->orientation()->x();
     point.orientation_y = state->orientation()->y();
@@ -321,12 +326,12 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.orientation_w = state->orientation()->w();
   }
 
-  // Datos atmosféricos
+  // Atmospheric data
   point.atm_density = state->atm_density();
   point.atm_pressure = state->atm_pressure();
   point.atm_temperature = state->atm_temperature();
 
-  // Gravedad
+  // Gravity
   if (state->gravity()) {
     point.gravity_x = state->gravity()->x();
     point.gravity_y = state->gravity()->y();
@@ -337,7 +342,7 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.gravity_z = 0.0;
   }
 
-  // Viento
+  // Wind
   if (state->wind_velocity()) {
     point.wind_speed_x = state->wind_velocity()->x();
     point.wind_speed_y = state->wind_velocity()->y();
@@ -348,7 +353,7 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.wind_speed_z = 0.0;
   }
 
-  // Velocidad angular
+  // Angular velocity
   if (state->angular_velocity()) {
     point.angular_velocity_x = state->angular_velocity()->x();
     point.angular_velocity_y = state->angular_velocity()->y();
@@ -359,7 +364,7 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.angular_velocity_z = 0.0;
   }
 
-  // Masa y propiedades
+  // Mass and properties
   point.total_mass = state->total_mass();
   if (state->cg_location()) {
     point.cg_x = state->cg_location()->x();
@@ -371,7 +376,7 @@ SimulationDataPoint OutputManager::extractDataPoint(const state_vector::GeneralS
     point.cg_z = 0.0;
   }
 
-  // Datos aerodinámicos
+  // Aerodynamic data
   point.mach_number = state->mach_number();
   point.dynamic_pressure = state->dynamic_pressure();
   point.angle_of_attack = state->angle_of_attack();
@@ -486,6 +491,7 @@ void OutputManager::writeMetricsJSON() {
 void OutputManager::writerLoop() {
   for (;;) {
     PendingPoint pending;
+    std::function<void(const SimulationDataPoint&, int)> telemetry_callback;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
       queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
@@ -498,26 +504,37 @@ void OutputManager::writerLoop() {
       pending_points_.pop_front();
     }
 
-    std::lock_guard<std::mutex> lock(data_mutex_);
+    {
+      std::lock_guard<std::mutex> lock(data_mutex_);
 
-    if (!initialized_) {
-      continue;
+      if (!initialized_) {
+        continue;
+      }
+
+      data_points_.push_back(pending.point);
+
+      if (output_csv_ && csv_file_ && csv_file_->is_open()) {
+        writeDataPointCSV(pending.point, pending.tick);
+      }
+
+      if (output_json_ && json_file_ && json_file_->is_open()) {
+        writeDataPointJSON(pending.point, pending.tick);
+      }
+
+      if (output_binary_ && binary_file_ && binary_file_->is_open()) {
+        binary_file_->write(reinterpret_cast<const char*>(&pending.point), sizeof(SimulationDataPoint));
+      }
+
+      last_recorded_tick_ = pending.tick;
+      telemetry_callback = realtime_telemetry_callback_;
     }
 
-    data_points_.push_back(pending.point);
-
-    if (output_csv_ && csv_file_ && csv_file_->is_open()) {
-      writeDataPointCSV(pending.point, pending.tick);
+    if (telemetry_callback) {
+      try {
+        telemetry_callback(pending.point, pending.tick);
+      } catch (...) {
+        // Telemetry callback must not break async output writer.
+      }
     }
-
-    if (output_json_ && json_file_ && json_file_->is_open()) {
-      writeDataPointJSON(pending.point, pending.tick);
-    }
-
-    if (output_binary_ && binary_file_ && binary_file_->is_open()) {
-      binary_file_->write(reinterpret_cast<const char*>(&pending.point), sizeof(SimulationDataPoint));
-    }
-
-    last_recorded_tick_ = pending.tick;
   }
 }

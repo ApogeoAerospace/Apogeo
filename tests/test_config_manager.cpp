@@ -5,7 +5,7 @@
 
 /**
  * @file test_config_manager.cpp
- * @brief Pruebas unitarias para `ConfigManager`.
+ * @brief Unit tests for `ConfigManager`.
  */
 
 using json = nlohmann::json;
@@ -14,7 +14,7 @@ using namespace MoLab;
 class ConfigManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Crear un archivo de configuración temporal para tests
+    // Create a temporary configuration file for tests
         test_config_file = "test_config.json";
         json test_config = {
             {"simulation", {
@@ -23,6 +23,10 @@ protected:
                 {"enable_logging", true},
                 {"log_file", "logs/test.log"},
                 {"log_level", "INFO"}
+            }},
+            {"ipc", {
+                {"tick_event_interval", 40},
+                {"telemetry_interval_ticks", 8}
             }},
             // Physics section removed per new config design
             {"initial_state_file", "data/initial_state.json"},
@@ -35,7 +39,7 @@ protected:
     }
 
     void TearDown() override {
-        // Limpiar archivo temporal
+    // Clean up temporary file
         std::remove(test_config_file.c_str());
     }
 
@@ -65,7 +69,7 @@ TEST_F(ConfigManagerTest, GetMaxIterations) {
 
 TEST_F(ConfigManagerTest, InvalidConfigFileUsesDefaults) {
     auto& config_manager = ConfigManager::getInstance();
-    // loadConfig retorna false si el archivo no existe, pero aplica defaults
+    // loadConfig returns false if file does not exist, but applies defaults
     EXPECT_FALSE(config_manager.loadConfig("non_existent_file.json"));
 
     const auto& sim_config = config_manager.getSimulationConfig();
@@ -76,7 +80,8 @@ TEST_F(ConfigManagerTest, ValidateConfigSuccess) {
     auto& config_manager = ConfigManager::getInstance();
     config_manager.loadConfig(test_config_file);
 
-    EXPECT_TRUE(config_manager.validateConfig());
+    std::string error_detail;
+    EXPECT_TRUE(config_manager.validateConfig(error_detail));
 }
 
 TEST_F(ConfigManagerTest, GetInitialStateFile) {
@@ -128,6 +133,10 @@ TEST_F(ConfigManagerTest, ConfigWithDifferentValues) {
             {"log_file", "logs/alt.log"},
             {"log_level", "DEBUG"}
         }},
+        {"ipc", {
+            {"tick_event_interval", 25},
+            {"telemetry_interval_ticks", 4}
+        }},
         {"initial_state_file", "data/alt_state.json"},
         {"output_directory", "alt_output/"}
     };
@@ -145,6 +154,8 @@ TEST_F(ConfigManagerTest, ConfigWithDifferentValues) {
     EXPECT_FALSE(sim_config.enable_logging);
     EXPECT_EQ(sim_config.log_file, "logs/alt.log");
     EXPECT_EQ(sim_config.log_level, "DEBUG");
+    EXPECT_EQ(sim_config.ipc_tick_event_interval, 25);
+    EXPECT_EQ(sim_config.ipc_telemetry_interval_ticks, 4);
 
     // Physics section removed: no physics_config usage here
 

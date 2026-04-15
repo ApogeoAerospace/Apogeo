@@ -1,10 +1,9 @@
 #include "structures_module.h"
-
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
 #include <nlohmann/json.hpp>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 namespace {
 
@@ -18,14 +17,54 @@ static std::vector<std::string> splitCsvLine(const std::string& line) {
     return fields;
 }
 
+static std::string resolveExistingPath(const std::string& input_path) {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+
+    fs::path original(input_path);
+    if (original.is_absolute() && fs::exists(original, ec)) {
+        return original.string();
+    }
+
+    std::vector<fs::path> candidates;
+    candidates.push_back(original);
+
+    const fs::path cwd = fs::current_path(ec);
+    if (!ec && !cwd.empty()) {
+        candidates.push_back(cwd / original);
+
+        fs::path cursor = cwd;
+        for (int i = 0; i < 6; ++i) {
+            candidates.push_back(cursor / original);
+            if (!cursor.has_parent_path()) {
+                break;
+            }
+            cursor = cursor.parent_path();
+        }
+    }
+
+    for (const auto& candidate : candidates) {
+        if (candidate.empty()) {
+            continue;
+        }
+
+        fs::path normalized = candidate.lexically_normal();
+        if (fs::exists(normalized, ec)) {
+            return normalized.string();
+        }
+    }
+
+    return input_path;
+}
+
 } // namespace
 
 namespace structures {
 
 bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) {
-    std::ifstream file(json_path);
+    const std::string resolved_path = resolveExistingPath(json_path);
+    std::ifstream file(resolved_path);
     if (!file.is_open()) {
-        std::cout << "[Structures] No se pudo abrir JSON: " << json_path << std::endl;
         return false;
     }
 
@@ -52,12 +91,7 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
             inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
             inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
         }
-    } catch (const std::exception& e) {
-        std::cout << "[Structures] Error parseando JSON de masa: " << json_path
-                  << " - " << e.what() << std::endl;
-        return false;
     } catch (...) {
-        std::cout << "[Structures] Error parseando JSON de masa: " << json_path << std::endl;
         return false;
     }
 
@@ -65,9 +99,9 @@ bool StructuresModule::loadMassPropertiesFromJson(const std::string& json_path) 
 }
 
 bool StructuresModule::loadStructuralLimitsFromCsv(const std::string& csv_path) {
-    std::ifstream file(csv_path);
+    const std::string resolved_path = resolveExistingPath(csv_path);
+    std::ifstream file(resolved_path);
     if (!file.is_open()) {
-        std::cout << "[Structures] No se pudo abrir CSV: " << csv_path << std::endl;
         return false;
     }
 
@@ -127,6 +161,8 @@ PluginVector3 StructuresModule::computeStructuralForce(const state_vector::Gener
         return out;
     }
 
+    // Temporary template model: simplified linear damping.
+    // Must be replaced by the final structural model.
     const double c = 5.0;
     out.x = static_cast<float>(-c * state->velocity()->x());
     out.y = static_cast<float>(-c * state->velocity()->y());
@@ -140,6 +176,8 @@ PluginVector3 StructuresModule::computeStructuralTorque(const state_vector::Gene
         return out;
     }
 
+    // Temporary template model: simplified angular damping.
+    // Must be replaced by the final structural model.
     const double c_ang = 3.0;
     out.x = static_cast<float>(-c_ang * state->angular_velocity()->x());
     out.y = static_cast<float>(-c_ang * state->angular_velocity()->y());

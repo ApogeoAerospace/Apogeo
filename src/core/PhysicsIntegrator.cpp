@@ -5,7 +5,7 @@
 
 /**
  * @file PhysicsIntegrator.cpp
- * @brief Implementación de integración numérica del estado físico.
+ * @brief Implementation of numerical integration for physical state.
  */
 
 namespace odeint = boost::numeric::odeint;
@@ -38,7 +38,7 @@ inline Quaternion4 normalizedOrIdentity(const Quaternion4& q) {
 
 } // namespace
 // ---------------------------------------------------------------------------
-// PhysicsState: conversión entre estado estructurado y vector plano
+// PhysicsState: conversion between structured state and flat vector
 // ---------------------------------------------------------------------------
 
 OdeState PhysicsState::toOdeState() const {
@@ -67,12 +67,12 @@ PhysicsIntegrator::PhysicsIntegrator(IntegratorType type)
 }
 
 // ---------------------------------------------------------------------------
-// computeOdeDerivatives — núcleo del sistema ODE
+// computeOdeDerivatives — ODE system core
 // ---------------------------------------------------------------------------
-// Opera directamente sobre OdeState, extrayendo solo los Eigen temporales
-// necesarios para las operaciones de álgebra lineal (producto cruz,
-// producto cuaternión, LDLT solve). Evita reconstruir un PhysicsState
-// completo (incluyendo copiar la Matrix3d de inercia) en cada evaluación.
+// Operates directly on OdeState, extracting only temporary Eigen vectors
+// required for linear algebra operations (cross product,
+// quaternion product, LDLT solve). Avoids rebuilding a full
+// PhysicsState (including Matrix3d inertia copy) on each evaluation.
 
 void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                               double mass,
@@ -81,17 +81,17 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                               const Vector3& torque) {
     dydt.fill(0.0);
 
-    // Extraer variables dinámicas del vector plano
+    // Extract dynamic variables from flat vector
     const Vector3 vel   = odeVelocity(y);
     const Vector3 omega = odeAngularVelocity(y);
     const Quaternion4 q = normalizedOrIdentity(odeOrientation(y));
 
-    // --- Cinemática lineal: x_dot = v ---
+    // --- Linear kinematics: x_dot = v ---
     dydt[0] = vel.x();
     dydt[1] = vel.y();
     dydt[2] = vel.z();
 
-    // --- Segunda ley de Newton: v_dot = F / m ---
+    // --- Newton's second law: v_dot = F / m ---
     if (hasValidMass(mass)) {
         double inv_mass = 1.0 / mass;
         dydt[3] = force.x() * inv_mass;
@@ -101,9 +101,9 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
         dydt[3] = 0.0; dydt[4] = 0.0; dydt[5] = 0.0;
     }
 
-    // --- Cinemática rotacional: q_dot = 0.5 * q * (0, omega) ---
-    // Producto de Hamilton entre cuaternión de orientación y cuaternión
-    // puro de velocidad angular, escalado por 0.5.
+    // --- Rotational kinematics: q_dot = 0.5 * q * (0, omega) ---
+    // Hamilton product between orientation quaternion and pure
+    // angular-velocity quaternion, scaled by 0.5.
     Quaternion4 omega_quat(0.0, omega.x(), omega.y(), omega.z());
     Quaternion4 q_dot;
     q_dot.coeffs() = (q * omega_quat).coeffs() * 0.5;
@@ -114,8 +114,8 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
 
     // --- Ecuaciones de Euler rotacionales: ---
     //   omega_dot = I^(-1) * (tau - omega x (I * omega))
-    // Se usa descomposición LDLT (estable para matrices simétricas
-    // semidefinidas positivas) en lugar de inversión explícita.
+    // Uses LDLT decomposition (stable for symmetric
+    // positive semidefinite matrices) instead of explicit inversion.
     Vector3 i_omega    = inertia * omega;
     Vector3 gyroscopic = omega.cross(i_omega);
     Vector3 net_torque = torque - gyroscopic;
@@ -136,7 +136,7 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
 }
 
 // ---------------------------------------------------------------------------
-// integrate — despacha al stepper de odeint correspondiente
+// integrate — dispatches to corresponding odeint stepper
 // ---------------------------------------------------------------------------
 
 PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
@@ -149,8 +149,8 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
     }
     OdeState y = state.toOdeState();
 
-    // Lambda del sistema ODE. Captura por referencia los parámetros constantes
-    // del paso (masa, inercia, fuerzas) sin copiarlos.
+    // ODE system lambda. Captures constant step parameters
+    // (mass, inertia, forces) by reference without copying.
     auto system = [&](const OdeState& y_in, OdeState& dydt, double /*t*/) {
         computeOdeDerivatives(y_in, dydt, state.mass, state.inertia, force, torque);
     };
@@ -167,11 +167,11 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             break;
         }
         case IntegratorType::VERLET: {
-            // Velocity-Verlet para traslación + RK4 para rotación.
-            // Odeint no ofrece velocity_verlet para sistemas mixtos de
-            // primer y segundo orden, por lo que se implementa manualmente.
+            // Velocity-Verlet for translation + RK4 for rotation.
+            // Odeint does not provide velocity_verlet for mixed
+            // first- and second-order systems, so this is manual.
 
-            // --- Traslación: Velocity-Verlet (a = F/m) ---
+            // --- Translation: Velocity-Verlet (a = F/m) ---
             Vector3 a_n = Vector3::Zero();
             if (hasValidMass(state.mass))
                 a_n = force / state.mass;
@@ -179,15 +179,15 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             Vector3 v_half  = state.velocity + a_n * (0.5 * dt);
             Vector3 new_pos = state.position + v_half * dt;
 
-            // Aceleración constante durante el paso => a_{n+1} = a_n
+            // Constant acceleration during step => a_{n+1} = a_n
             Vector3 new_vel = v_half + a_n * (0.5 * dt);
 
-            // --- Rotación: RK4 explícito sobre (q, omega) ---
+            // --- Rotation: explicit RK4 over (q, omega) ---
             OdeState y_rot = state.toOdeState();
             odeint::runge_kutta4<OdeState> rot_stepper;
             rot_stepper.do_step(system, y_rot, state.time, dt);
 
-            // Aplicar traslación Verlet + rotación RK4
+            // Apply Verlet translation + RK4 rotation
             odePackVec3(y, 0, new_pos);
             odePackVec3(y, 3, new_vel);
             y[6]  = y_rot[6];
@@ -207,8 +207,8 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
         }
     }
 
-    // Desempaquetar resultado y normalizar cuaternión
-    PhysicsState new_state = state;     // conserva masa e inercia
+    // Unpack result and normalize quaternion
+    PhysicsState new_state = state;     // preserves mass and inertia
     new_state.fromOdeState(y);
     new_state.time = state.time + dt;
     new_state.orientation = normalizedOrIdentity(new_state.orientation);
@@ -241,9 +241,9 @@ std::string PhysicsIntegrator::getIntegratorTypeName() const {
 }
 
 PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState* fb_state) {
-    // Convierte el estado serializado (FlatBuffer) a PhysicsState interno (double).
-    // La conversión float->double ocurre aquí; la truncación inversa es
-    // responsabilidad de PluginManager al reconstruir el buffer.
+// Converts serialized state (FlatBuffer) to internal PhysicsState (double).
+    // float->double conversion happens here; reverse truncation is
+    // PluginManager responsibility when rebuilding the buffer.
 
     if (fb_state == nullptr) {
         LOG_WARNING("Null FlatBuffer state pointer, returning default PhysicsState", "PhysicsIntegrator");
@@ -264,7 +264,7 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
     }
 
     if (fb_state->orientation()) {
-        // Constructor de Eigen::Quaterniond: (w, x, y, z)
+        // Eigen::Quaterniond constructor: (w, x, y, z)
         state.orientation = Quaternion4(
             fb_state->orientation()->w(),
             fb_state->orientation()->x(),
@@ -292,6 +292,6 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
     return state;
 }
 
-// PluginManager es el responsable de reconstruir el FlatBuffer del estado.
+// PluginManager is responsible for rebuilding the state FlatBuffer.
 
 } // namespace MoLab

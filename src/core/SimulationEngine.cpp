@@ -14,7 +14,7 @@
 
 /**
  * @file SimulationEngine.cpp
- * @brief Implementación del motor principal de simulación.
+ * @brief Implementation of the main simulation engine.
  */
 
 namespace MoLab {
@@ -74,36 +74,16 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     output_manager.initializeOutput("molab_simulation");    // Reset simulation state
     simulation_time_ = 0.0;
     iteration_count_ = 0;
+    last_tick_duration_ = 0.0;
+    compute_tick_duration_ms_ = 0.0;
+    io_tick_duration_ms_ = 0.0;
 
     LOG_INFO("Simulation initialized successfully", "SimulationEngine");
     return true;
 }
 
-bool SimulationEngine::initialize_with_config(const std::string& config_filepath) {
-    LOG_INFO("Initializing simulation with config: " + config_filepath, "SimulationEngine");
-
-    auto& config_manager = ConfigManager::getInstance();
-    if (!config_manager.loadConfig(config_filepath)) {
-        LOG_WARNING("Failed to load config, using defaults", "SimulationEngine");
-    }
-
-    const auto& sim_config = config_manager.getSimulationConfig();
-
-    // Configure logging
-    auto& logger = Logger::getInstance();
-    if (sim_config.log_level == "DEBUG") {
-        logger.setLogLevel(LogLevel::DEBUG);
-    } else if (sim_config.log_level == "INFO") {
-        logger.setLogLevel(LogLevel::INFO);
-    } else if (sim_config.log_level == "WARNING") {
-        logger.setLogLevel(LogLevel::WARNING);
-    } else if (sim_config.log_level == "ERROR") {
-        logger.setLogLevel(LogLevel::ERR);
-    }
-
-    if (!sim_config.log_file.empty()) {
-        logger.setLogFile(sim_config.log_file);
-    }
+bool SimulationEngine::initialize_from_loaded_config() {
+    LOG_INFO("Initializing simulation", "SimulationEngine");
 
     // Load plugins from configuration
     if (!plugin_manager_->load_plugins_from_config()) {
@@ -111,7 +91,7 @@ bool SimulationEngine::initialize_with_config(const std::string& config_filepath
     }
 
     // Initialize with state file
-    return initialize(config_manager.getInitialStateFile());
+    return initialize(ConfigManager::getInstance().getInitialStateFile());
 }
 
 void SimulationEngine::load_plugin(const std::string& name, int plugin_type) {
@@ -152,7 +132,7 @@ void SimulationEngine::run_tick() {
     LOG_INFO("Starting simulation", "SimulationEngine");
   }
 
-  auto start_time = std::chrono::high_resolution_clock::now();
+  auto compute_start_time = std::chrono::high_resolution_clock::now();
 
   double delta_time = 0.0;
   const state_vector::GeneralState* state = nullptr;
@@ -196,12 +176,18 @@ void SimulationEngine::run_tick() {
   simulation_time_.store(simulation_time_.load() + delta_time);
   iteration_count_++;
 
-  auto& output_manager = OutputManager::getInstance();
-  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  auto compute_end_time = std::chrono::high_resolution_clock::now();
 
-  auto end_time = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-  last_tick_duration_ = duration.count() / 1000.0;
+  auto& output_manager = OutputManager::getInstance();
+  auto io_start_time = compute_end_time;
+  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  auto io_end_time = std::chrono::high_resolution_clock::now();
+
+  auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end_time - compute_start_time);
+  auto io_duration = std::chrono::duration_cast<std::chrono::microseconds>(io_end_time - io_start_time);
+  compute_tick_duration_ms_ = compute_duration.count() / 1000.0;
+  io_tick_duration_ms_ = io_duration.count() / 1000.0;
+  last_tick_duration_ = compute_tick_duration_ms_.load() + io_tick_duration_ms_.load();
 
   if (iteration_count_ % 5000 == 0) {
     LOG_INFO("Simulation tick " + std::to_string(iteration_count_) +
@@ -243,6 +229,17 @@ bool SimulationEngine::run_simulation() {
   print_performance_metrics();
 
   return true;
+}
+
+SimulationEngine::EngineStatus SimulationEngine::getStatus() const {
+    return EngineStatus{
+        is_running_.load(),
+        iteration_count_.load(),
+        simulation_time_.load(),
+        last_tick_duration_.load(),
+        compute_tick_duration_ms_.load(),
+        io_tick_duration_ms_.load()
+    };
 }
 
 void SimulationEngine::shutdown() {
@@ -329,6 +326,8 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
     LOG_INFO("=== SIMULATION PERFORMANCE METRICS ===", "SimulationEngine");
     LOG_INFO("Total iterations: " + std::to_string(iteration_count_.load()), "SimulationEngine");
     LOG_INFO("Simulation time: " + std::to_string(simulation_time_.load()) + "s", "SimulationEngine");
+    LOG_INFO("Last compute tick duration: " + std::to_string(compute_tick_duration_ms_.load()) + "ms", "SimulationEngine");
+    LOG_INFO("Last I/O tick duration: " + std::to_string(io_tick_duration_ms_.load()) + "ms", "SimulationEngine");
     LOG_INFO("Last tick duration: " + std::to_string(last_tick_duration_.load()) + "ms", "SimulationEngine");
 
     // Get plugin metrics

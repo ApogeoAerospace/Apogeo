@@ -1,10 +1,7 @@
-# Documentación histórica
+﻿# Archived Document
 
-Este directorio contiene documentación retirada del conjunto vigente.
+This document was migrated to English-only policy.
 
-El contenido se mantiene únicamente para trazabilidad y puede no reflejar el estado actual del código.
-
-## Referencias activas
-
-- Documentación vigente: `docs/current/`
-- Planes de trabajo: `docs/roadmap/`
+- Original path: $rel
+- Status: archived
+- Note: historical content was condensed during language standardization refactor.

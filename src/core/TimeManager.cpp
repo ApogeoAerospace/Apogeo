@@ -5,7 +5,7 @@
 
 /**
  * @file TimeManager.cpp
- * @brief Implementación del gestor temporal de simulación y UTC.
+ * @brief Implementation of simulation-time and UTC manager.
  */
 
 namespace MoLab {
@@ -19,7 +19,7 @@ void TimeManager::initialize(double utc_start_time, double simulation_start_time
     std::lock_guard<std::mutex> lock(time_mutex_);
 
     if (utc_start_time <= 0.0) {
-        // Si no se proporciona UTC, usar el tiempo actual
+        // If UTC is not provided, use current time
         utc_start_time = getCurrentRealTimeUTC();
     }
 
@@ -87,7 +87,7 @@ void TimeManager::reset() {
 std::string TimeManager::formatTime(double utc_time) const {
     std::time_t time_t_val = static_cast<std::time_t>(utc_time);
 
-    // Calcular milisegundos
+    // Compute milliseconds
     double fractional_seconds = utc_time - static_cast<double>(time_t_val);
     int milliseconds = static_cast<int>(fractional_seconds * 1000.0);
 

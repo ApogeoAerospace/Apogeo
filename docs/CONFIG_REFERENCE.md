@@ -3,6 +3,12 @@
 This document defines the intended behavior of each configuration variable in
 `data/defaults/default_config.json`.
 
+Configuration is loaded once during bootstrap in `main.cpp` and then consumed by runtime components through `ConfigManager`.
+`ConfigManager` is responsible for loading/parsing/validation and exposing config data.
+Logger runtime bootstrap policy is applied in `main.cpp` from loaded values.
+If loading fails, `ConfigManager` falls back to defaults and emits detailed failure diagnostics.
+Parse/validation errors include detailed failure reasons.
+
 ## Root Structure
 
 - `simulation`: Global simulation run controls.
@@ -10,6 +16,7 @@ This document defines the intended behavior of each configuration variable in
 - `initial_state_file`: Input state file used to initialize simulation state.
 - `output_directory`: Base directory for generated simulation outputs.
 - `logging`: Logger output/retention behavior.
+- `ipc`: IPC transport throttling behavior for event/telemetry output.
 - `performance`: Performance instrumentation and execution tuning.
 - `validation`: Runtime sanity and numerical safety checks.
 - `vehicle_models`: Vehicle model data sources (aero, geometry, propulsion, mass, limits).
@@ -79,9 +86,12 @@ Example parameters in default config:
 
 - `logging.console_output` (`boolean`)  
   If `true`, log messages are written to console/stdout.
+  Currently integrated in core runtime through `Logger::setConsoleOutputEnabled(...)`.
+  In `--ipc stdio` mode, console output is forced off to keep stdout reserved for JSON IPC lines.
 
 - `logging.file_output` (`boolean`)  
   If `true`, log messages are written to configured log file.
+  Currently integrated in core runtime through `Logger::setLogFile(...)` / `Logger::closeLogFile()`.
 
 - `logging.log_rotation` (`boolean`)  
   Enables rolling/rotating log files when size limit is reached.
@@ -91,6 +101,23 @@ Example parameters in default config:
 
 - `logging.max_files` (`integer`)  
   Number of rotated log files retained.
+
+---
+
+## `ipc`
+
+- `ipc.tick_event_interval` (`integer`, ticks)
+  Emit `tick_completed` IPC events every N ticks.
+
+- `ipc.telemetry_interval_ticks` (`integer`, ticks)
+  Emit `state_sample` IPC telemetry every N ticks.
+
+Both values must be positive integers.
+
+IPC runtime note:
+
+- On IPC session start, recent logger history is replayed as `log` events.
+- Replay history is bounded to the latest `256` accepted log entries.
 
 ---
 

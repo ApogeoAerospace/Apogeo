@@ -19,7 +19,7 @@
 
 /**
  * @file PluginManager.cpp
- * @brief Implementación del gestor de carga y ejecución de plugins.
+ * @brief Implementation of plugin load and execution manager.
  */
 
 #ifdef _WIN32
@@ -27,6 +27,56 @@
 #endif
 
 namespace MoLab {
+
+namespace {
+
+/**
+ * @brief Logging adapter so plugins can use the host logger.
+ */
+void plugin_host_log_bridge(int32_t level, const char* component, const char* message, void* user_data) {
+    (void)user_data;
+
+    const std::string component_name = component ? component : "Plugin";
+    const std::string log_message = message ? message : "";
+
+    switch (level) {
+        case PLUGIN_LOG_DEBUG:
+            LOG_DEBUG(log_message, component_name);
+            break;
+        case PLUGIN_LOG_INFO:
+            LOG_INFO(log_message, component_name);
+            break;
+        case PLUGIN_LOG_WARNING:
+            LOG_WARNING(log_message, component_name);
+            break;
+        case PLUGIN_LOG_ERROR:
+            LOG_ERROR(log_message, component_name);
+            break;
+        case PLUGIN_LOG_CRITICAL:
+            LOG_CRITICAL(log_message, component_name);
+            break;
+        default:
+            LOG_INFO(log_message, component_name);
+            break;
+    }
+}
+
+/**
+ * @brief Returns a stable host-services instance for plugins.
+ */
+const PluginHostServices* get_stable_host_services() {
+    static PluginHostServices services = [] {
+        PluginHostServices s = {};
+        s.api_version = 1;
+        s.log = &plugin_host_log_bridge;
+        s.user_data = nullptr;
+        return s;
+    }();
+
+    return &services;
+}
+
+} // namespace
 
 static std::string normalize_plugin_path(const std::string& path) {
     if (path.find(".dll") != std::string::npos ||
@@ -54,17 +104,20 @@ static std::string normalize_plugin_path(const std::string& path) {
     }
 
 #ifdef _WIN32
-    return dir + basename + ".dll";
+    std::filesystem::path normalized(dir + basename + ".dll");
+    return normalized.lexically_normal().generic_string();
 #elif __APPLE__
     if (basename.substr(0, 3) != "lib") {
         basename = "lib" + basename;
     }
-    return dir + basename + ".dylib";
+    std::filesystem::path normalized(dir + basename + ".dylib");
+    return normalized.lexically_normal().generic_string();
 #else
     if (basename.substr(0, 3) != "lib") {
         basename = "lib" + basename;
     }
-    return dir + basename + ".so";
+    std::filesystem::path normalized(dir + basename + ".so");
+    return normalized.lexically_normal().generic_string();
 #endif
 }
 
@@ -73,7 +126,7 @@ static std::vector<std::string> build_plugin_candidates(const std::string& norma
 
     std::vector<std::string> candidates;
     auto append_unique = [&candidates](const fs::path& candidate) {
-        std::string normalized = candidate.lexically_normal().string();
+        std::string normalized = candidate.lexically_normal().generic_string();
         if (normalized.empty()) {
             return;
         }
@@ -105,7 +158,7 @@ static std::vector<std::string> build_plugin_candidates(const std::string& norma
     return candidates;
 }
 
-// Scheduler simple para ejecutar tareas de plugins en paralelo.
+// Simple scheduler to run plugin tasks in parallel.
 class PluginTaskScheduler {
 public:
     explicit PluginTaskScheduler(size_t thread_count) {
@@ -220,6 +273,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(GetProcAddress(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
+    plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(GetProcAddress(plugin.lib_handle, "plugin_set_host_services"));
 #else
     for (const auto& candidate : candidates) {
         LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
@@ -238,6 +292,7 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
     plugin.configure_func = reinterpret_cast<decltype(plugin.configure_func)>(dlsym(plugin.lib_handle, "plugin_configure"));
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(dlsym(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(dlsym(plugin.lib_handle, "plugin_destroy_instance"));
+    plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(dlsym(plugin.lib_handle, "plugin_set_host_services"));
 #endif
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
@@ -293,6 +348,20 @@ bool PluginManager::load_plugins_from_config() {
             loaded_plugins_.back().name = plugin_config.name;
         }
 
+        bool enable_host_logger = false;
+        if (plugin_config.parameters.is_object()) {
+            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
+        }
+
+        if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
+            if (enable_host_logger) {
+                loaded_plugins_.back().set_host_services_func(get_stable_host_services());
+                LOG_INFO("Host logger enabled for plugin: " + plugin_config.name, "PluginManager");
+            } else {
+                LOG_INFO("Host logger disabled for plugin: " + plugin_config.name, "PluginManager");
+            }
+        }
+
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {
             auto& last_plugin = loaded_plugins_.back();
             if (last_plugin.configure_func) {
@@ -316,13 +385,13 @@ bool PluginManager::load_plugins_from_config() {
 void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, double delta_time) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Fase 1: ejecución secuencial (modifica estado)
+    // Phase 1: sequential execution (modifies state)
     execute_sequential_plugins(state_buffer, delta_time);
 
-    // Fase 2: ejecución paralela (calcula fuerzas)
+    // Phase 2: parallel execution (computes forces)
     execute_parallel_plugins(state_buffer, delta_time);
 
-    // Fase 3: integración física con fuerzas/torques acumulados
+    // Phase 3: physical integration with accumulated forces/torques
     apply_physics_integration(state_buffer, delta_time);
 
     total_cycles_++;
@@ -471,7 +540,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Si no hay fuerzas/torques, solo avanzar tiempo sin reconstruir buffer
+    // If there are no forces/torques, only advance time without rebuilding buffer
     if (total_force.isZero() && total_torque.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
@@ -487,7 +556,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     flatbuffers::FlatBufferBuilder builder;
 
-    // Cinemática actualizada
+    // Updated kinematics
     auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
     auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
     auto orientation = state_vector::Quaternion(
@@ -497,7 +566,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         static_cast<float>(new_state.orientation.w()));
     auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
 
-    // Propiedades de masa y CG
+    // Mass and CG properties
     float total_mass = current_state->total_mass();
     state_vector::Vec3 cg_loc = current_state->cg_location()
         ? state_vector::Vec3(current_state->cg_location()->x(), current_state->cg_location()->y(), current_state->cg_location()->z())
@@ -512,8 +581,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Datos aerodinámicos - Los plugins actualizan estos valores en el buffer
-    // PluginManager solo los copia del estado actual
+    // Aerodynamic data - plugins update these values in the buffer
+    // PluginManager only copies them from current state
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();
@@ -523,7 +592,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     float atm_pressure = current_state->atm_pressure();
     float atm_temperature = current_state->atm_temperature();
 
-    // Arrays: copiar si existen
+    // Arrays: copy if present
     flatbuffers::Offset<flatbuffers::Vector<float>> propellant_masses_fb;
     if (auto pm = current_state->propellant_masses()) {
         std::vector<float> pm_vec;
@@ -532,7 +601,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         propellant_masses_fb = builder.CreateVector(pm_vec);
     }
 
-    // Engines (vector de structs)
+    // Engines (vector of structs)
     flatbuffers::Offset<flatbuffers::Vector<const state_vector::EngineCmd*>> engines_fb;
     if (auto engines = current_state->engines()) {
         std::vector<state_vector::EngineCmd> eng_vec;
@@ -553,7 +622,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         surface_deflections_fb = builder.CreateVector(sd_vec);
     }
 
-    // Construir GeneralState preservando dt
+    // Build GeneralState while preserving dt
     state_vector::GeneralStateBuilder gs_builder(builder);
     gs_builder.add_sim_time(static_cast<float>(new_state.time));
     gs_builder.add_dt(current_state->dt());
@@ -583,7 +652,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     auto general_state = gs_builder.Finish();
     builder.Finish(general_state);
 
-    // Actualizar buffer de estado
+    // Update state buffer
     const uint8_t* new_buffer = builder.GetBufferPointer();
     uint32_t new_size = builder.GetSize();
     state_buffer.assign(new_buffer, new_buffer + new_size);

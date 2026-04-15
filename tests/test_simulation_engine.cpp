@@ -7,7 +7,7 @@
 
 /**
  * @file test_simulation_engine.cpp
- * @brief Pruebas unitarias para `SimulationEngine`.
+ * @brief Unit tests for `SimulationEngine`.
  */
 
 using json = nlohmann::json;
@@ -113,7 +113,9 @@ TEST_F(SimulationEngineTest, InitializeWithNonExistentFile) {
 
 TEST_F(SimulationEngineTest, InitializeWithConfig) {
     SimulationEngine engine;
-    EXPECT_TRUE(engine.initialize_with_config(test_config_file));
+    auto& config = MoLab::ConfigManager::getInstance();
+    config.loadConfig(test_config_file);
+    EXPECT_TRUE(engine.initialize_from_loaded_config());
 }
 
 TEST_F(SimulationEngineTest, GetSimulationTime) {
@@ -188,6 +190,8 @@ TEST_F(SimulationEngineTest, GetLastTickDuration) {
 
     engine.run_tick();
     EXPECT_GE(engine.get_last_tick_duration(), 0.0);
+    EXPECT_GE(engine.get_last_compute_tick_duration(), 0.0);
+    EXPECT_GE(engine.get_last_io_tick_duration(), 0.0);
 }
 
 TEST_F(SimulationEngineTest, PrintPerformanceMetrics) {
@@ -220,7 +224,7 @@ TEST_F(SimulationEngineTest, ValidateStateAfterTick) {
     EXPECT_TRUE(engine.validate_simulation_state());
 }
 
-// Ground Collision Se maneja en el módulo de ambiente, no en el núcleo de simulación
+    // Ground collision is handled by the environment module, not by the simulation core
 
 TEST_F(SimulationEngineTest, MultipleInitializations) {
     SimulationEngine engine;

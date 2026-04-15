@@ -1,9 +1,9 @@
-# Guía de ejecución (redirección)
+# Execution Guide
 
-Este documento fue movido al archivo de documentación `Legacy`:
+This document was moved to the `Legacy` documentation set:
 
-- [Guía de ejecución Legacy](./deprecated/EXECUTION_GUIDE.md)
+- [Legacy execution guide](./deprecated/EXECUTION_GUIDE.md)
 
-Para el flujo vigente, consulta:
+For the active workflow, see:
 
-- [Compilación y ejecución (actual)](./current/build-run.md)
+- [Build and run (current)](./current/build-run.md)

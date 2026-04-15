@@ -6,17 +6,17 @@
 
 /**
  * @file InitialStateLoader.h
- * @brief Declaraciones para cargar el estado inicial desde JSON hacia FlatBuffers.
+ * @brief Declarations for loading initial state from JSON into FlatBuffers.
  */
 
-// Utilidades para crear el estado inicial de simulación desde JSON.
+// Utilities to create initial simulation state from JSON.
 namespace MoLab::InitialStateLoader {
     /**
-     * @brief Construye un `GeneralState` a partir de un archivo JSON.
+     * @brief Builds a `GeneralState` from a JSON file.
      *
-     * @param builder Constructor de FlatBuffers donde se escribirá el estado.
-     * @param filepath Ruta del archivo JSON de entrada.
-     * @return `true` si el estado fue creado correctamente.
+     * @param builder FlatBuffers builder where state is written.
+     * @param filepath Input JSON file path.
+     * @return `true` if state was created successfully.
      */
     bool create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath);
 } // namespace MoLab::InitialStateLoader
