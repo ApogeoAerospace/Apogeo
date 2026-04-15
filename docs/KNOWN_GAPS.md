@@ -22,4 +22,4 @@
 
 Documentation status: **Current**
 
-Back to: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](./README.md)

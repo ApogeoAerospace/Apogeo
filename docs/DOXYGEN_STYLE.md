@@ -39,10 +39,10 @@ public:
 
 The official project guide is:
 
-- [`docs/DOCUMENTATION_STYLE_GUIDE.md`](../DOCUMENTATION_STYLE_GUIDE.md)
+- [`docs/DOCUMENTATION_STYLE_GUIDE.md`](./DOCUMENTATION_STYLE_GUIDE.md)
 
 ---
 
 Documentation status: **Current**
 
-Back to: [`docs/README.md`](../README.md)
+Back to: [`docs/README.md`](./README.md)

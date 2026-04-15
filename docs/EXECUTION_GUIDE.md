@@ -6,4 +6,4 @@ This document was moved to the `Legacy` documentation set:
 
 For the active workflow, see:
 
-- [Build and run (current)](./current/build-run.md)
+- [Build and run (current)](./BUILD_RUN.md)
