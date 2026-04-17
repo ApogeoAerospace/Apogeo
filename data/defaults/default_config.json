@@ -1,7 +1,7 @@
 {
     "simulation": {
         "duration": 100.0,
-        "max_iterations": 10,
+        "max_iterations": 100.0,
         "enable_logging": true,
         "log_file": "logs/molab.log",
         "log_level": "INFO"
@@ -25,6 +25,32 @@
             "enabled": true,
             "parameters": {
                 "use_host_logger": true
+            }
+        },
+        {
+          "name": "aerodynamics",
+          "type": 1,
+          "library_path": "plugins/aerodynamics",
+          "enabled": true,
+          "parameters": {
+
+            }
+        },
+        {
+          "name": "propulsion",
+          "type": 1,
+          "library_path": "plugins/propulsion",
+          "enabled": true,
+          "parameters": {
+
+            }
+        },
+        {
+          "name": "environment",
+          "type": 1,
+          "library_path": "plugins/environment",
+          "enabled": true,
+          "parameters": {
             }
         }
     ],

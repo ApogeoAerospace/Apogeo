@@ -131,7 +131,7 @@ add_custom_command(
 # --- Plugins ---
 
 set(PLUGIN_NAMES
-    structures
+
 )
 
 # Standardized plugin output layout:
@@ -183,6 +183,51 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
 
 endforeach()
+
+# --- Deprecated Plugins ---
+
+set(DEPRECATED_PLUGIN_NAMES
+    structures
+    aerodynamics
+    propulsion
+    environment
+)
+
+# Standardized plugin output layout:
+# - Plugin runtime binaries (.dll/.so/.dylib) -> bin/plugins
+# - Archive/import libraries (.lib/.a)        -> lib/plugins
+set(PLUGIN_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+set(PLUGIN_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/plugins")
+
+foreach(_plugin_name IN LISTS DEPRECATED_PLUGIN_NAMES)
+
+    set(_plugin_sources
+        plugins/deprecated/${_plugin_name}/${_plugin_name}.cpp
+    )
+
+    set(_plugin_private_libs
+        flatbuffers::flatbuffers
+    )
+
+    add_library(${_plugin_name} SHARED ${_plugin_sources})
+    add_dependencies(${_plugin_name} generate_flatbuffers)
+
+    # Keep plugin binary output path consistent across platforms/configurations
+    set_target_properties(${_plugin_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        LIBRARY_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${PLUGIN_ARCHIVE_OUTPUT_DIRECTORY}"
+    )
+
+    target_include_directories(${_plugin_name} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
+        "${GENERATED_DIR}"
+    )
+
+    target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
+
+endforeach()
+
 
 message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
 message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")

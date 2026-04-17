@@ -9,7 +9,7 @@
  * - Coeficientes aerodinámicos configurables
  */
 
-#include "../../src/api/plugin_api.h"
+#include "../../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 #include <cmath>
 #include <algorithm>
@@ -157,6 +157,24 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     instance->initialized = true;
 
     return reinterpret_cast<PluginHandle>(instance);
+}
+
+PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params) {
+    (void)json_params;
+    if (!handle) {
+        return -1;
+    }
+
+    AerodynamicsPluginInstance* instance = reinterpret_cast<AerodynamicsPluginInstance*>(handle);
+    if (!instance->initialized) {
+        return -2;
+    }
+
+    return 0;
+}
+
+PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
+    (void)services;
 }
 
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {
