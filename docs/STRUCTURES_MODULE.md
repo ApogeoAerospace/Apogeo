@@ -64,7 +64,6 @@ Accepts JSON parameters:
 
 - `mass_properties_path` (`string`, optional)
 - `structural_limits_path` (`string`, optional)
-- `debug_output` (`bool`, optional)
 
 Returns:
 
@@ -82,6 +81,7 @@ This keeps interface compatibility while the final structural physics model is p
 If host services are provided via `plugin_set_host_services(...)`, plugin logs are forwarded through host logger callback. Otherwise, the plugin falls back to local `stdout` logging.
 
 Host injection is controlled by runtime plugin configuration (`use_host_logger` / host logger integration flag in plugin parameters).
+Tick-level verbosity is controlled by the host logger level (for example `DEBUG`), not by plugin-local debug flags.
 
 Compatibility behavior:
 

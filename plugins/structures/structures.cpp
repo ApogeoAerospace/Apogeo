@@ -14,6 +14,7 @@
 #include <atomic>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <nlohmann/json.hpp>
 
@@ -28,7 +29,6 @@ using HostLogFn = void(*)(int32_t, const char*, const char*, void*);
 struct StructuresPluginInstance {
     structures::StructuresModule module;
     bool initialized = false;
-    bool debug_output = false;
 };
 
 std::atomic<HostLogFn> g_host_log_fn{nullptr};
@@ -103,6 +103,9 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
 
     instance->initialized = true;
 
+    plugin_log(PLUGIN_LOG_INFO, "Structures", "Structures plugin instance created and default data loaded.");
+    plugin_log(PLUGIN_LOG_WARNING, "Structures", "Module currently returns zero force and torque.");
+
     return reinterpret_cast<PluginHandle>(instance);
 }
 
@@ -131,10 +134,6 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         if (params.contains("structural_limits_path")) {
             limits_csv_path = params["structural_limits_path"].get<std::string>();
         }
-        if (params.contains("debug_output")) {
-            instance->debug_output = params["debug_output"].get<bool>();
-        }
-
         // Mass/CoM/inertia are temporarily kept in JSON placeholders.
         const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
         const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
@@ -148,6 +147,11 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
             }
             return -4;
         }
+
+        std::ostringstream config_msg;
+        config_msg << "Configured with mass_properties_path='" << mass_json_path
+                   << "', structural_limits_path='" << limits_csv_path;
+        plugin_log(PLUGIN_LOG_INFO, "Structures", config_msg.str());
 
         return 0;
     } catch (...) {

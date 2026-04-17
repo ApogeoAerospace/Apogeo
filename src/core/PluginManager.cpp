@@ -242,7 +242,7 @@ PluginManager::~PluginManager() {
     shutdown();
 }
 
-bool PluginManager::load_plugin(const std::string& path, PluginType type) {
+bool PluginManager::load_plugin(const std::string& path, PluginType type, bool enable_host_logger) {
     // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
@@ -305,6 +305,16 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
         return false;
     }
 
+    if (plugin.set_host_services_func) {
+        if (enable_host_logger) {
+            plugin.set_host_services_func(get_stable_host_services());
+            LOG_INFO("Host logger enabled for plugin: " + normalized_path, "PluginManager");
+        } else {
+            plugin.set_host_services_func(nullptr);
+            LOG_INFO("Host logger disabled for plugin: " + normalized_path, "PluginManager");
+        }
+    }
+
     // Crear instancia del plugin
     plugin.handle = plugin.create_func();
     if (plugin.handle == nullptr) {
@@ -338,7 +348,12 @@ bool PluginManager::load_plugins_from_config() {
         }
 
         PluginType type = static_cast<PluginType>(plugin_config.type);
-        if (!load_plugin(plugin_config.library_path, type)) {
+        bool enable_host_logger = false;
+        if (plugin_config.parameters.is_object()) {
+            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
+        }
+
+        if (!load_plugin(plugin_config.library_path, type, enable_host_logger)) {
             LOG_ERROR("Failed to load plugin from config: " + plugin_config.name, "PluginManager");
             all_loaded = false;
             continue;
@@ -346,20 +361,6 @@ bool PluginManager::load_plugins_from_config() {
 
         if (!loaded_plugins_.empty()) {
             loaded_plugins_.back().name = plugin_config.name;
-        }
-
-        bool enable_host_logger = false;
-        if (plugin_config.parameters.is_object()) {
-            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
-        }
-
-        if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
-            if (enable_host_logger) {
-                loaded_plugins_.back().set_host_services_func(get_stable_host_services());
-                LOG_INFO("Host logger enabled for plugin: " + plugin_config.name, "PluginManager");
-            } else {
-                LOG_INFO("Host logger disabled for plugin: " + plugin_config.name, "PluginManager");
-            }
         }
 
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {

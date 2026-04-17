@@ -24,8 +24,7 @@
             "library_path": "plugins/structures",
             "enabled": true,
             "parameters": {
-                "use_host_logger": true,
-                "debug_output": true
+                "use_host_logger": true
             }
         }
     ],
