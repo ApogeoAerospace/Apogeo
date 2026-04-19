@@ -131,7 +131,7 @@ add_custom_command(
 # --- Plugins ---
 
 set(PLUGIN_NAMES
-
+    example_plugin
 )
 
 # Standardized plugin output layout:

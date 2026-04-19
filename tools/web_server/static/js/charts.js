@@ -5,6 +5,11 @@
 
 const Charts = {
     charts: {},
+
+    getColumnIndex(headers, name, fallbackIndex = -1) {
+        const idx = headers.indexOf(name);
+        return idx >= 0 ? idx : fallbackIndex;
+    },
     
     /**
      * Create all charts from data
@@ -38,12 +43,16 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
+        const posXIdx = this.getColumnIndex(data.headers, 'position_x', 3);
+        const posYIdx = this.getColumnIndex(data.headers, 'position_y', 4);
+        const posZIdx = this.getColumnIndex(data.headers, 'position_z', 5);
         
         // Position X
-        if (data.headers.length > 3) {
+        if (posXIdx >= 0) {
             datasets.push({
                 label: '📍 Position X (m)',
-                data: data.rows.map(row => ({x: row[1], y: row[3]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[posXIdx]})),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
                 fill: false,
@@ -53,10 +62,10 @@ const Charts = {
         }
         
         // Position Y
-        if (data.headers.length > 4) {
+        if (posYIdx >= 0) {
             datasets.push({
                 label: '📍 Position Y (m)',
-                data: data.rows.map(row => ({x: row[1], y: row[4]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[posYIdx]})),
                 borderColor: 'rgba(54, 162, 235, 1)',
                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                 fill: false,
@@ -66,10 +75,10 @@ const Charts = {
         }
         
         // Position Z
-        if (data.headers.length > 5) {
+        if (posZIdx >= 0) {
             datasets.push({
                 label: '📍 Position Z (m)',
-                data: data.rows.map(row => ({x: row[1], y: row[5]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[posZIdx]})),
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
                 fill: false,
@@ -124,12 +133,16 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
+        const vxIdx = this.getColumnIndex(data.headers, 'velocity_x', 6);
+        const vyIdx = this.getColumnIndex(data.headers, 'velocity_y', 7);
+        const vzIdx = this.getColumnIndex(data.headers, 'velocity_z', 8);
         
         // Velocity X
-        if (data.headers.length > 6) {
+        if (vxIdx >= 0) {
             datasets.push({
                 label: '🚀 Velocity X (m/s)',
-                data: data.rows.map(row => ({x: row[1], y: row[6]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[vxIdx]})),
                 borderColor: 'rgba(255, 159, 64, 1)',
                 backgroundColor: 'rgba(255, 159, 64, 0.1)',
                 fill: false,
@@ -139,10 +152,10 @@ const Charts = {
         }
         
         // Velocity Y
-        if (data.headers.length > 7) {
+        if (vyIdx >= 0) {
             datasets.push({
                 label: '🚀 Velocity Y (m/s)',
-                data: data.rows.map(row => ({x: row[1], y: row[7]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[vyIdx]})),
                 borderColor: 'rgba(153, 102, 255, 1)',
                 backgroundColor: 'rgba(153, 102, 255, 0.1)',
                 fill: false,
@@ -152,10 +165,10 @@ const Charts = {
         }
         
         // Velocity Z
-        if (data.headers.length > 8) {
+        if (vzIdx >= 0) {
             datasets.push({
                 label: '🚀 Velocity Z (m/s)',
-                data: data.rows.map(row => ({x: row[1], y: row[8]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[vzIdx]})),
                 borderColor: 'rgba(255, 205, 86, 1)',
                 backgroundColor: 'rgba(255, 205, 86, 0.1)',
                 fill: false,
@@ -165,12 +178,12 @@ const Charts = {
         }
         
         // Total velocity magnitude
-        if (data.headers.length > 8) {
+        if (vxIdx >= 0 && vyIdx >= 0 && vzIdx >= 0) {
             const totalVelocity = data.rows.map(row => {
-                const vx = row[6] || 0;
-                const vy = row[7] || 0;
-                const vz = row[8] || 0;
-                return {x: row[1], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
+                const vx = row[vxIdx] || 0;
+                const vy = row[vyIdx] || 0;
+                const vz = row[vzIdx] || 0;
+                return {x: row[timeIdx], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
             });
             
             datasets.push({
@@ -219,12 +232,15 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
+        const altitudeIdx = this.getColumnIndex(data.headers, 'position_z', 5);
+        const vzIdx = this.getColumnIndex(data.headers, 'velocity_z', 8);
         
         // Altitude (Position Z)
-        if (data.headers.length > 5) {
+        if (altitudeIdx >= 0) {
             datasets.push({
                 label: '🏔️ Altitude (m)',
-                data: data.rows.map(row => ({x: row[1], y: row[5]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[altitudeIdx]})),
                 borderColor: 'rgba(40, 167, 69, 1)',
                 backgroundColor: 'rgba(40, 167, 69, 0.2)',
                 fill: true,
@@ -234,10 +250,10 @@ const Charts = {
         }
         
         // Vertical velocity
-        if (data.headers.length > 8) {
+        if (vzIdx >= 0) {
             datasets.push({
                 label: '📈 Vertical Velocity (m/s)',
-                data: data.rows.map(row => ({x: row[1], y: row[8]})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[vzIdx]})),
                 borderColor: 'rgba(23, 162, 184, 1)',
                 backgroundColor: 'rgba(23, 162, 184, 0.1)',
                 fill: false,
@@ -291,25 +307,29 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
-        
-        if (data.headers.length > 8) {
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
+        const vxIdx = this.getColumnIndex(data.headers, 'velocity_x', 6);
+        const vyIdx = this.getColumnIndex(data.headers, 'velocity_y', 7);
+        const vzIdx = this.getColumnIndex(data.headers, 'velocity_z', 8);
+
+        if (vxIdx >= 0 && vyIdx >= 0 && vzIdx >= 0) {
             // Calculate speed metrics
             const totalSpeed = data.rows.map(row => {
-                const vx = row[6] || 0;
-                const vy = row[7] || 0;
-                const vz = row[8] || 0;
-                return {x: row[1], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
+                const vx = row[vxIdx] || 0;
+                const vy = row[vyIdx] || 0;
+                const vz = row[vzIdx] || 0;
+                return {x: row[timeIdx], y: Math.sqrt(vx*vx + vy*vy + vz*vz)};
             });
             
             const horizontalSpeed = data.rows.map(row => {
-                const vx = row[6] || 0;
-                const vy = row[7] || 0;
-                return {x: row[1], y: Math.sqrt(vx*vx + vy*vy)};
+                const vx = row[vxIdx] || 0;
+                const vy = row[vyIdx] || 0;
+                return {x: row[timeIdx], y: Math.sqrt(vx*vx + vy*vy)};
             });
             
             const verticalSpeed = data.rows.map(row => {
-                const vz = row[8] || 0;
-                return {x: row[1], y: Math.abs(vz)};
+                const vz = row[vzIdx] || 0;
+                return {x: row[timeIdx], y: Math.abs(vz)};
             });
             
             datasets.push({
@@ -378,6 +398,7 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
         
         // Find column indices for atmospheric data
         const densityIdx = data.headers.indexOf('atm_density');
@@ -387,7 +408,7 @@ const Charts = {
         if (densityIdx > 0) {
             datasets.push({
                 label: '🌫️ Density (kg/m³)',
-                data: data.rows.map(row => ({x: row[1], y: row[densityIdx] || 0})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[densityIdx] || 0})),
                 borderColor: 'rgba(54, 162, 235, 1)',
                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                 fill: false,
@@ -400,7 +421,7 @@ const Charts = {
         if (pressureIdx > 0) {
             datasets.push({
                 label: '📊 Pressure (Pa/1000)',
-                data: data.rows.map(row => ({x: row[1], y: (row[pressureIdx] || 0) / 1000})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: (row[pressureIdx] || 0) / 1000})),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
                 fill: false,
@@ -413,7 +434,7 @@ const Charts = {
         if (temperatureIdx > 0) {
             datasets.push({
                 label: '🌡️ Temperature (K)',
-                data: data.rows.map(row => ({x: row[1], y: row[temperatureIdx] || 0})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[temperatureIdx] || 0})),
                 borderColor: 'rgba(255, 193, 7, 1)',
                 backgroundColor: 'rgba(255, 193, 7, 0.1)',
                 fill: false,
@@ -477,6 +498,7 @@ const Charts = {
         if (!ctx) return;
         
         const datasets = [];
+        const timeIdx = this.getColumnIndex(data.headers, 'simulation_time', 1);
         
         // Find column indices for gravity data
         const gravityXIdx = data.headers.indexOf('gravity_x');
@@ -486,7 +508,7 @@ const Charts = {
         if (gravityXIdx > 0) {
             datasets.push({
                 label: '⚖️ Gravity X (m/s²)',
-                data: data.rows.map(row => ({x: row[1], y: row[gravityXIdx] || 0})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[gravityXIdx] || 0})),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
                 fill: false,
@@ -498,7 +520,7 @@ const Charts = {
         if (gravityYIdx > 0) {
             datasets.push({
                 label: '⚖️ Gravity Y (m/s²)',
-                data: data.rows.map(row => ({x: row[1], y: row[gravityYIdx] || 0})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[gravityYIdx] || 0})),
                 borderColor: 'rgba(54, 162, 235, 1)',
                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                 fill: false,
@@ -510,7 +532,7 @@ const Charts = {
         if (gravityZIdx > 0) {
             datasets.push({
                 label: '⚖️ Gravity Z (m/s²)',
-                data: data.rows.map(row => ({x: row[1], y: row[gravityZIdx] || 0})),
+                data: data.rows.map(row => ({x: row[timeIdx], y: row[gravityZIdx] || 0})),
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
                 fill: false,
@@ -527,7 +549,7 @@ const Charts = {
                     const gx = row[gravityXIdx] || 0;
                     const gy = row[gravityYIdx] || 0;
                     const gz = row[gravityZIdx] || 0;
-                    return {x: row[1], y: Math.sqrt(gx*gx + gy*gy + gz*gz)};
+                    return {x: row[timeIdx], y: Math.sqrt(gx*gx + gy*gy + gz*gz)};
                 }),
                 borderColor: 'rgba(255, 193, 7, 1)',
                 backgroundColor: 'rgba(255, 193, 7, 0.1)',

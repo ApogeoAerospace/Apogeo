@@ -6,14 +6,15 @@ import subprocess
 import threading
 import time
 import uuid
+import json
 from pathlib import Path
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any
 from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
 
 from .logger import setup_logger
-from .utils import write_json_file, get_simulator_path
+from .utils import write_json_file, get_simulator_path, normalize_config_for_simulator
 
 
 logger = setup_logger(__name__)
@@ -126,6 +127,7 @@ class SimulationManager:
         Args:
             job: SimulationJob instance
         """
+        temp_config = None
         try:
             job.status = SimulationStatus.INITIALIZING
             job.start_time = datetime.now()
@@ -146,12 +148,15 @@ class SimulationManager:
                 job.config["initial_state_file"] = str(temp_state_file)
             else:
                 # Use default state file
-                job.config["initial_state_file"] = str(self.config.project_root / "data" / "initial_state.json")
+                job.config["initial_state_file"] = str(self.config.project_root / "data" / "default_state.json")
             
+            # Normalize config for current simulator schema
+            normalized_config = normalize_config_for_simulator(job.config)
+
             # Create temporary config file
             temp_config = self.config.config_dir / f"temp_web_{timestamp}.json"
             
-            if not write_json_file(temp_config, job.config):
+            if not write_json_file(temp_config, normalized_config):
                 raise Exception("Failed to write config file")
             
             # Get simulator path
@@ -160,18 +165,22 @@ class SimulationManager:
             if not simulator_path.exists():
                 raise Exception(f"Simulator not found at: {simulator_path}")
             
-            # Calculate ticks
-            ticks = int(job.config['simulation']['duration'] / job.config['simulation']['time_step'])
+            simulation_cfg = normalized_config.get('simulation', {})
+            duration = float(simulation_cfg.get('duration', 0.0))
+            total_ticks = int(simulation_cfg.get('max_iterations', 0))
+            if total_ticks <= 0:
+                total_ticks = 1
             
-            # Start the simulation process
+            # Start the simulation process (IPC mode)
             job.status = SimulationStatus.RUNNING
-            job.message = f"Running simulation ({ticks} ticks)..."
+            job.message = f"Running simulation (max {total_ticks} ticks)..."
             
             self.logger.info(f"Starting simulation process for job {job.id}")
             
-            # Run simulation with real-time output capture
+            # Run simulation in IPC stdio mode for structured progress/events
             process = subprocess.Popen(
-                [str(simulator_path), "--config", str(temp_config), "--ticks", str(ticks)],
+                [str(simulator_path), "--config", str(temp_config), "--ipc", "stdio"],
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -180,28 +189,28 @@ class SimulationManager:
             
             job.process = process
             
-            # Monitor the process (OPTIMIZED: non-blocking read)
-            import select
-            import sys
-            
-            while process.poll() is None:
-                # Non-blocking read with minimal latency
-                if sys.platform == 'win32':
-                    # Windows: use readline but don't sleep as much
-                    line = process.stdout.readline()
-                    if line:
-                        self._process_output_line(job, line, ticks)
-                    # Reduced sleep for better responsiveness
-                    time.sleep(0.01)  # 10ms instead of 100ms
-                else:
-                    # Unix: use select for true non-blocking
-                    ready = select.select([process.stdout], [], [], 0.01)
-                    if ready[0]:
-                        line = process.stdout.readline()
-                        if line:
-                            self._process_output_line(job, line, ticks)
-                    else:
-                        time.sleep(0.01)
+            init_response = self._send_ipc_command(process, "initialize", {}, job, total_ticks, duration)
+            if init_response.get('type') != 'ack':
+                error_message = init_response.get('error', {}).get('message', 'Failed to initialize IPC session')
+                raise Exception(error_message)
+
+            ipc_cfg = normalized_config.get('ipc', {})
+            run_payload = {
+                "tick_event_interval": int(ipc_cfg.get('tick_event_interval', 50)),
+                "telemetry_interval_ticks": int(ipc_cfg.get('telemetry_interval_ticks', 5))
+            }
+
+            run_response = self._send_ipc_command(process, "run_full", run_payload, job, total_ticks, duration)
+            if run_response.get('type') != 'ack':
+                error_message = run_response.get('error', {}).get('message', 'Simulation execution failed')
+                raise Exception(error_message)
+
+            self._send_ipc_command(process, "shutdown", {}, job, total_ticks, duration)
+
+            if process.stdin:
+                process.stdin.close()
+
+            process.wait(timeout=self.config.max_simulation_timeout)
             
             # Process finished
             returncode = process.returncode
@@ -220,10 +229,6 @@ class SimulationManager:
                 job.message = "Simulation failed"
                 self.logger.error(f"Simulation job {job.id} failed: {job.error}")
             
-            # Cleanup temporary config file
-            if temp_config.exists():
-                temp_config.unlink()
-            
         except Exception as e:
             job.status = SimulationStatus.FAILED
             job.error = str(e)
@@ -231,38 +236,90 @@ class SimulationManager:
             self.logger.exception(f"Exception in simulation job {job.id}")
         
         finally:
+            if temp_config and temp_config.exists():
+                temp_config.unlink()
             job.end_time = datetime.now()
     
-    def _process_output_line(self, job: SimulationJob, line: str, total_ticks: int):
+    def _send_ipc_command(
+        self,
+        process: subprocess.Popen,
+        command_name: str,
+        payload: Dict[str, Any],
+        job: SimulationJob,
+        total_ticks: int,
+        total_duration: float
+    ) -> Dict[str, Any]:
+        """Send an IPC command and wait for its ack/error response."""
+        if not process.stdin or not process.stdout:
+            raise Exception("IPC pipes are not available")
+
+        request_id = str(uuid.uuid4())
+        command = {
+            "type": "command",
+            "id": request_id,
+            "name": command_name,
+            "payload": payload or {}
+        }
+
+        process.stdin.write(json.dumps(command) + "\n")
+        process.stdin.flush()
+
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                stderr = process.stderr.read().strip() if process.stderr else ""
+                raise Exception(stderr or f"IPC connection closed while waiting for '{command_name}' response")
+
+            message = self._process_ipc_message(job, line, total_ticks, total_duration)
+            if not message:
+                continue
+
+            if message.get('type') in {'ack', 'error'} and message.get('request_id') == request_id:
+                return message
+
+    def _process_ipc_message(self, job: SimulationJob, line: str, total_ticks: int, total_duration: float) -> Optional[Dict[str, Any]]:
         """
-        Process a line of output from the simulator to update progress
+        Process a line of IPC output from the simulator to update job status/progress.
         
         Args:
             job: SimulationJob instance
-            line: Output line from simulator
+            line: IPC line from simulator stdout
             total_ticks: Total number of ticks
+            total_duration: Expected simulation duration
         """
-        # Look for progress indicators in output
-        # This assumes the simulator outputs something like "Tick: 100/1000"
-        # Adjust the parsing based on actual simulator output format
-        
-        if "Tick:" in line or "tick" in line.lower():
-            try:
-                # Try to extract tick number
-                parts = line.split()
-                for i, part in enumerate(parts):
-                    if 'tick' in part.lower() and i + 1 < len(parts):
-                        tick_str = parts[i + 1].strip(':,')
-                        if '/' in tick_str:
-                            current_tick = int(tick_str.split('/')[0])
-                        else:
-                            current_tick = int(tick_str)
-                        
-                        job.progress = min((current_tick / total_ticks) * 100, 99.9)
-                        job.message = f"Processing tick {current_tick}/{total_ticks}"
-                        break
-            except (ValueError, IndexError):
-                pass
+        try:
+            message = json.loads(line.strip())
+        except json.JSONDecodeError:
+            return None
+
+        msg_type = message.get('type')
+        if msg_type == 'event':
+            event_name = message.get('event')
+            payload = message.get('payload', {})
+
+            if event_name == 'simulation_started':
+                mode = payload.get('mode', 'run_full')
+                job.message = f"Simulation started ({mode})"
+            elif event_name == 'tick_completed':
+                tick = int(payload.get('tick', 0))
+                sim_time = float(payload.get('sim_time', 0.0))
+
+                tick_progress = (tick / total_ticks) if total_ticks > 0 else 0.0
+                time_progress = (sim_time / total_duration) if total_duration > 0 else 0.0
+                progress_ratio = max(tick_progress, time_progress)
+
+                job.progress = min(max(progress_ratio * 100.0, 0.0), 99.9)
+                job.message = f"Processing tick {tick}/{total_ticks}"
+            elif event_name == 'simulation_finished':
+                if payload.get('success', True):
+                    job.progress = max(job.progress, 99.9)
+                    job.message = "Finalizing simulation output..."
+            elif event_name == 'error':
+                error_msg = payload.get('message')
+                if error_msg:
+                    job.error = str(error_msg)
+
+        return message
     
     def _create_initial_state_data(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
         """
