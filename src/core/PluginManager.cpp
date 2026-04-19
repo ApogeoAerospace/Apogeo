@@ -541,16 +541,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // If there are no forces/torques, only advance time without rebuilding buffer
-    if (total_force.isZero() && total_torque.isZero()) {
-
-        auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
-        if (mutable_state) {
-            float new_time = static_cast<float>(mutable_state->sim_time() + delta_time);
-            mutable_state->mutate_sim_time(new_time);
-        }
-        return;
-    }
+    // Even with zero force/torque, run integration so kinematics are still
+    // propagated (e.g., position advances with current velocity).
 
     PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
@@ -592,6 +584,12 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     float atm_density = current_state->atm_density();
     float atm_pressure = current_state->atm_pressure();
     float atm_temperature = current_state->atm_temperature();
+    state_vector::Vec3 gravity = current_state->gravity()
+        ? state_vector::Vec3(current_state->gravity()->x(), current_state->gravity()->y(), current_state->gravity()->z())
+        : state_vector::Vec3(0.0f, 0.0f, 0.0f);
+    state_vector::Vec3 wind_velocity = current_state->wind_velocity()
+        ? state_vector::Vec3(current_state->wind_velocity()->x(), current_state->wind_velocity()->y(), current_state->wind_velocity()->z())
+        : state_vector::Vec3(0.0f, 0.0f, 0.0f);
 
     // Arrays: copy if present
     flatbuffers::Offset<flatbuffers::Vector<float>> propellant_masses_fb;
@@ -646,6 +644,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     gs_builder.add_atm_density(atm_density);
     gs_builder.add_atm_pressure(atm_pressure);
     gs_builder.add_atm_temperature(atm_temperature);
+    gs_builder.add_gravity(&gravity);
+    gs_builder.add_wind_velocity(&wind_velocity);
 
     if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
     if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);

@@ -91,6 +91,7 @@ inline bool isInertiaDiagonal(const InertiaTensor3& I, double tol = 1e-10) {
 struct PhysicsState {
     Vector3 position;
     Vector3 velocity;
+    Vector3 gravity;
     Quaternion4 orientation;         // Unit quaternion (w, x, y, z)
     Vector3 angular_velocity;
     double mass;
@@ -100,6 +101,7 @@ struct PhysicsState {
     PhysicsState()
         : position(Vector3::Zero()),
           velocity(Vector3::Zero()),
+          gravity(Vector3::Zero()),
           orientation(Quaternion4::Identity()),
           angular_velocity(Vector3::Zero()),
           mass(1.0),
@@ -195,6 +197,7 @@ private:
     static void computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                       double mass,
                                       const InertiaTensor3& inertia,
+                                      const Vector3& gravity,
                                       const Vector3& force,
                                       const Vector3& torque);
 };
