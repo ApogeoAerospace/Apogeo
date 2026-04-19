@@ -10,7 +10,7 @@
 
 /**
  * @file SimulationEngine.h
- * @brief Declaration of the main MoLab simulation engine.
+ * @brief Declaration of the main Apogeo simulation engine.
  */
 
 namespace MoLab {
@@ -22,7 +22,7 @@ namespace state_vector {
 }
 
 /**
- * @class SimulationEngine
+ * @class MoLab::SimulationEngine
  * @brief Main engine that orchestrates state, plugins, time, and output.
  */
 namespace MoLab {

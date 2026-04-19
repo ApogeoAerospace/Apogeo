@@ -8,7 +8,7 @@
 
 /**
  * @namespace MoLab
- * @brief Main namespace for the MoLab simulator core.
+ * @brief Main namespace for the Apogeo simulator core.
  *
  * Groups the main simulation components, plugin management,
  * configuration, logging, time, and output handling.

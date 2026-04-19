@@ -1,6 +1,7 @@
 # Unit tests
+# Unit tests
 
-This directory contains project unit tests implemented with Google Test.
+This directory contains GoogleTest-based unit tests for MoLab.
 
 ## Objective
 
@@ -19,6 +20,8 @@ Tests currently cover components such as:
 - `PhysicsIntegrator`
 - `SimulationEngine`
 - `TimeManager`
+- `CommandEventProtocol`
+- `IpcSession`
 
 ## Local execution
 
@@ -38,7 +41,21 @@ ctest --output-on-failure --verbose
 ./bin/core_tests --gtest_filter=ConfigManagerTest.*
 ./bin/core_tests --gtest_filter=PhysicsIntegratorTest.*
 ./bin/core_tests --gtest_filter=TimeManagerTest.*
+./bin/core_tests --gtest_filter=CommandEventProtocolTest.*
+./bin/core_tests --gtest_filter=IpcSessionTest.*
 ```
+
+## Test inventory
+
+- `test_config_manager.cpp`: configuration loading, defaults, and validation.
+- `test_initial_state_loader.cpp`: state JSON parsing into FlatBuffers.
+- `test_logger.cpp`: log levels, formatting, append behavior, and thread safety.
+- `test_output_manager.cpp`: output persistence and generated file behavior.
+- `test_physics_integrator.cpp`: integration methods, analytical checks, and edge cases.
+- `test_simulation_engine.cpp`: engine lifecycle and integration flow behavior.
+- `test_time_manager.cpp`: simulation time, UTC conversion, and reset semantics.
+- `test_command_event_protocol.cpp`: command parsing and ACK/error/event message builders.
+- `test_ipc_session.cpp`: throttle defaults, payload overrides, and validation failures.
 
 ## Best practices
 

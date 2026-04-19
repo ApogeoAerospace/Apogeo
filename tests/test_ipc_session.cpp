@@ -1,6 +1,14 @@
 #include <gtest/gtest.h>
 #include "ipc/IpcSession.h"
 
+/**
+ * @file test_ipc_session.cpp
+ * @brief Unit tests for IPC session throttle settings resolution.
+ *
+ * Covers default resolution from `SimulationConfig`, payload override behavior,
+ * and validation failures for invalid values.
+ */
+
 using namespace MoLab;
 
 TEST(IpcSessionTest, ResolveThrottleSettingsUsesConfigDefaults) {

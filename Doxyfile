@@ -6,7 +6,7 @@
 # Project Information
 #---------------------------------------------------------------------------
 
-PROJECT_NAME           = "MoLab Aerospace Simulator"
+PROJECT_NAME           = "Apogeo Aerospace Simulator"
 PROJECT_NUMBER         = "1.0.0"
 PROJECT_BRIEF          = "Modular aerospace simulator with plugin architecture"
 PROJECT_LOGO           = 
@@ -40,12 +40,18 @@ RECURSIVE              = YES
 
 # Files and directories to exclude
 EXCLUDE                = build \
+                         vcpkg \
                          vcpkg_installed \
+                         docs/generated \
+                         plugins/deprecated \
                          .git
 
 # Exclusion patterns
 EXCLUDE_PATTERNS       = */build/* \
+                         */docs/generated/* \
                          */.git/* \
+                         */plugins/deprecated/* \
+                         */vcpkg/* \
                          */vcpkg_installed/*
 
 # Use README.md as main page
@@ -55,23 +61,27 @@ USE_MDFILE_AS_MAINPAGE = README.md
 EXTENSION_MAPPING      = fbs=C++
 
 # Customized layout file
-LAYOUT_FILE            = docs/doxygen_layout.xml
+LAYOUT_FILE            = docs/DOXYGEN_LAYOUT.xml
 
 #---------------------------------------------------------------------------
 # Build Options
 #---------------------------------------------------------------------------
 
 # Extract all elements (including undocumented)
-EXTRACT_ALL            = YES
+EXTRACT_ALL            = NO
 
 # Extract private members
-EXTRACT_PRIVATE        = YES
+EXTRACT_PRIVATE        = NO
 
 # Extract static members
-EXTRACT_STATIC         = YES
+EXTRACT_STATIC         = NO
 
 # Extract local members (function-scope variables)
-EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_CLASSES  = NO
+
+# Hide undocumented internals to keep API docs concise
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = YES
 
 # Sort members alphabetically
 SORT_MEMBER_DOCS       = YES
@@ -87,7 +97,7 @@ SHOW_NAMESPACES        = YES
 #---------------------------------------------------------------------------
 
 # Show warnings for undocumented elements
-WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_UNDOCUMENTED   = NO
 
 # Show warnings for invalid documentation format
 WARN_IF_DOC_ERROR      = YES
@@ -104,6 +114,10 @@ GENERATE_HTML          = YES
 
 # HTML output directory
 HTML_OUTPUT            = html
+
+# Cleaner output paths
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = .
 
 # Navigation sidebar tree
 GENERATE_TREEVIEW      = YES
@@ -200,26 +214,26 @@ INLINE_INHERITED_MEMB  = YES
 SORT_BRIEF_DOCS        = YES
 
 # Show @todo tags
-GENERATE_TODOLIST      = YES
+GENERATE_TODOLIST      = NO
 
 # Show @bug tags
-GENERATE_BUGLIST       = YES
+GENERATE_BUGLIST       = NO
 
 # Show @deprecated tags
-GENERATE_DEPRECATEDLIST = YES
+GENERATE_DEPRECATEDLIST = NO
 
 # Maximum number of code lines in @code
 MAX_INITIALIZER_LINES  = 30
 
 # Hide standard-library implementation details
-HIDE_UNDOC_RELATIONS   = NO
+HIDE_UNDOC_RELATIONS   = YES
 
 # Extract inline source documentation
-INLINE_SOURCES         = YES
+INLINE_SOURCES         = NO
 
 # Show line numbers in source code
 SOURCE_BROWSER         = YES
 STRIP_CODE_COMMENTS    = NO
 
 # Source code references
-REFERENCES_LINK_SOURCE = YES
+REFERENCES_LINK_SOURCE = NO
