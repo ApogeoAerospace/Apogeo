@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .logger import setup_logger
-from .utils import write_json_file, get_simulator_path, normalize_config_for_simulator
+from .utils import write_json_file, read_json_file, get_simulator_path, normalize_config_for_simulator
 
 
 logger = setup_logger(__name__)
@@ -136,19 +136,33 @@ class SimulationManager:
             # Prepare configuration files
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            # Handle initial state
+            # Handle initial state (always materialize a temp state so dt follows UI)
+            temp_state_file = self.config.initial_state_dir / f"temp_web_state_{timestamp}.json"
+            simulation_cfg = job.config.get('simulation', {})
+            physics_cfg = job.config.get('physics', {})
+            time_step = float(simulation_cfg.get('time_step', 0.01))
+
             if 'initial_state' in job.config and job.config['initial_state']:
-                temp_state_file = self.config.initial_state_dir / f"temp_web_state_{timestamp}.json"
-                
-                initial_state_data = self._create_initial_state_data(job.config['initial_state'])
-                
-                if not write_json_file(temp_state_file, initial_state_data):
-                    raise Exception("Failed to write initial state file")
-                
-                job.config["initial_state_file"] = str(temp_state_file)
+                initial_state_data = self._create_initial_state_data(job.config['initial_state'], time_step, physics_cfg)
             else:
-                # Use default state file
-                job.config["initial_state_file"] = str(self.config.project_root / "data" / "default_state.json")
+                default_state_file = self.config.project_root / "data" / "defaults" / "default_state.json"
+                initial_state_data = read_json_file(default_state_file)
+                if not initial_state_data:
+                    raise Exception(f"Failed to read default state file: {default_state_file}")
+
+                initial_state_data['dt'] = time_step
+                gravity_enabled = bool(physics_cfg.get('enable_gravity', True))
+                gravity_magnitude = float(physics_cfg.get('gravity_magnitude', 9.81))
+                initial_state_data['gravity'] = {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": -gravity_magnitude if gravity_enabled else 0.0
+                }
+
+            if not write_json_file(temp_state_file, initial_state_data):
+                raise Exception("Failed to write initial state file")
+
+            job.config["initial_state_file"] = str(temp_state_file)
             
             # Normalize config for current simulator schema
             normalized_config = normalize_config_for_simulator(job.config)
@@ -321,7 +335,7 @@ class SimulationManager:
 
         return message
     
-    def _create_initial_state_data(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_initial_state_data(self, initial_state: Dict[str, Any], time_step: float, physics: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create initial state data structure
         
@@ -331,8 +345,12 @@ class SimulationManager:
         Returns:
             Complete initial state data
         """
+        gravity_enabled = bool(physics.get('enable_gravity', True))
+        gravity_magnitude = float(physics.get('gravity_magnitude', 9.81))
+
         return {
-            "_comment": "Temporary state from web GUI template",
+            "sim_time": 0.0,
+            "dt": time_step,
             "position": {
                 "x": initial_state['position'][0],
                 "y": initial_state['position'][1],
@@ -344,14 +362,22 @@ class SimulationManager:
                 "z": initial_state['velocity'][2]
             },
             "orientation": {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0},
-            "mass": initial_state.get('mass', 1000.0),
+            "angular_velocity": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "total_mass": initial_state.get('mass', 1000.0),
+            "cg_location": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "inertia_tensor": {"ixx": 10.0, "iyy": 12.0, "izz": 8.0, "ixy": 0.0, "ixz": 0.0, "iyz": 0.0},
+            "propellant_masses": [200.0, 150.0],
+            "mach_number": 0.0,
+            "dynamic_pressure": 0.0,
+            "angle_of_attack": 0.0,
+            "sideslip_angle": 0.0,
             "atm_density": 1.225,
             "atm_pressure": 101325.0,
             "atm_temperature": 288.15,
-            "gravity": {"x": 0.0, "y": 0.0, "z": -9.81},
-            "UTC": 0,
-            "Time": 0.0,
-            "wind_speed": {"x": 5.0, "y": 0.0, "z": 0.0}
+            "gravity": {"x": 0.0, "y": 0.0, "z": -gravity_magnitude if gravity_enabled else 0.0},
+            "wind_velocity": {"x": 5.0, "y": 0.0, "z": 0.0},
+            "engines": [],
+            "surface_deflections": []
         }
     
     def _find_output_files(self, timestamp: str) -> list:

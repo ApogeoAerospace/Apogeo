@@ -1,7 +1,13 @@
 /**
+/**
  * Charts module
  * Handles all chart creation and visualization using Chart.js
  */
+
+if (window.Chart) {
+    Chart.defaults.parsing = false;
+    Chart.defaults.normalized = true;
+}
 
 const Charts = {
     charts: {},
@@ -30,6 +36,40 @@ const Charts = {
         if (this.charts[chartId]) {
             this.charts[chartId].destroy();
             delete this.charts[chartId];
+        }
+    },
+
+    resizeChart(chartId) {
+        const chart = this.charts[chartId];
+        if (!chart) return;
+        chart.resize();
+        chart.update('none');
+    },
+
+    renderChart(chartId, data) {
+        if (!data) return;
+
+        switch (chartId) {
+            case 'trajectory':
+                this.createTrajectoryChart(data);
+                break;
+            case 'velocity':
+                this.createVelocityChart(data);
+                break;
+            case 'altitude':
+                this.createAltitudeChart(data);
+                break;
+            case 'speed':
+                this.createSpeedChart(data);
+                break;
+            case 'atmosphere':
+                this.createAtmosphereChart(data);
+                break;
+            case 'gravity':
+                this.createGravityChart(data);
+                break;
+            default:
+                break;
         }
     },
     
@@ -212,6 +252,7 @@ const Charts = {
                 },
                 scales: {
                     x: {
+                        type: 'linear',
                         title: { display: true, text: '⏱️ Time (seconds)' }
                     },
                     y: {
@@ -277,6 +318,7 @@ const Charts = {
                 },
                 scales: {
                     x: {
+                        type: 'linear',
                         title: { display: true, text: '⏱️ Time (seconds)' }
                     },
                     y: {
@@ -378,6 +420,7 @@ const Charts = {
                 },
                 scales: {
                     x: {
+                        type: 'linear',
                         title: { display: true, text: '⏱️ Time (seconds)' }
                     },
                     y: {
@@ -462,6 +505,7 @@ const Charts = {
                 },
                 scales: {
                     x: {
+                        type: 'linear',
                         title: { display: true, text: '⏱️ Time (seconds)' }
                     },
                     y: {
@@ -578,6 +622,7 @@ const Charts = {
                 },
                 scales: {
                     x: {
+                        type: 'linear',
                         title: { display: true, text: '⏱️ Time (seconds)' }
                     },
                     y: {

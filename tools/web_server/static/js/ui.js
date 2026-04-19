@@ -92,6 +92,21 @@ const UI = {
         if (activeTab) {
             activeTab.classList.add('active');
         }
+
+        // Re-render with current dataset when switching tabs to avoid
+        // stale hidden-layout chart sizing/parsing artifacts.
+        const currentData = window.app?.results?.currentResultData;
+        if (currentData && window.Charts && typeof window.Charts.renderChart === 'function') {
+            window.Charts.renderChart(chartName, currentData);
+        }
+
+        // Charts rendered while hidden need an explicit resize once visible.
+        if (window.Charts && typeof window.Charts.resizeChart === 'function') {
+            requestAnimationFrame(() => {
+                setTimeout(() => window.Charts.resizeChart(chartName), 50);
+                setTimeout(() => window.Charts.resizeChart(chartName), 200);
+            });
+        }
     },
     
     /**
