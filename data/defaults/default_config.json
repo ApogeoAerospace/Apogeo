@@ -11,7 +11,7 @@
             "name": "example_plugin",
             "type": 0,
             "library_path": "plugins/example_plugin",
-            "enabled": true,
+            "enabled": false,
             "parameters": {
                 "use_host_logger": false,
                 "step_size": 1.0,
@@ -22,7 +22,7 @@
             "name": "structures",
             "type": 1,
             "library_path": "plugins/structures",
-            "enabled": false,
+            "enabled": true,
             "parameters": {
                 "use_host_logger": true
             }

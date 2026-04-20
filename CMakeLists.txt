@@ -132,6 +132,7 @@ add_custom_command(
 
 set(PLUGIN_NAMES
     example_plugin
+    structures
 )
 
 # Standardized plugin output layout:
@@ -187,7 +188,6 @@ endforeach()
 # --- Deprecated Plugins ---
 
 set(DEPRECATED_PLUGIN_NAMES
-    structures
     aerodynamics
     propulsion
     environment

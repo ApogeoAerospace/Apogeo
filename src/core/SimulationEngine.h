@@ -160,6 +160,7 @@ private:
     std::atomic<double> compute_tick_duration_ms_{0.0};
     std::atomic<double> io_tick_duration_ms_{0.0};
     std::atomic<bool> is_running_{false};
+    std::atomic<bool> is_shutdown_{false};
 
     /**
      * @brief Validates an already parsed state.
