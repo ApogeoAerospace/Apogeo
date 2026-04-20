@@ -16,12 +16,12 @@
 .main-content::after {
     content: "";
     position: absolute;
-    right: clamp(10px, 1.8vw, 32px);
-    top: 52%;
+    right: 0;
+    top: 50%;
     transform: translateY(-50%);
     width: clamp(290px, 24vw, 470px);
     aspect-ratio: 1 / 1;
-    background: url("../assets/icons/Satellite.png") center / contain no-repeat;
+    background: url("../../assets/icons/Satellite.png") center / contain no-repeat;
     opacity: 0.96;
     filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.48));
     pointer-events: none;

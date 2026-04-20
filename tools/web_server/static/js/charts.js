@@ -181,7 +181,7 @@ const Charts = {
         // Velocity X
         if (vxIdx >= 0) {
             datasets.push({
-                label: '🚀 Velocity X (m/s)',
+                label: ' Velocity X (m/s)',
                 data: data.rows.map(row => ({x: row[timeIdx], y: row[vxIdx]})),
                 borderColor: 'rgba(255, 159, 64, 1)',
                 backgroundColor: 'rgba(255, 159, 64, 0.1)',
@@ -194,7 +194,7 @@ const Charts = {
         // Velocity Y
         if (vyIdx >= 0) {
             datasets.push({
-                label: '🚀 Velocity Y (m/s)',
+                label: ' Velocity Y (m/s)',
                 data: data.rows.map(row => ({x: row[timeIdx], y: row[vyIdx]})),
                 borderColor: 'rgba(153, 102, 255, 1)',
                 backgroundColor: 'rgba(153, 102, 255, 0.1)',
@@ -207,7 +207,7 @@ const Charts = {
         // Velocity Z
         if (vzIdx >= 0) {
             datasets.push({
-                label: '🚀 Velocity Z (m/s)',
+                label: ' Velocity Z (m/s)',
                 data: data.rows.map(row => ({x: row[timeIdx], y: row[vzIdx]})),
                 borderColor: 'rgba(255, 205, 86, 1)',
                 backgroundColor: 'rgba(255, 205, 86, 0.1)',
@@ -247,16 +247,16 @@ const Charts = {
                 plugins: {
                     title: {
                         display: true,
-                        text: '🚀 Velocity Analysis - Components and Total Speed'
+                        text: ' Velocity Analysis - Components and Total Speed'
                     }
                 },
                 scales: {
                     x: {
                         type: 'linear',
-                        title: { display: true, text: '⏱️ Time (seconds)' }
+                        title: { display: true, text: '⏱ Time (seconds)' }
                     },
                     y: {
-                        title: { display: true, text: '🚀 Velocity (m/s)' }
+                        title: { display: true, text: ' Velocity (m/s)' }
                     }
                 }
             }
