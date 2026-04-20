@@ -1,0 +1,22 @@
+<!-- Control Panel -->
+<div class="control-panel">
+    <h3>Control Panel</h3>
+
+    <!-- Progress Section -->
+    <div id="progress-section" class="progress-section" style="display: none;">
+        <h4>🚀 Simulation Progress</h4>
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div id="progress-text" class="progress-text">0% - Initializing...</div>
+        <div id="progress-message" class="progress-message"></div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="control-buttons">
+        <button class="btn btn-control btn-control-dark" onclick="app.saveConfig()">Save Config</button>
+        <button class="btn btn-control btn-control-primary" onclick="app.simulation.runSimulation()" id="run-btn">Run Simulation</button>
+        <button class="btn btn-control btn-control-dark" onclick="app.results.loadResults()">View Results</button>
+        <button class="btn btn-control btn-control-cancel" onclick="app.simulation.cancelSimulation()" id="cancel-btn" style="display: none;">⏹️ Cancel</button>
+    </div>
+</div>

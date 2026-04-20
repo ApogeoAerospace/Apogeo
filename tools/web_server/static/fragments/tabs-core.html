@@ -1,0 +1,131 @@
+<!-- Tab Content: Simulation -->
+<section id="simulation-tab" class="tab-content active">
+    <h3>Simulation Configuration</h3>
+
+    <!-- Mission Templates -->
+    <div class="mission-templates">
+        <h4>Mission Templates</h4>
+        <div class="template-cards" id="template-cards">
+            <button class="template-card" data-template="suborbital">
+                <h5>Parabolic Trajectory</h5>
+                <p>Ballistic parabola test (gravity-driven, no propulsion)</p>
+            </button>
+            <button class="template-card" data-template="atmospheric">
+                <h5>Atmospheric Test</h5>
+                <p>Low altitude flight with atmospheric effects</p>
+            </button>
+            <button class="template-card" data-template="landing">
+                <h5>Re-entry</h5>
+                <p>Controlled descent and landing sequence</p>
+            </button>
+            <button class="template-card" data-template="orbital">
+                <h5>Orbital Insertion</h5>
+                <p>Multi-stage ascent to orbital velocity</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Simulation Parameters -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="time-step">Time Step (seconds)</label>
+            <input type="number" id="time-step" min="0.001" max="1.0" step="0.001" value="0.1">
+        </div>
+        <div class="form-group">
+            <label for="duration">Duration (seconds)</label>
+            <input type="number" id="duration" min="1" max="1000" value="10">
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="log-level">Log Level</label>
+            <select id="log-level">
+                <option value="INFO" selected>INFO</option>
+                <option value="DEBUG">DEBUG</option>
+                <option value="WARNING">WARNING</option>
+                <option value="ERROR">ERROR</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="enable-logging" checked>
+                Enable Logging
+            </label>
+        </div>
+    </div>
+</section>
+
+<!-- Tab Content: Physics -->
+<section id="physics-tab" class="tab-content">
+    <h3>⚗️ Physics Configuration</h3>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="enable-gravity" checked>
+                Enable Gravity
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="gravity-magnitude">Gravity (m/s²)</label>
+            <input type="number" id="gravity-magnitude" min="0" max="50" step="0.01" value="9.81">
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="integrator-type">Integrator</label>
+            <select id="integrator-type">
+                <option value="euler">Euler</option>
+                <option value="runge_kutta_4" selected>Runge-Kutta 4</option>
+                <option value="verlet">Verlet</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="enable-drag">
+                Atmospheric Drag
+            </label>
+        </div>
+    </div>
+</section>
+
+<!-- Tab Content: Plugins -->
+<section id="plugins-tab" class="tab-content">
+    <h3>🔌 Plugin Configuration</h3>
+    <div id="plugins-list">
+        <p class="loading">Loading plugins...</p>
+    </div>
+</section>
+
+<!-- Tab Content: Output -->
+<section id="output-tab" class="tab-content">
+    <h3>📊 Output Configuration</h3>
+
+    <div class="form-group">
+        <label>Output Formats:</label>
+        <div>
+            <label>
+                <input type="checkbox" id="enable-csv" checked>
+                CSV Format
+            </label>
+            <br>
+            <label>
+                <input type="checkbox" id="enable-json">
+                JSON Format
+            </label>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label for="output-interval">Output Interval</label>
+            <input type="number" id="output-interval" min="1" value="1">
+        </div>
+        <div class="form-group">
+            <label for="output-directory">Output Directory</label>
+            <input type="text" id="output-directory" value="output">
+        </div>
+    </div>
+</section>

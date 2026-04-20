@@ -125,10 +125,20 @@ const Templates = {
         
         templateButtons.forEach(button => {
             button.addEventListener('click', () => {
+                this.setSelectedTemplate(button);
                 const templateName = button.dataset.template;
                 this.loadTemplate(templateName);
             });
         });
+    },
+
+    /**
+     * Mark the selected template button with a persistent visual state
+     */
+    setSelectedTemplate(selectedButton) {
+        const templateButtons = document.querySelectorAll('.template-card[data-template]');
+        templateButtons.forEach(button => button.classList.remove('selected'));
+        selectedButton.classList.add('selected');
     },
     
     /**

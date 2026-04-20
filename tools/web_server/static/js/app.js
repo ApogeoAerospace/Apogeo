@@ -255,11 +255,30 @@ const App = {
     }
 };
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+let appStarted = false;
+
+function startMoLabApp() {
+    if (appStarted) {
+        return;
+    }
+
+    appStarted = true;
     console.log('DOM loaded, starting application...');
     App.init();
-});
+}
+
+// Expose manual bootstrap entry-point for layout loader.
+window.startMoLabApp = startMoLabApp;
+
+if (window.__MOLAB_LAYOUT_LOADER__) {
+    if (window.__MOLAB_LAYOUT_READY__) {
+        startMoLabApp();
+    } else {
+        document.addEventListener('molab:layout-ready', startMoLabApp, { once: true });
+    }
+} else {
+    document.addEventListener('DOMContentLoaded', startMoLabApp);
+}
 
 // Export globally
 window.app = App;
