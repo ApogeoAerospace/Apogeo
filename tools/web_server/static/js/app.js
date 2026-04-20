@@ -58,11 +58,11 @@ const App = {
             const status = await API.getStatus();
             
             if (status.simulator_built && status.simulator_executable) {
-                UI.updateStatus('✅ System ready - Simulator built and available', 'success');
+                UI.updateStatus('System ready - Simulator built and available', 'success');
             } else if (status.simulator_exists && !status.simulator_executable) {
-                UI.updateStatus('⚠️ Simulator exists but is not executable', 'warning');
+                UI.updateStatus('Simulator exists but is not executable', 'warning');
             } else {
-                UI.updateStatus('❌ Simulator not built - Please build the project first', 'error');
+                UI.updateStatus('Simulator not built - Please build the project first', 'error');
             }
             
             // Log detailed status for debugging

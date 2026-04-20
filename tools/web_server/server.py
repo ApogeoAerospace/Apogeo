@@ -179,7 +179,7 @@ class MoLabWebServer:
         try:
             # Create server
             with socketserver.TCPServer(("", self.config.port), MoLabRequestHandler) as httpd:
-                self.logger.info(f"✅ Server started on http://localhost:{self.config.port}")
+                self.logger.info(f"Server started on http://localhost:{self.config.port}")
                 
                 # Open browser if configured
                 if self.config.auto_open_browser:
