@@ -25,6 +25,7 @@ CREATE_SUBDIRS         = YES
 INPUT                  = src \
                          plugins \
                          tests \
+                         docs \
                          README.md
 
 # File extensions to process
