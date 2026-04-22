@@ -1,3 +1,9 @@
+
+.stats-row.secondary > .stat-section:last-child {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
 /* === Plugins === */
 .plugin-card {
     padding: 15px;

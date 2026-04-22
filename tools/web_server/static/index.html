@@ -1,60 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MoLab Aerospace Simulator</title>
-    
-    <!-- External dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Apogeo - Inicio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="css/splash.css">
 </head>
 <body>
-    <!-- Sidebar icon sprite (loaded from fragments/sidebar-sprite.html) -->
-    <div id="sidebar-sprite-slot"></div>
+    <video
+        id="bg-video"
+        src="assets/videos/logovideo.mp4"
+        autoplay
+        muted
+        playsinline
+        preload="auto"
+    ></video>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>
-                <img src="assets/icons/LogoApogeo.png" alt="Apogeo" class="header-logo">
-            </h1>
-            <h3>Web Interface for Realistic Aerospace Simulations</h3>
-        </header>
-        
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Status Bar -->
-            <div id="status" class="status info">
-                Loading system status...
-                <button onclick="app.forceRefresh()" class="btn btn-secondary"> Force Refresh</button>
-            </div>
-            
-            <div id="navigation-tabs-slot"></div>
+    <div class="vignette"></div>
 
-            <div id="tabs-core-slot"></div>
-            
-            <!-- Tab Content: Results (loaded from fragments/results-tab.html) -->
-            <div id="results-tab-slot"></div>
-
-            <!-- Control Panel (loaded from fragments/control-panel.html) -->
-            <div id="control-panel-slot"></div>
-        </main>
+    <div class="ui">
+        <button class="btn-start" id="btn" type="button">
+            Inicio
+        </button>
     </div>
-    
-    <div id="html-templates-slot"></div>
-    
-    <!-- JavaScript Modules -->
-    <script src="js/config.js?v=20260418a"></script>
-    <script src="js/api.js?v=20260418a"></script>
-    <script src="js/ui.js?v=20260418a"></script>
-    <script src="js/simulation.js?v=20260418a"></script>
-    <script src="js/results.js?v=20260418a"></script>
-    <script src="js/charts.js?v=20260418a"></script>
-    <script src="js/templates.js?v=20260418a"></script>
-    <script src="js/layout-loader.js?v=20260420a"></script>
-    <script src="js/app.js?v=20260418a"></script>
+
+    <div class="transition-overlay" id="overlay"></div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const overlay = document.getElementById('overlay');
+        const video = document.getElementById('bg-video');
+        const DESTINO = './app.html';
+
+        function showStartButton() {
+            btn.classList.add('show');
+        }
+
+        // Button effect after 5 deg (temporal).
+        setTimeout(showStartButton, 5000);
+
+        // If video falls, the idea is that it puts a black wallpaper and we can start normally
+        
+        video.addEventListener('error', () => {
+            setTimeout(showStartButton, 5000);
+        }, { once: true });
+
+        btn.addEventListener('click', () => {
+            overlay.classList.add('active');
+            setTimeout(() => {
+                window.location.href = DESTINO;
+            }, 580);
+        });
+    </script>
 </body>
 </html>
