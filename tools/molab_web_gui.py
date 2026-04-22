@@ -1286,7 +1286,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                             <h4> ${result.filename}</h4>
                             <p> Modified: ${date} |  Size: ${size} KB</p>
                             <button class="btn btn-primary" onclick="visualizeResult('${result.filename}')"> Visualize</button>
-                            ${comparisonMode ? `<button class="btn btn-secondary" onclick="selectResult('${result.filename}')">📊 Select for Comparison</button>` : ''}
+                            ${comparisonMode ? `<button class="btn btn-secondary" onclick="selectResult('${result.filename}')"> Select for Comparison</button>` : ''}
                         </div>
                     `;
                 });
@@ -1523,7 +1523,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 
                 <div class="stats-row primary">
                     <div class="stat-section">
-                        <h3>📍 Position Details</h3>
+                        <h3> Position Details</h3>
                         <div class="stat-cards">
                             <div class="stat-card multi-value">
                                 <h4> Initial Position</h4>
@@ -2297,14 +2297,14 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
             if (comparisonMode) {
                 comparisonPanel.style.display = 'block';
-                toggleButton.textContent = '📊 Exit Comparison Mode';
+                toggleButton.textContent = ' Exit Comparison Mode';
                 toggleButton.className = 'btn btn-warning';
                 
                 // Reload results to add comparison buttons
                 loadResults();
             } else {
                 comparisonPanel.style.display = 'none';
-                toggleButton.textContent = '📊 Compare Simulations';
+                toggleButton.textContent = ' Compare Simulations';
                 toggleButton.className = 'btn btn-info';
                 selectedResults = [];
                 updateComparisonChart();
