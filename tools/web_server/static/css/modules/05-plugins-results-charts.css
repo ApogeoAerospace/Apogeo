@@ -191,16 +191,21 @@
     border-radius: 12px;
 }
 
+
 .stats-row.primary {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: #eae6dd;
 }
 
 .stats-row.secondary {
     background: #ffffff;
 }
 
+
 .stat-section {
     margin-bottom: 15px;
+    background: #eae6dd;
+    border-radius: 10px;
+    padding: 10px 0 10px 0;
 }
 
 .stat-section h3 {
@@ -240,7 +245,7 @@
 .stat-card .value {
     font-size: 1.8em;
     font-weight: bold;
-    color: #667eea;
+    color: #2a2f36;
     margin-bottom: 5px;
 }
 
@@ -288,9 +293,9 @@
 }
 
 .stat-card.highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #083151 0%, #0e4a73 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px rgba(8, 49, 81, 0.45);
 }
 
 .stat-card.highlight h4,
@@ -305,6 +310,35 @@
     font-size: 0.9em;
     margin: 5px 0;
     display: block;
+}
+
+.stats-row.secondary .stat-section {
+    min-height: 320px;
+}
+
+.mission-classification-section {
+    background: #1b1c1e;
+    border: 1px solid #2a2c30;
+    padding: 12px;
+}
+
+.mission-classification-section h3 {
+    color: #f2f2f0;
+    border-bottom-color: #3a3d42;
+}
+
+.mission-classification-section .stat-card {
+    background: #ffffff;
+    border-color: #d9d9d9;
+}
+
+.result-visualize-btn {
+    background: linear-gradient(135deg, #083151 0%, #0e4a73 100%);
+    color: #ffffff;
+}
+
+.result-visualize-btn:hover {
+    background: linear-gradient(135deg, #072a45 0%, #0b3e61 100%);
 }
 
 /* === Performance Alerts === */
@@ -336,9 +370,9 @@
 }
 
 .performance-alert.warning {
-    background: #fff3cd;
-    color: #856404;
-    border-left-color: #ffc107;
+    background: #f8d7da;
+    color: #721c24;
+    border-left-color: #dc3545;
 }
 
 .performance-alert.error {

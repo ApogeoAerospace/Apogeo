@@ -1,5 +1,26 @@
 /* === Responsive Design === */
+@media (max-width: 1200px) {
+    .main-content::after {
+        top: 34%;
+        width: clamp(240px, 22vw, 360px);
+        opacity: 0.88;
+    }
+}
+
+@media (max-width: 992px) {
+    .main-content::after {
+        top: 30%;
+        right: -20px;
+        width: clamp(180px, 26vw, 280px);
+        opacity: 0.8;
+    }
+}
+
 @media (max-width: 768px) {
+    .stats-row.secondary .stat-section {
+        min-height: auto;
+    }
+
     .container {
         padding: 8px;
     }
@@ -31,6 +52,18 @@
         border-radius: 0;
         border-right: none;
         border-bottom: 1px solid #262d3b;
+    }
+
+    .sidebar-brand {
+        flex: 0 0 auto;
+        border-bottom: none;
+        border-right: 1px solid #2a2a2a;
+        padding: 14px 10px 12px 10px;
+    }
+
+    .sidebar-brand-logo {
+        width: 54px;
+        height: 54px;
     }
 
     .tab {

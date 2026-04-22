@@ -17,7 +17,7 @@
     content: "";
     position: absolute;
     right: 0;
-    top: 50%;
+    top: 38%;
     transform: translateY(-50%);
     width: clamp(290px, 24vw, 470px);
     aspect-ratio: 1 / 1;
@@ -93,6 +93,24 @@
     padding: 0;
     width: 100%;
     min-height: 100vh;
+}
+
+
+.sidebar-brand {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 28px 8px 24px 8px; /* Increased vertical padding */
+    border-bottom: 1px solid #2a2a2a;
+    background: #171717;
+}
+
+.sidebar-brand-logo {
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.38));
+    transition: width 0.2s, height 0.2s;
 }
 
 .tab {

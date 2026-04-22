@@ -116,7 +116,7 @@ const App = {
                 <div class="plugin-card ${enabledClass}" onclick="app.togglePlugin(${index})">
                     <div class="plugin-header">
                         <div>
-                            <h4>${plugin.enabled ? '✅' : '❌'} ${this.escapeHtml(plugin.name)}</h4>
+                            <h4>${plugin.enabled ? '' : ''} ${this.escapeHtml(plugin.name)}</h4>
                             <p class="plugin-description">${this.escapeHtml(plugin.description)}</p>
                             <span class="plugin-type">Type: ${plugin.type === 0 ? 'Sequential' : 'Parallel Physics'}</span>
                         </div>
@@ -228,7 +228,7 @@ const App = {
      * Force refresh of status and plugins
      */
     async forceRefresh() {
-        UI.updateStatus('🔄 Refreshing...', 'info');
+        UI.updateStatus(' Refreshing...', 'info');
         await this.loadInitialData();
     },
     

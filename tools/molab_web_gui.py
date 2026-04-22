@@ -658,7 +658,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             </div>
             
             <div id="output-tab" class="tab-content">
-                <h3>📊 Output Configuration</h3>
+                <h3> Output Configuration</h3>
                 <div class="form-group">
                     <label>Output Formats:</label>
                     <div>
@@ -849,15 +849,15 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     statusDiv.innerHTML = ' System ready - Simulator built and available';
                 } else {
                     statusDiv.className = 'status error';
-                    statusDiv.innerHTML = '❌ Simulator not built - Please build the project first';
+                    statusDiv.innerHTML = ' Simulator not built - Please build the project first';
                 }
             } catch (error) {
                 console.error('Status loading error:', error);
                 statusDiv.className = 'status error';
                 if (error.name === 'AbortError') {
-                    statusDiv.innerHTML = '⏱️ Status loading timed out - Server may be starting up. <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>';
+                    statusDiv.innerHTML = ' Status loading timed out - Server may be starting up. <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>';
                 } else {
-                    statusDiv.innerHTML = `❌ Error loading status: ${error.message} <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>`;
+                    statusDiv.innerHTML = ` Error loading status: ${error.message} <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>`;
                 }
             }
         }
@@ -866,7 +866,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             console.log('Force refresh triggered');
             const statusDiv = document.getElementById('status');
             statusDiv.className = 'status info';
-            statusDiv.innerHTML = '🔄 Loading system status... <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;">🔄 Force Refresh</button>';
+            statusDiv.innerHTML = ' Loading system status... <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;">🔄 Force Refresh</button>';
             
             // Clear any caches and reload status
             if ('caches' in window) {
@@ -1283,9 +1283,9 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     const size = (result.size / 1024).toFixed(1);
                     html += `
                         <div class="result-item">
-                            <h4>📊 ${result.filename}</h4>
-                            <p>📅 Modified: ${date} | 📁 Size: ${size} KB</p>
-                            <button class="btn btn-primary" onclick="visualizeResult('${result.filename}')">📈 Visualize</button>
+                            <h4> ${result.filename}</h4>
+                            <p> Modified: ${date} |  Size: ${size} KB</p>
+                            <button class="btn btn-primary" onclick="visualizeResult('${result.filename}')"> Visualize</button>
                             ${comparisonMode ? `<button class="btn btn-secondary" onclick="selectResult('${result.filename}')">📊 Select for Comparison</button>` : ''}
                         </div>
                     `;
@@ -1400,7 +1400,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         <h3> Mission Overview</h3>
                         <div class="stat-cards">
                             <div class="stat-card highlight">
-                                <h4>⏱ Flight Duration</h4>
+                                <h4> Flight Duration</h4>
                                 <div class="value">${duration}</div>
                                 <div class="unit">seconds</div>
                             </div>
@@ -1515,7 +1515,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                                 <h4> Final Vertical</h4>
                                 <div class="value">Z: ${finalVel.z.toFixed(1)} m/s</div>
                                 <div class="value">|Z|: ${verticalVelocity.toFixed(1)} m/s</div>
-                                <div class="value">${finalVel.z >= 0 ? '⬆️ Ascending' : '⬇️ Descending'}</div>
+                                <div class="value">${finalVel.z >= 0 ? 'Ascending' : ' Descending'}</div>
                             </div>
                         </div>
                     </div>
@@ -1586,7 +1586,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                             <div class="stat-card">
                                 <h4> Mission Success</h4>
                                 <div class="value ${missionSuccess ? 'positive' : 'negative'}">${missionSuccess ? 'SUCCESS' : 'PARTIAL'}</div>
-                                <div class="unit">${missionSuccess ? '✅' : '⚠️'}</div>
+                                <div class="unit">${missionSuccess ? ' ' : ' '}</div>
                             </div>
                             <div class="stat-card">
                                 <h4> Realism Score</h4>
@@ -1682,7 +1682,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             // Generate alerts HTML
             if (alerts.length === 0) {
                 return `<div class="performance-alert success">
-                    <h4>✅ All Systems Nominal</h4>
+                    <h4> All Systems Nominal</h4>
                     <p>Mission parameters are within acceptable ranges. No performance issues detected.</p>
                 </div>`;
             }
@@ -1808,15 +1808,15 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         function getFlightPhaseEmoji(flightPhase) {
             switch (flightPhase) {
                 case 'Deep Space':
-                    return '🚀';
+                    return '';
                 case 'Space':
-                    return '🛰️';
+                    return '';
                 case 'Upper Atmosphere':
-                    return '☁️';
+                    return '';
                 case 'Stratosphere':
-                    return '🌌';
+                    return '';
                 case 'Ground Level':
-                    return '🏔️';
+                    return '';
                 default:
                     return '';
             }
@@ -2380,15 +2380,15 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: '📊 Multi-Simulation Comparison'
+                                    text: ' Multi-Simulation Comparison'
                                 }
                             },
                             scales: {
                                 x: {
-                                    title: { display: true, text: '⏱️ Time (seconds)' }
+                                    title: { display: true, text: ' Time (seconds)' }
                                 },
                                 y: {
-                                    title: { display: true, text: '🏔️ Altitude (meters)' }
+                                    title: { display: true, text: ' Altitude (meters)' }
                                 }
                             }
                         }

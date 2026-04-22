@@ -68,7 +68,7 @@ const Results = {
             const clone = template.content.cloneNode(true);
             
             // Populate data
-            clone.querySelector('.result-filename').textContent = `📊 ${result.filename}`;
+            clone.querySelector('.result-filename').textContent = ` ${result.filename}`;
             clone.querySelector('.result-date').textContent = date;
             clone.querySelector('.result-size').textContent = size;
             
@@ -185,7 +185,7 @@ const Results = {
         this.setStat('finalVelHTotal', `Total: ${metrics.horizontalVelocity.toFixed(1)} m/s`);
         this.setStat('finalVelZ', `Z: ${finalVel.z.toFixed(1)} m/s`);
         this.setStat('finalVelZAbs', `|Z|: ${metrics.verticalVelocity.toFixed(1)} m/s`);
-        this.setStat('finalVelDirection', finalVel.z >= 0 ? '⬆️ Ascending' : '⬇️ Descending');
+        this.setStat('finalVelDirection', finalVel.z >= 0 ? ' Ascending' : ' Descending');
         
 
         this.setStat('initialPosX', `X: ${initialPos.x.toFixed(1)}m`);
@@ -220,7 +220,7 @@ const Results = {
         this.setStat('flightType', flightType);
         this.setStat('flightPhase', flightPhase);
         this.setStat('missionSuccess', missionSuccess ? 'SUCCESS' : 'PARTIAL');
-        this.setStat('successIcon', missionSuccess ? '✅' : '⚠️');
+        this.setStat('successIcon', missionSuccess ? '✅' : '');
         this.setStatClass('missionSuccess', missionSuccess ? 'positive' : 'negative');
         
         this.setStat('realismScore', realismScore.toFixed(0));

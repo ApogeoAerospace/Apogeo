@@ -117,11 +117,11 @@ const UI = {
         statusDiv.className = `status ${type}`;
         
         const icon = {
-            'success': '✅',
-            'error': '❌',
-            'info': '🔄',
-            'warning': '⚠️'
-        }[type] || 'ℹ️';
+            'success': '',
+            'error': '',
+            'info': '',
+            'warning': ''
+        }[type] || ' ';
         
         statusDiv.innerHTML = `${icon} ${message}`;
     },
