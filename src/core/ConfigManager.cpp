@@ -60,6 +60,10 @@ bool ConfigManager::loadConfig(const std::string& config_file) {
             output_directory_ = "output/";
         }
 
+        if (config_json.contains("vehicle_models") && config_json["vehicle_models"].contains("flight_computer")) {
+            flight_script_path = config_json["vehicle_models"]["flight_computer"]["script_path"];
+        }
+
         // Validate overall consistency
         if (!validateConfig(error_detail)) {
             setDefaults();

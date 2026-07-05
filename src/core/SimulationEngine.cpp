@@ -9,6 +9,7 @@
 #include "ConfigManager.h"
 #include "OutputManager.h"
 #include "TimeManager.h"
+#include "../FlightComputerContext.h"
 #include "state_vector_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
@@ -63,6 +64,11 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     {
         std::lock_guard<std::mutex> lock(state_mutex_);
         current_state_buffer_.assign(buf, buf + size);
+    }
+
+    const auto& config_mgr = ConfigManager::getInstance();
+    if (!config_mgr.flight_script_path.empty()) {
+        flight_computer_ = std::make_unique<FlightComputerContext>(config_mgr.flight_script_path);
     }
 
 
@@ -145,6 +151,16 @@ void SimulationEngine::run_tick() {
     }
 
     if (delta_time > 0.0) {
+      if (flight_computer_ && flight_computer_->is_valid()) {
+          auto* state_ptr = state_vector::GetGeneralState(current_state_buffer_.data());
+          flatbuffers::FlatBufferBuilder fbb;
+          flight_computer_->update(state_ptr, fbb, static_cast<float>(delta_time));
+          const uint8_t* new_buf = fbb.GetBufferPointer();
+          uint32_t new_sz = fbb.GetSize();
+          if (new_sz > 0) {
+              current_state_buffer_.assign(new_buf, new_buf + new_sz);
+          }
+      }
       plugin_manager_->run_simulation_cycle(current_state_buffer_, delta_time);
       state = flatbuffers::GetRoot<state_vector::GeneralState>(current_state_buffer_.data());
     }

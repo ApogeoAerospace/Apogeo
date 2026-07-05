@@ -54,6 +54,9 @@
         "enable_nan_checks": true
     },
     "vehicle_models": {
+        "flight_computer": {
+            "script_path": "scripts/vuelo_test.lua"
+        },
         "aero_database": {
             "type": "lookup_table",
             "source": {
