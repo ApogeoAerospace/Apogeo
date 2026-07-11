@@ -16,12 +16,12 @@ FlightComputerContext::FlightComputerContext(const std::string& script_path) {
 
     // Layer 1: Sandbox - Load only safe base and math libraries
     lua_.open_libraries(sol::lib::base, sol::lib::math);
-    
+
     // Layer 1: Security - Block dangerous functions that could execute arbitrary files
     lua_["dofile"] = sol::lua_nil;
     lua_["loadfile"] = sol::lua_nil;
     lua_["load"] = sol::lua_nil;
-    
+
     // Bind C++ methods to Lua functions
     register_api();
 
