@@ -10,16 +10,34 @@
 namespace MoLab {
 
 FlightComputerContext::FlightComputerContext(const std::string& script_path) {
+    // ==========================================
+    // PHASE 1: SCRIPT ENVIRONMENT INITIALIZATION
+    // ==========================================
+
+    // Layer 1: Sandbox - Load only safe base and math libraries
     lua_.open_libraries(sol::lib::base, sol::lib::math);
+    
+    // Layer 1: Security - Block dangerous functions that could execute arbitrary files
+    lua_["dofile"] = sol::lua_nil;
+    lua_["loadfile"] = sol::lua_nil;
+    lua_["load"] = sol::lua_nil;
+    
+    // Bind C++ methods to Lua functions
     register_api();
 
-    try {
-        lua_.script_file(script_path);
+    // ==========================================
+    // SCRIPT LOADING AND VALIDATION
+    // ==========================================
+
+    // Layer 2: Protection - Safely load the user script
+    auto result = lua_.safe_script_file(script_path, sol::script_pass_on_error);
+    if (result.valid()) {
         valid_ = true;
         LOG_INFO("Flight script loaded successfully: " + script_path, "FlightComputer");
-    } catch (const sol::error& e) {
+    } else {
+        sol::error err = result;
         valid_ = false;
-        LOG_ERROR("Failed to load flight script: " + std::string(e.what()), "FlightComputer");
+        LOG_ERROR("Failed to load flight script: " + std::string(err.what()), "FlightComputer");
     }
 }
 
@@ -28,6 +46,11 @@ bool FlightComputerContext::is_valid() const {
 }
 
 void FlightComputerContext::register_api() {
+    // ==========================================
+    // C++ TO LUA API BRIDGE
+    // ==========================================
+
+    // READ FUNCTIONS: Allow Lua to read simulation telemetry
     lua_.set_function("get_altitude", [&]() -> float {
         return current_altitude_;
     });
@@ -36,10 +59,13 @@ void FlightComputerContext::register_api() {
         return current_velocity_;
     });
 
+    // WRITE FUNCTIONS -> Allow Lua to send commands to the simulation
     lua_.set_function("set_throttle", [&](float value) {
+        // Clamp throttle between 0% (0.0) and 100% (1.0)
         throttle_cmd_ = std::clamp(value, 0.0f, 1.0f);
     });
 
+    // UTILITY FUNCTIONS -> Allow Lua to print to the simulation console
     lua_.set_function("print_log", [](std::string msg) {
         LOG_INFO(msg, "FlightComputer");
     });
@@ -50,7 +76,10 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
                                    float dt) {
     if (!in) return;
 
-    // Read current state into internal variables for Lua access.
+    // ==========================================
+    // STEP 1: READ SIMULATION STATE (TELEMETRY)
+    // ==========================================
+    // Read current state from the physics engine into internal variables for Lua access.
     if (in->position()) {
         current_altitude_ = in->position()->z();
     } else {
@@ -63,23 +92,30 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
         current_velocity_ = 0.0f;
     }
 
+    // Reset commands to zero before executing the script
     throttle_cmd_ = 0.0f;
 
-    // Execute user script tick function.
+    // ==========================================
+    // STEP 2: EXECUTE USER SCRIPT
+    // ==========================================
     if (valid_) {
-        try {
-            sol::function on_tick = lua_["on_tick"];
-            if (on_tick.valid()) {
-                on_tick(dt);
-            } else {
-                LOG_ERROR("Function 'on_tick' not found in script", "FlightComputer");
+        // Layer 2: Runtime protection - Catch script errors gracefully
+        sol::protected_function on_tick = lua_["on_tick"];
+        if (on_tick.valid()) {
+            auto result = on_tick(dt);
+            if (!result.valid()) {
+                sol::error err = result;
+                LOG_ERROR("Error executing on_tick: " + std::string(err.what()), "FlightComputer");
             }
-        } catch (const sol::error& e) {
-            LOG_ERROR("Error executing on_tick: " + std::string(e.what()), "FlightComputer");
+        } else {
+            LOG_ERROR("Function 'on_tick' not found in script", "FlightComputer");
         }
     }
 
-    // Rebuild state buffer with updated engine commands.
+    // ==========================================
+    // STEP 3: REBUILD STATE (SEND COMMANDS)
+    // ==========================================
+    // FlatBuffers are immutable, so we must copy the entire state and insert our new commands.
     auto position = state_vector::Vec3(
         in->position() ? in->position()->x() : 0.0f,
         in->position() ? in->position()->y() : 0.0f,
@@ -134,7 +170,6 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
         for (size_t i = 0; i < engines->size(); ++i) {
             const state_vector::EngineCmd* ec = engines->Get(i);
             const state_vector::Vec3 tvc = ec->tvc_angles();
-            // Override throttle on the first engine with script command.
             float throttle = (i == 0) ? throttle_cmd_ : ec->throttle();
             eng_vec.emplace_back(throttle, tvc);
         }
