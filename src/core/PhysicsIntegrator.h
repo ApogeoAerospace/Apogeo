@@ -91,7 +91,6 @@ inline bool isInertiaDiagonal(const InertiaTensor3& I, double tol = 1e-10) {
 struct PhysicsState {
     Vector3 position;
     Vector3 velocity;
-    Vector3 gravity;
     Quaternion4 orientation;         // Unit quaternion (w, x, y, z)
     Vector3 angular_velocity;
     double mass;

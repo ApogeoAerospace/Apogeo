@@ -64,6 +64,7 @@ Accepts JSON parameters:
 
 - `mass_properties_path` (`string`, optional)
 - `structural_limits_path` (`string`, optional)
+- `debug_output` (`bool`, optional)
 
 Returns:
 

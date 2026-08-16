@@ -29,6 +29,7 @@ using HostLogFn = void(*)(int32_t, const char*, const char*, void*);
 struct StructuresPluginInstance {
     structures::StructuresModule module;
     bool initialized = false;
+    bool debug_output = false;
 };
 
 std::atomic<HostLogFn> g_host_log_fn{nullptr};
@@ -86,6 +87,37 @@ PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) 
 }
 
 /**
+ * @brief Receives optional host services (includes shared logger).
+ */
+PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
+    if (services != nullptr && services->log != nullptr) {
+        // If api_version mismatches, fallback to local plugin logging behavior.
+        if (services->api_version != kSupportedHostServicesApiVersion) {
+            g_host_log_fn.store(nullptr, std::memory_order_release);
+            g_host_user_data.store(nullptr, std::memory_order_relaxed);
+
+            bool expected = false;
+            if (g_host_api_mismatch_warned.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+                std::cout << "[Structures] WARNING: Host services api_version mismatch (host="
+                          << services->api_version
+                          << ", plugin-supported="
+                          << kSupportedHostServicesApiVersion
+                          << "). Falling back to local plugin logging." << std::endl;
+            }
+            return;
+        }
+
+        g_host_api_mismatch_warned.store(false, std::memory_order_release);
+        g_host_user_data.store(services->user_data, std::memory_order_relaxed);
+        g_host_log_fn.store(services->log, std::memory_order_release);
+        return;
+    }
+
+    g_host_log_fn.store(nullptr, std::memory_order_release);
+    g_host_user_data.store(nullptr, std::memory_order_relaxed);
+}
+
+/**
  * @brief Creates Structures plugin instance and loads initial placeholders.
  */
 PLUGIN_EXPORT PluginHandle plugin_create_instance() {
@@ -102,9 +134,6 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     }
 
     instance->initialized = true;
-
-    plugin_log(PLUGIN_LOG_INFO, "Structures", "Structures plugin instance created and default data loaded.");
-    plugin_log(PLUGIN_LOG_WARNING, "Structures", "Module currently returns zero force and torque.");
 
     return reinterpret_cast<PluginHandle>(instance);
 }
@@ -134,6 +163,10 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         if (params.contains("structural_limits_path")) {
             limits_csv_path = params["structural_limits_path"].get<std::string>();
         }
+        if (params.contains("debug_output")) {
+            instance->debug_output = params["debug_output"].get<bool>();
+        }
+
         // Mass/CoM/inertia are temporarily kept in JSON placeholders.
         const bool mass_loaded = instance->module.loadMassPropertiesFromJson(mass_json_path);
         const bool limits_loaded = instance->module.loadStructuralLimitsFromCsv(limits_csv_path);
@@ -147,11 +180,6 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
             }
             return -4;
         }
-
-        std::ostringstream config_msg;
-        config_msg << "Configured with mass_properties_path='" << mass_json_path
-                   << "', structural_limits_path='" << limits_csv_path;
-        plugin_log(PLUGIN_LOG_INFO, "Structures", config_msg.str());
 
         return 0;
     } catch (...) {

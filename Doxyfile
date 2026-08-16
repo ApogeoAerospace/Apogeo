@@ -62,7 +62,7 @@ USE_MDFILE_AS_MAINPAGE = README.md
 EXTENSION_MAPPING      = fbs=C++
 
 # Customized layout file
-LAYOUT_FILE            = docs/DOXYGEN_LAYOUT.xml
+LAYOUT_FILE            = docs/doxygen_layout.xml
 
 #---------------------------------------------------------------------------
 # Build Options
@@ -74,8 +74,8 @@ EXTRACT_ALL            = NO
 # Extract private members
 EXTRACT_PRIVATE        = NO
 
-# Extract static members
-EXTRACT_STATIC         = NO
+# Extraer miembros privados
+EXTRACT_PRIVATE        = YES
 
 # Extract local members (function-scope variables)
 EXTRACT_LOCAL_CLASSES  = NO
@@ -98,7 +98,7 @@ SHOW_NAMESPACES        = YES
 #---------------------------------------------------------------------------
 
 # Show warnings for undocumented elements
-WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_UNDOCUMENTED   = YES
 
 # Show warnings for invalid documentation format
 WARN_IF_DOC_ERROR      = YES
@@ -215,13 +215,13 @@ INLINE_INHERITED_MEMB  = YES
 SORT_BRIEF_DOCS        = YES
 
 # Show @todo tags
-GENERATE_TODOLIST      = NO
+GENERATE_TODOLIST      = YES
 
 # Show @bug tags
-GENERATE_BUGLIST       = NO
+GENERATE_BUGLIST       = YES
 
 # Show @deprecated tags
-GENERATE_DEPRECATEDLIST = NO
+GENERATE_DEPRECATEDLIST = YES
 
 # Maximum number of code lines in @code
 MAX_INITIALIZER_LINES  = 30
@@ -230,11 +230,11 @@ MAX_INITIALIZER_LINES  = 30
 HIDE_UNDOC_RELATIONS   = YES
 
 # Extract inline source documentation
-INLINE_SOURCES         = NO
+INLINE_SOURCES         = YES
 
 # Show line numbers in source code
 SOURCE_BROWSER         = YES
 STRIP_CODE_COMMENTS    = NO
 
 # Source code references
-REFERENCES_LINK_SOURCE = NO
+REFERENCES_LINK_SOURCE = YES

@@ -1,7 +1,6 @@
 # Unit tests
-# Unit tests
 
-This directory contains GoogleTest-based unit tests for MoLab.
+This directory contains project unit tests implemented with Google Test.
 
 ## Objective
 

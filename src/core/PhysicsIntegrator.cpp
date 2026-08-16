@@ -92,20 +92,14 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
     dydt[1] = vel.y();
     dydt[2] = vel.z();
 
-    // --- Translational dynamics: v_dot = g + F / m ---
-    if (gravity.allFinite()) {
-        dydt[3] = gravity.x();
-        dydt[4] = gravity.y();
-        dydt[5] = gravity.z();
-    } else {
-        dydt[3] = 0.0; dydt[4] = 0.0; dydt[5] = 0.0;
-    }
-
+    // --- Newton's second law: v_dot = F / m ---
     if (hasValidMass(mass)) {
         double inv_mass = 1.0 / mass;
-        dydt[3] += force.x() * inv_mass;
-        dydt[4] += force.y() * inv_mass;
-        dydt[5] += force.z() * inv_mass;
+        dydt[3] = force.x() * inv_mass;
+        dydt[4] = force.y() * inv_mass;
+        dydt[5] = force.z() * inv_mass;
+    } else {
+        dydt[3] = 0.0; dydt[4] = 0.0; dydt[5] = 0.0;
     }
 
     // --- Rotational kinematics: q_dot = 0.5 * q * (0, omega) ---
@@ -178,11 +172,10 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             // Odeint does not provide velocity_verlet for mixed
             // first- and second-order systems, so this is manual.
 
-            // --- Translation: Velocity-Verlet (a = g + F/m) ---
-            Vector3 a_n = state.gravity.allFinite() ? state.gravity : Vector3::Zero();
-            if (hasValidMass(state.mass)) {
-                a_n += force / state.mass;
-            }
+            // --- Translation: Velocity-Verlet (a = F/m) ---
+            Vector3 a_n = Vector3::Zero();
+            if (hasValidMass(state.mass))
+                a_n = force / state.mass;
 
             Vector3 v_half  = state.velocity + a_n * (0.5 * dt);
             Vector3 new_pos = state.position + v_half * dt;

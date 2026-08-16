@@ -8,11 +8,21 @@
  */
 
 /**
+ * @defgroup StateVectorModel State Vector Model
+ * @brief Simulation-state data model serialized with FlatBuffers.
+ *
+ * This group documents types generated from `src/schemas/state_vector.fbs`
+ * and their functional semantics inside the simulation core.
+ */
+
+/**
  * @namespace state_vector
  * @brief FlatBuffers types representing global simulation state.
  *
  * This namespace is generated from schema `src/schemas/state_vector.fbs`.
  * It contains basic mathematical structures and root table `GeneralState`.
+ *
+ * @ingroup StateVectorModel
  */
 namespace state_vector {
 

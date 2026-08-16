@@ -131,7 +131,6 @@ add_custom_command(
 # --- Plugins ---
 
 set(PLUGIN_NAMES
-    example_plugin
     structures
 )
 

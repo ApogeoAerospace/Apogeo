@@ -22,7 +22,7 @@ namespace state_vector {
 }
 
 /**
- * @class MoLab::SimulationEngine
+ * @class SimulationEngine
  * @brief Main engine that orchestrates state, plugins, time, and output.
  */
 namespace MoLab {

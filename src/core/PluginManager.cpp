@@ -363,6 +363,20 @@ bool PluginManager::load_plugins_from_config() {
             loaded_plugins_.back().name = plugin_config.name;
         }
 
+        bool enable_host_logger = false;
+        if (plugin_config.parameters.is_object()) {
+            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
+        }
+
+        if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
+            if (enable_host_logger) {
+                loaded_plugins_.back().set_host_services_func(get_stable_host_services());
+                LOG_INFO("Host logger enabled for plugin: " + plugin_config.name, "PluginManager");
+            } else {
+                LOG_INFO("Host logger disabled for plugin: " + plugin_config.name, "PluginManager");
+            }
+        }
+
         if (!plugin_config.parameters.empty() && !loaded_plugins_.empty()) {
             auto& last_plugin = loaded_plugins_.back();
             if (last_plugin.configure_func) {
@@ -541,8 +555,16 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    // Even with zero force/torque, run integration so kinematics are still
-    // propagated (e.g., position advances with current velocity).
+    // If there are no forces/torques, only advance time without rebuilding buffer
+    if (total_force.isZero() && total_torque.isZero()) {
+
+        auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
+        if (mutable_state) {
+            float new_time = static_cast<float>(mutable_state->sim_time() + delta_time);
+            mutable_state->mutate_sim_time(new_time);
+        }
+        return;
+    }
 
     PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
