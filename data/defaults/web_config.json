@@ -19,7 +19,7 @@
       "name": "environment",
       "type": 0,
       "library_path": "plugins/environment",
-      "enabled": true,
+      "enabled": false,
       "parameters": {
         "enable_atmospheric_model": false,
         "enable_wind_effects": false,

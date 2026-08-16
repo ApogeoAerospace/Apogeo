@@ -15,7 +15,7 @@ class ServerConfig:
         self.auto_open_browser = auto_open_browser
         self.project_root = Path(__file__).parent.parent.parent
         self.build_dir = self.project_root / "out" / "build"
-        self.config_dir = self.project_root / "data" / "config"
+        self.config_dir = self.project_root / "data" / "defaults"
         self.output_dir = self.build_dir / "output"
         self.initial_state_dir = self.project_root / "data" / "initial_state"
         self.static_dir = Path(__file__).parent / "static"

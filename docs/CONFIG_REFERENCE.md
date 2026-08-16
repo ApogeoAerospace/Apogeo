@@ -232,4 +232,5 @@ IPC runtime note:
 - Units should be treated as mandatory contract where specified (seconds, deg/s, MB, etc.).
 - `plugins[].parameters` keys are plugin-owned and may vary by plugin implementation.
 - Gravity is carried in the serialized initial state (`GeneralState.gravity`) and is consumed by the physics integration path as part of the force model.
+  It is not configured or owned by `PluginManager`.
 - The web UI legacy `physics.enable_gravity` / `physics.gravity_magnitude` fields are normalized into the initial state by the web server before simulation starts.

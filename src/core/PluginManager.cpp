@@ -551,14 +551,6 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
-    if (current_state->gravity() && std::isfinite(current_state->total_mass()) && current_state->total_mass() > 0.0f) {
-        total_force += Vector3(
-            current_state->gravity()->x(),
-            current_state->gravity()->y(),
-            current_state->gravity()->z()
-        ) * static_cast<double>(current_state->total_mass());
-    }
-
     // If there are no forces/torques, only advance time without rebuilding buffer
     if (total_force.isZero() && total_torque.isZero()) {
 
@@ -600,8 +592,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         current_state->inertia_tensor() ? current_state->inertia_tensor()->iyz() : 0.0f
     );
 
-    // Aerodynamic data - plugins update these values in the buffer
-    // PluginManager only copies them from current state
+    // Environment and aerodynamic data are preserved from the current state
+    // while rebuilding the FlatBuffer; PluginManager does not own gravity.
     float mach_number = current_state->mach_number();
     float dynamic_pressure = current_state->dynamic_pressure();
     float angle_of_attack = current_state->angle_of_attack();
