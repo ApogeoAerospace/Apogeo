@@ -1,5 +1,4 @@
 #ifndef STATE_VECTOR_DOCS_H
-#ifndef STATE_VECTOR_DOCS_H
 #define STATE_VECTOR_DOCS_H
 
 /**

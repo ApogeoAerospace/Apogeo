@@ -77,7 +77,6 @@ PhysicsIntegrator::PhysicsIntegrator(IntegratorType type)
 void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                               double mass,
                                               const InertiaTensor3& inertia,
-                                              const Vector3& gravity,
                                               const Vector3& force,
                                               const Vector3& torque) {
     dydt.fill(0.0);
@@ -153,7 +152,7 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
     // ODE system lambda. Captures constant step parameters
     // (mass, inertia, forces) by reference without copying.
     auto system = [&](const OdeState& y_in, OdeState& dydt, double /*t*/) {
-        computeOdeDerivatives(y_in, dydt, state.mass, state.inertia, state.gravity, force, torque);
+        computeOdeDerivatives(y_in, dydt, state.mass, state.inertia, force, torque);
     };
 
     switch (integrator_type_) {
@@ -262,12 +261,6 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
         state.velocity = Vector3(fb_state->velocity()->x(),
                                  fb_state->velocity()->y(),
                                  fb_state->velocity()->z());
-    }
-
-    if (fb_state->gravity()) {
-        state.gravity = Vector3(fb_state->gravity()->x(),
-                                fb_state->gravity()->y(),
-                                fb_state->gravity()->z());
     }
 
     if (fb_state->orientation()) {

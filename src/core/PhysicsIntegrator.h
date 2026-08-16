@@ -100,7 +100,6 @@ struct PhysicsState {
     PhysicsState()
         : position(Vector3::Zero()),
           velocity(Vector3::Zero()),
-          gravity(Vector3::Zero()),
           orientation(Quaternion4::Identity()),
           angular_velocity(Vector3::Zero()),
           mass(1.0),
@@ -196,7 +195,6 @@ private:
     static void computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                       double mass,
                                       const InertiaTensor3& inertia,
-                                      const Vector3& gravity,
                                       const Vector3& force,
                                       const Vector3& torque);
 };

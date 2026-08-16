@@ -16,6 +16,7 @@
 #include <deque>
 #include <functional>
 #include <filesystem>
+#include <cmath>
 
 /**
  * @file PluginManager.cpp
@@ -363,11 +364,6 @@ bool PluginManager::load_plugins_from_config() {
             loaded_plugins_.back().name = plugin_config.name;
         }
 
-        bool enable_host_logger = false;
-        if (plugin_config.parameters.is_object()) {
-            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
-        }
-
         if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
             if (enable_host_logger) {
                 loaded_plugins_.back().set_host_services_func(get_stable_host_services());
@@ -554,6 +550,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
+
+    if (current_state->gravity() && std::isfinite(current_state->total_mass()) && current_state->total_mass() > 0.0f) {
+        total_force += Vector3(
+            current_state->gravity()->x(),
+            current_state->gravity()->y(),
+            current_state->gravity()->z()
+        ) * static_cast<double>(current_state->total_mass());
+    }
 
     // If there are no forces/torques, only advance time without rebuilding buffer
     if (total_force.isZero() && total_torque.isZero()) {

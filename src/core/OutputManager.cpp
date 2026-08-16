@@ -492,7 +492,7 @@ void OutputManager::writerLoop() {
       queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
 
       if (!writer_running_.load() && pending_points_.empty()) {
-        return;
+        break;
       }
 
       pending = std::move(pending_points_.front());
