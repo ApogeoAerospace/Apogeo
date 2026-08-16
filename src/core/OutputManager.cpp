@@ -82,12 +82,7 @@ void OutputManager::initializeOutput(const std::string& run_name) {
     std::string csv_path = output_dir_ + "/" + run_name_ + ".csv";
     csv_file_ = std::make_unique<std::ofstream>(csv_path);
     if (csv_file_->is_open()) {
-      *csv_file_ << "tick,simulation_time,utc_time,position_x,position_y,position_z,"
-                 << "velocity_x,velocity_y,velocity_z,"
-                 << "orientation_x,orientation_y,orientation_z,orientation_w,"
-                 << "atm_density,atm_pressure,atm_temperature,"
-                 << "gravity_x,gravity_y,gravity_z,"
-                 << "wind_velocity_x,wind_velocity_y,wind_velocity_z\n";
+      writeCSVHeader();
       LOG_INFO("CSV output initialized: " + csv_path, "OutputManager");
       LOG_INFO("Simulation start UTC: " + time_manager.getStartUTCString(), "OutputManager");
     } else {
@@ -497,7 +492,7 @@ void OutputManager::writerLoop() {
       queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
 
       if (!writer_running_.load() && pending_points_.empty()) {
-        return;
+        break;
       }
 
       pending = std::move(pending_points_.front());

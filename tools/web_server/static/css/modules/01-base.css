@@ -1,0 +1,57 @@
+/* === Reset and Base Styles === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #000000;
+    min-height: 100vh;
+    color: #333;
+    line-height: 1.6;
+}
+
+input,
+select,
+textarea,
+button {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* === Container === */
+.container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 8px 12px 12px 0;
+}
+
+/* === Header === */
+.header {
+    text-align: center;
+    color: white;
+    margin-bottom: 18px;
+}
+
+.header h1 {
+    margin-bottom: 10px;
+}
+
+.header-logo {
+    width: clamp(209px, 28.6vw, 352px);
+    height: auto;
+    display: inline-block;
+}
+
+.header p {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.header .version {
+    font-size: 0.9em;
+    opacity: 0.7;
+    margin-top: 5px;
+}

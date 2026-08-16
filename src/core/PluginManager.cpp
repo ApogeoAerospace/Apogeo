@@ -16,6 +16,7 @@
 #include <deque>
 #include <functional>
 #include <filesystem>
+#include <cmath>
 
 /**
  * @file PluginManager.cpp
@@ -242,7 +243,7 @@ PluginManager::~PluginManager() {
     shutdown();
 }
 
-bool PluginManager::load_plugin(const std::string& path, PluginType type) {
+bool PluginManager::load_plugin(const std::string& path, PluginType type, bool enable_host_logger) {
     // Mutex ya obtenido por load_plugins_from_config()
     LoadedPlugin plugin;
     plugin.type = type;
@@ -305,6 +306,16 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type) {
         return false;
     }
 
+    if (plugin.set_host_services_func) {
+        if (enable_host_logger) {
+            plugin.set_host_services_func(get_stable_host_services());
+            LOG_INFO("Host logger enabled for plugin: " + normalized_path, "PluginManager");
+        } else {
+            plugin.set_host_services_func(nullptr);
+            LOG_INFO("Host logger disabled for plugin: " + normalized_path, "PluginManager");
+        }
+    }
+
     // Crear instancia del plugin
     plugin.handle = plugin.create_func();
     if (plugin.handle == nullptr) {
@@ -338,7 +349,12 @@ bool PluginManager::load_plugins_from_config() {
         }
 
         PluginType type = static_cast<PluginType>(plugin_config.type);
-        if (!load_plugin(plugin_config.library_path, type)) {
+        bool enable_host_logger = false;
+        if (plugin_config.parameters.is_object()) {
+            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
+        }
+
+        if (!load_plugin(plugin_config.library_path, type, enable_host_logger)) {
             LOG_ERROR("Failed to load plugin from config: " + plugin_config.name, "PluginManager");
             all_loaded = false;
             continue;
@@ -346,11 +362,6 @@ bool PluginManager::load_plugins_from_config() {
 
         if (!loaded_plugins_.empty()) {
             loaded_plugins_.back().name = plugin_config.name;
-        }
-
-        bool enable_host_logger = false;
-        if (plugin_config.parameters.is_object()) {
-            enable_host_logger = plugin_config.parameters.value("use_host_logger", false);
         }
 
         if (!loaded_plugins_.empty() && loaded_plugins_.back().set_host_services_func) {
@@ -540,6 +551,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
 
+    if (current_state->gravity() && std::isfinite(current_state->total_mass()) && current_state->total_mass() > 0.0f) {
+        total_force += Vector3(
+            current_state->gravity()->x(),
+            current_state->gravity()->y(),
+            current_state->gravity()->z()
+        ) * static_cast<double>(current_state->total_mass());
+    }
+
     // If there are no forces/torques, only advance time without rebuilding buffer
     if (total_force.isZero() && total_torque.isZero()) {
 
@@ -591,6 +610,12 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     float atm_density = current_state->atm_density();
     float atm_pressure = current_state->atm_pressure();
     float atm_temperature = current_state->atm_temperature();
+    state_vector::Vec3 gravity = current_state->gravity()
+        ? state_vector::Vec3(current_state->gravity()->x(), current_state->gravity()->y(), current_state->gravity()->z())
+        : state_vector::Vec3(0.0f, 0.0f, 0.0f);
+    state_vector::Vec3 wind_velocity = current_state->wind_velocity()
+        ? state_vector::Vec3(current_state->wind_velocity()->x(), current_state->wind_velocity()->y(), current_state->wind_velocity()->z())
+        : state_vector::Vec3(0.0f, 0.0f, 0.0f);
 
     // Arrays: copy if present
     flatbuffers::Offset<flatbuffers::Vector<float>> propellant_masses_fb;
@@ -645,6 +670,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     gs_builder.add_atm_density(atm_density);
     gs_builder.add_atm_pressure(atm_pressure);
     gs_builder.add_atm_temperature(atm_temperature);
+    gs_builder.add_gravity(&gravity);
+    gs_builder.add_wind_velocity(&wind_velocity);
 
     if (engines_fb.o != 0) gs_builder.add_engines(engines_fb);
     if (surface_deflections_fb.o != 0) gs_builder.add_surface_deflections(surface_deflections_fb);

@@ -14,7 +14,7 @@ class ServerConfig:
         self.port = port
         self.auto_open_browser = auto_open_browser
         self.project_root = Path(__file__).parent.parent.parent
-        self.build_dir = self.project_root / "build"
+        self.build_dir = self.project_root / "out" / "build"
         self.config_dir = self.project_root / "data" / "config"
         self.output_dir = self.build_dir / "output"
         self.initial_state_dir = self.project_root / "data" / "initial_state"

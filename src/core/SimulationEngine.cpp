@@ -40,6 +40,8 @@ SimulationEngine::~SimulationEngine() noexcept {
 bool SimulationEngine::initialize(const std::string& state_filepath) {
     LOG_INFO("Initializing simulation with state file: " + state_filepath, "SimulationEngine");
 
+    is_shutdown_.store(false);
+
     // Initialize TimeManager with current UTC time
     auto& time_manager = TimeManager::getInstance();
     time_manager.initialize(); // Use current UTC time as start
@@ -243,6 +245,11 @@ SimulationEngine::EngineStatus SimulationEngine::getStatus() const {
 }
 
 void SimulationEngine::shutdown() {
+    bool expected = false;
+    if (!is_shutdown_.compare_exchange_strong(expected, true)) {
+        return;
+    }
+
     if (is_running_) {
         LOG_INFO("Shutting down simulation", "SimulationEngine");
         is_running_ = false;

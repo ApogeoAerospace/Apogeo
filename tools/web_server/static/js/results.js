@@ -68,7 +68,7 @@ const Results = {
             const clone = template.content.cloneNode(true);
             
             // Populate data
-            clone.querySelector('.result-filename').textContent = `📊 ${result.filename}`;
+            clone.querySelector('.result-filename').textContent = ` ${result.filename}`;
             clone.querySelector('.result-date').textContent = date;
             clone.querySelector('.result-size').textContent = size;
             
@@ -185,7 +185,7 @@ const Results = {
         this.setStat('finalVelHTotal', `Total: ${metrics.horizontalVelocity.toFixed(1)} m/s`);
         this.setStat('finalVelZ', `Z: ${finalVel.z.toFixed(1)} m/s`);
         this.setStat('finalVelZAbs', `|Z|: ${metrics.verticalVelocity.toFixed(1)} m/s`);
-        this.setStat('finalVelDirection', finalVel.z >= 0 ? '⬆️ Ascending' : '⬇️ Descending');
+        this.setStat('finalVelDirection', finalVel.z >= 0 ? ' Ascending' : ' Descending');
         
 
         this.setStat('initialPosX', `X: ${initialPos.x.toFixed(1)}m`);
@@ -220,7 +220,7 @@ const Results = {
         this.setStat('flightType', flightType);
         this.setStat('flightPhase', flightPhase);
         this.setStat('missionSuccess', missionSuccess ? 'SUCCESS' : 'PARTIAL');
-        this.setStat('successIcon', missionSuccess ? '✅' : '⚠️');
+        this.setStat('successIcon', missionSuccess ? '✅' : '');
         this.setStatClass('missionSuccess', missionSuccess ? 'positive' : 'negative');
         
         this.setStat('realismScore', realismScore.toFixed(0));
@@ -451,13 +451,13 @@ const Results = {
         if (metrics.flightEfficiency < 50) {
             alerts.push({
                 type: 'error',
-                title: '⚠️ Low Flight Efficiency',
+                title: ' Low Flight Efficiency',
                 message: `Flight efficiency is ${metrics.flightEfficiency.toFixed(1)}%. Consider optimizing trajectory.`
             });
         } else if (metrics.flightEfficiency > 90) {
             alerts.push({
                 type: 'success',
-                title: '✅ Excellent Flight Efficiency',
+                title: ' Excellent Flight Efficiency',
                 message: `Outstanding efficiency of ${metrics.flightEfficiency.toFixed(1)}%.`
             });
         }
@@ -465,13 +465,13 @@ const Results = {
         if (metrics.energyChange > 1000) {
             alerts.push({
                 type: 'warning',
-                title: '🔥 High Energy Gain',
+                title: ' High Energy Gain',
                 message: `Energy increase of ${metrics.energyChange.toFixed(1)} J/kg. Check propulsion.`
             });
         } else if (metrics.energyChange < -1000) {
             alerts.push({
                 type: 'warning',
-                title: '🛑 High Energy Loss',
+                title: ' High Energy Loss',
                 message: `Energy loss of ${Math.abs(metrics.energyChange).toFixed(1)} J/kg. Check drag.`
             });
         }
@@ -479,7 +479,7 @@ const Results = {
         if (Math.abs(metrics.avgAcceleration) > 20) {
             alerts.push({
                 type: 'error',
-                title: '🚨 Extreme Acceleration',
+                title: ' Extreme Acceleration',
                 message: `Acceleration of ${metrics.avgAcceleration.toFixed(2)} m/s² exceeds safe limits.`
             });
         }
@@ -487,13 +487,13 @@ const Results = {
         if (metrics.ascentRate > 50) {
             alerts.push({
                 type: 'warning',
-                title: '📈 Rapid Ascent',
+                title: ' Rapid Ascent',
                 message: `High ascent rate of ${metrics.ascentRate.toFixed(1)} m/s. Monitor structural loads.`
             });
         } else if (metrics.ascentRate < -50) {
             alerts.push({
                 type: 'warning',
-                title: '📉 Rapid Descent',
+                title: 'Rapid Descent',
                 message: `High descent rate of ${Math.abs(metrics.ascentRate).toFixed(1)} m/s. Check landing systems.`
             });
         }
@@ -501,7 +501,7 @@ const Results = {
         if (metrics.finalSpeed > 200) {
             alerts.push({
                 type: 'warning',
-                title: '🚀 High Terminal Speed',
+                title: 'High Terminal Speed',
                 message: `Final speed of ${metrics.finalSpeed.toFixed(1)} m/s is very high.`
             });
         }
@@ -509,7 +509,7 @@ const Results = {
         if (metrics.duration && metrics.duration < 1) {
             alerts.push({
                 type: 'warning',
-                title: '⏱️ Short Mission Duration',
+                title: '⏱ Short Mission Duration',
                 message: `Mission duration of ${metrics.duration.toFixed(2)}s is very short.`
             });
         }
@@ -518,7 +518,7 @@ const Results = {
         if (alerts.length === 0) {
             alerts.push({
                 type: 'success',
-                title: '✅ All Systems Nominal',
+                title: ' All Systems Nominal',
                 message: 'Mission parameters within acceptable ranges. No issues detected.'
             });
         }
@@ -532,22 +532,22 @@ const Results = {
     getFlightType(altitude, finalVel) {
         const speed = Math.sqrt(finalVel.x**2 + finalVel.y**2 + finalVel.z**2);
         
-        if (altitude > 100000 && speed > 7000) return 'Orbital 🛰️';
-        if (altitude > 100000) return 'Suborbital 🌌';
-        if (finalVel.z > 0) return 'Ascending 🚀';
-        if (finalVel.z < -50) return 'Landing 🛬';
-        return 'Atmospheric 🌍';
+        if (altitude > 100000 && speed > 7000) return 'Orbital ';
+        if (altitude > 100000) return 'Suborbital ';
+        if (finalVel.z > 0) return 'Ascending ';
+        if (finalVel.z < -50) return 'Landing ';
+        return 'Atmospheric ';
     },
     
     /**
      * Determine flight phase
      */
     getFlightPhase(altitude) {
-        if (altitude > 400000) return 'Deep Space 🌌';
+        if (altitude > 400000) return 'Deep Space ';
         if (altitude > 100000) return 'Space ✨';
-        if (altitude > 50000) return 'Upper Atmosphere ☁️';
-        if (altitude > 10000) return 'Stratosphere 🌤️';
-        return 'Ground Level 🌍';
+        if (altitude > 50000) return 'Upper Atmosphere ';
+        if (altitude > 10000) return 'Stratosphere ';
+        return 'Ground Level ';
     },
     
     /**

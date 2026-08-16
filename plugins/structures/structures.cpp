@@ -14,6 +14,7 @@
 #include <atomic>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <nlohmann/json.hpp>
 
