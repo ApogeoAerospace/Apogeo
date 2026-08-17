@@ -1,6 +1,14 @@
 #include <gtest/gtest.h>
 #include "CommandEventProtocol.h"
 
+/**
+ * @file test_command_event_protocol.cpp
+ * @brief Unit tests for command/event JSON protocol helpers.
+ *
+ * Verifies command parsing and JSON construction helpers for acknowledgements,
+ * errors, and events used by the IPC command channel.
+ */
+
 using namespace MoLab;
 
 TEST(CommandEventProtocolTest, ParseCommandJsonLineValidAndInvalid) {
