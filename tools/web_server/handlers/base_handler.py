@@ -117,6 +117,9 @@ class BaseHandler:
             request_handler.send_response(200)
             request_handler.send_header('Content-type', content_type)
             request_handler.send_header('Content-Length', str(len(content)))
+            request_handler.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            request_handler.send_header('Pragma', 'no-cache')
+            request_handler.send_header('Expires', '0')
             request_handler.end_headers()
             request_handler.wfile.write(content)
         

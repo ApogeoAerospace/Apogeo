@@ -1,10 +1,9 @@
-"""
-API Handlers - Business logic for API endpoints
-"""
+"""API Handlers - Business logic for API endpoints"""
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime
 import platform
+from typing import Optional, List
 
 from .base_handler import BaseHandler
 from ..utils import (
@@ -14,7 +13,8 @@ from ..utils import (
     write_json_file,
     read_json_file,
     sanitize_filename,
-    validate_config
+    validate_config,
+    normalize_config_for_simulator
 )
 
 
@@ -62,67 +62,69 @@ class PluginsHandler(BaseHandler):
         'Linux': ['.so']
     }
     
-    # Plugin definitions
+    # Plugin metadata (UI-oriented; runtime config comes from JSON files)
     PLUGIN_DEFINITIONS = {
         "example_plugin": {
-            "name": "Example Plugin",
-            "type": 1,
-            "description": "Example plugin for testing and demonstration",
-            "enabled": False
+            "display_name": "Example Plugin",
+            "description": "Example plugin for testing and demonstration"
         },
         "aerodynamics": {
-            "name": "Aerodynamics",
-            "type": 1,
-            "description": "Real aerodynamic forces: drag, lift, compressibility effects",
-            "enabled": False,
-            "parameters": {
-                "reference_area": 0.785,
-                "drag_coefficient": 0.3,
-                "enable_drag": True,
-                "enable_altitude_effects": True
-            }
+            "display_name": "Aerodynamics",
+            "description": "Real aerodynamic forces: drag, lift, compressibility effects"
         },
         "propulsion": {
-            "name": "Propulsion",
-            "type": 1,
-            "description": "Rocket/jet propulsion with fuel consumption and altitude compensation",
-            "enabled": False,
-            "parameters": {
-                "sea_level_thrust": 50000.0,
-                "specific_impulse_sl": 250.0,
-                "engine_on": True,
-                "throttle_setting": 0.8
-            }
+            "display_name": "Propulsion",
+            "description": "Rocket/jet propulsion with fuel consumption and altitude compensation"
         },
         "structures": {
-            "name": "Structures",
-            "type": 0,
-            "description": "Mass tracking, center of gravity, and structural analysis",
-            "enabled": False,
-            "parameters": {
-                "enable_mass_tracking": True,
-                "enable_inertia_calculation": True,
-                "enable_structural_analysis": True
-            }
+            "display_name": "Structures",
+            "description": "Mass tracking, center of gravity, and structural analysis"
         },
         "environment": {
-            "name": "Environment",
-            "type": 1,
-            "description": "Atmospheric model, wind effects, and gravity variation",
-            "enabled": False,
-            "parameters": {
-                "enable_atmospheric_model": True,
-                "enable_wind_effects": True,
-                "enable_gravity_variation": True
-            }
+            "display_name": "Environment",
+            "description": "Atmospheric model, wind effects, and gravity variation"
         },
         "programming": {
-            "name": "Programming",
-            "type": 0,
-            "description": "Programmable logic and control sequences",
-            "enabled": False
+            "display_name": "Programming",
+            "description": "Programmable logic and control sequences"
         }
     }
+
+    def _resolve_library_path(self, library_path: str, extensions: List[str]) -> Optional[Path]:
+        """Resolve plugin library path against project/build layouts."""
+        if not library_path:
+            return None
+
+        candidate = Path(library_path)
+        if not candidate.is_absolute():
+            candidate = self.config.project_root / candidate
+
+        if candidate.exists():
+            return candidate
+
+        bases = [
+            self.config.project_root,
+            self.config.build_dir,
+            self.config.build_dir / "bin",
+            self.config.build_dir / "lib",
+            self.config.build_dir / "plugins"
+        ]
+
+        raw_name = Path(library_path).name
+        name_variants = {raw_name}
+        if raw_name.startswith("lib"):
+            name_variants.add(raw_name[3:])
+        else:
+            name_variants.add(f"lib{raw_name}")
+
+        for base in bases:
+            for name_variant in name_variants:
+                for ext in ["", *extensions]:
+                    p = base / f"{name_variant}{ext}"
+                    if p.exists():
+                        return p
+
+        return None
     
     def handle(self, request_handler: SimpleHTTPRequestHandler, params: dict):
         """
@@ -131,41 +133,59 @@ class PluginsHandler(BaseHandler):
         Returns list of available plugins
         """
         plugins = []
-        
+
         # Get platform-specific extensions
         system = platform.system()
         extensions = self.LIBRARY_EXTENSIONS.get(system, ['.so'])
-        
-        # Search directories
-        plugins_dirs = [
-            self.config.build_dir / "plugins",
-            self.config.build_dir / "lib",
-            self.config.build_dir / "bin"
+
+        config_candidates = [
+            self.config.project_root / "data" / "config" / "web_last_config.json",
+            self.config.project_root / "data" / "defaults" / "default_config.json"
         ]
-        
-        # Find plugin libraries
-        found_plugins = set()
-        
-        for plugins_dir in plugins_dirs:
-            if not plugins_dir.exists():
+
+        config_data = None
+        for config_file in config_candidates:
+            config_data = read_json_file(config_file)
+            if config_data:
+                break
+
+        plugin_configs = config_data.get("plugins", []) if isinstance(config_data, dict) else []
+
+        for plugin_cfg in plugin_configs:
+            if not isinstance(plugin_cfg, dict):
                 continue
-            
-            for ext in extensions:
-                for plugin_file in plugins_dir.glob(f"*{ext}"):
-                    # Extract plugin name from filename
-                    plugin_name = plugin_file.stem
-                    
-                    # Remove common prefixes
-                    for prefix in ['lib', 'plugin_', 'molab_']:
-                        if plugin_name.startswith(prefix):
-                            plugin_name = plugin_name[len(prefix):]
-                    
-                    if plugin_name in self.PLUGIN_DEFINITIONS:
-                        if plugin_name not in found_plugins:
-                            plugin_def = self.PLUGIN_DEFINITIONS[plugin_name].copy()
-                            plugin_def["library_path"] = str(plugin_file.absolute())
-                            plugins.append(plugin_def)
-                            found_plugins.add(plugin_name)
+
+            name = plugin_cfg.get("name", "")
+            if not name:
+                continue
+
+            metadata = self.PLUGIN_DEFINITIONS.get(name, {})
+            resolved_path = self._resolve_library_path(str(plugin_cfg.get("library_path", "")), extensions)
+
+            plugins.append({
+                "name": metadata.get("display_name", name),
+                "id": name,
+                "type": int(plugin_cfg.get("type", 0)),
+                "description": metadata.get("description", f"{name} plugin"),
+                "enabled": bool(plugin_cfg.get("enabled", False)),
+                "parameters": plugin_cfg.get("parameters", {}),
+                "library_path": str(resolved_path) if resolved_path else str(plugin_cfg.get("library_path", "")),
+                "library_found": bool(resolved_path)
+            })
+
+        # Fallback for environments where no config was available.
+        if not plugins:
+            for plugin_name, metadata in self.PLUGIN_DEFINITIONS.items():
+                plugins.append({
+                    "name": metadata.get("display_name", plugin_name),
+                    "id": plugin_name,
+                    "type": 0,
+                    "description": metadata.get("description", f"{plugin_name} plugin"),
+                    "enabled": False,
+                    "parameters": {},
+                    "library_path": "",
+                    "library_found": False
+                })
         
         self.send_json_response(request_handler, plugins)
 
@@ -191,6 +211,9 @@ class SimulationHandler(BaseHandler):
         if not is_valid:
             self.send_error_response(request_handler, f"Configuration validation failed: {error_message}")
             return
+
+        # Normalize payload to current simulator schema
+        config = normalize_config_for_simulator(config)
         
         # Create and start simulation job
         try:
