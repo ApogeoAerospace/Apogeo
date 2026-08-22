@@ -55,8 +55,8 @@ void FlightComputerContext::register_api() {
         return current_altitude_;
     });
 
-    lua_.set_function("get_velocity", [&]() -> float {
-        return current_velocity_;
+    lua_.set_function("get_vertical_velocity", [&]() -> float {
+        return current_vertical_velocity_;
     });
 
     // WRITE FUNCTIONS -> Allow Lua to send commands to the simulation
@@ -87,9 +87,9 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
     }
 
     if (in->velocity()) {
-        current_velocity_ = in->velocity()->x();
+        current_vertical_velocity_ = in->velocity()->z();
     } else {
-        current_velocity_ = 0.0f;
+        current_vertical_velocity_ = 0.0f;
     }
 
     // Reset commands to zero before executing the script

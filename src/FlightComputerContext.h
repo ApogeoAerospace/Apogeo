@@ -56,7 +56,7 @@ private:
 
     // Internal variables read/written by API bridge lambdas.
     float current_altitude_  = 0.0f;
-    float current_velocity_  = 0.0f;
+    float current_vertical_velocity_ = 0.0f;
     float throttle_cmd_      = 0.0f;
 };
 
