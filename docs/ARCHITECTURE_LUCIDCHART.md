@@ -1,110 +1,71 @@
-# MoLab — Diagrama de Arquitectura (Lucidchart)
+# Apogeo Architecture Diagrams for Lucidchart
 
-## Importar en Lucidchart
+## Importing a Diagram
 
-**Insert → Import → Mermaid** → pegar código → Insert
+Each Mermaid block below is source code for a diagram. To import one into
+Lucidchart, copy the complete block without the surrounding Markdown fences,
+then select **Insert**, **Import**, and **Mermaid** in Lucidchart. Paste the
+code in the import dialog and select **Insert**.
 
----
-
-## Diagrama 1 — Flujo de Ejecucion
+## Diagram 1: Execution Flow
 
 ```mermaid
 flowchart TD
-    START(["Inicio"])
-    CONFIG["Cargar configuracion y Logger"]
-    MODE{{"CLI o IPC?"}}
-    INIT["Inicializar motor\nCargar estado inicial y plugins"]
-    TICK[["Bucle: run_tick()"]]
-    P1["Plugins secuenciales"]
-    P2["Plugins paralelos"]
-    P3["Integracion fisica"]
-    P4["Registrar resultados"]
-    SHUT["shutdown()"]
-    END_NODE(["Fin"])
+    Start([Start])
+    Config[Load configuration and logger]
+    Mode{CLI or IPC?}
+    Initialize[Initialize engine, state, and plugins]
+    Tick[Run simulation tick]
+    Sequential[Run sequential plugins]
+    Parallel[Run parallel plugins]
+    Physics[Integrate physics]
+    Output[Record results]
+    Shutdown[Release resources]
+    End([End])
 
-    START --> CONFIG --> MODE
-    MODE -->|"CLI"| INIT
-    MODE -->|"IPC stdio"| INIT
-    INIT --> TICK
-    TICK --> P1 --> P2 --> P3 --> P4
-    P4 -->|"siguiente tick"| TICK
-    TICK -->|"completado"| SHUT --> END_NODE
+    Start --> Config --> Mode --> Initialize --> Tick
+    Tick --> Sequential --> Parallel --> Physics --> Output --> Tick
+    Tick --> Shutdown --> End
 ```
 
----
-
-## Diagrama 2 — Componentes
+## Diagram 2: Components
 
 ```mermaid
 flowchart LR
-    subgraph IN["Entrada"]
-        A["CLI / IPC"]
-    end
-    subgraph CORE["Nucleo"]
-        B["ConfigManager"]
-        C["SimulationEngine"]
-    end
-    subgraph CALC["Calculo"]
-        D["PluginManager"]
-        E["PhysicsIntegrator"]
-    end
-    subgraph OUT["Salida"]
-        F["OutputManager"]
-    end
+    Input[CLI and IPC]
+    Core[ConfigManager and SimulationEngine]
+    Calculation[PluginManager and PhysicsIntegrator]
+    Results[OutputManager]
 
-    IN --> CORE --> CALC --> OUT
+    Input --> Core --> Calculation --> Results
 ```
 
----
-
-## Diagrama 3 — Flujo de Ejecucion (detallado)
+## Diagram 3: Detailed Execution Flow
 
 ```mermaid
 flowchart TD
-    START(["Inicio"])
-    MAIN["main.cpp\nEjecutar simulador"]
-    CONFIG["ConfigManager::loadConfig\nCargar configuracion JSON"]
-    LOGGER["Logger bootstrap\nNivel, consola, archivo"]
+    Start([Start])
+    Main[main.cpp]
+    Config[ConfigManager loads JSON configuration]
+    Logger[Initialize logger]
+    Mode{Execution mode}
+    Cli[CLI arguments]
+    Ipc[IpcSession over standard input and output]
+    Engine[SimulationEngine initialization]
+    State[InitialStateLoader builds the FlatBuffers state]
+    Plugins[PluginManager loads enabled plugins]
+    Tick[Simulation tick]
+    Sequential[Sequential plugins update state]
+    Parallel[Parallel plugins calculate force and torque]
+    Physics[PhysicsIntegrator updates motion]
+    Output[TimeManager and OutputManager]
+    Shutdown[SimulationEngine shutdown]
+    End([End])
 
-    MODE{{"Modo de ejecucion?"}}
-    IPC["IpcSession\nComandos JSON stdin/stdout"]
-    CLI["Modo CLI\n--config --ticks"]
-
-    INIT["SimulationEngine::initialize_from_loaded_config"]
-    STATE_LOAD["InitialStateLoader\nJSON → FlatBuffers state_buffer"]
-    PLUGINS_LOAD["PluginManager::load_plugins_from_config\nCargar plugins habilitados via dlopen"]
-
-    TICK_LOOP[["Bucle: run_tick()"]]
-
-    PHASE1["Fase 1\nPlugins secuenciales\nModifican state_buffer"]
-    PHASE2["Fase 2\nPlugins paralelos en threads\nCalculan fuerzas y torques"]
-    PHASE3["Fase 3\nPhysicsIntegrator\nIntegracion de ecuaciones de movimiento\nEuler / RK4 / Verlet"]
-    PHASE4["Fase 4\nTimeManager + OutputManager\nActualizar tiempo y registrar resultados\nCSV / JSON / binario"]
-
-    SHUTDOWN["SimulationEngine::shutdown\nLiberar plugins y recursos"]
-    END_NODE(["Fin"])
-
-    START --> MAIN
-    MAIN --> CONFIG
-    CONFIG --> LOGGER
-    LOGGER --> MODE
-
-    MODE -->|"--ipc stdio"| IPC
-    MODE -->|"CLI"| CLI
-
-    IPC --> INIT
-    CLI --> INIT
-
-    INIT --> STATE_LOAD
-    STATE_LOAD --> PLUGINS_LOAD
-    PLUGINS_LOAD --> TICK_LOOP
-
-    TICK_LOOP --> PHASE1
-    PHASE1 --> PHASE2
-    PHASE2 --> PHASE3
-    PHASE3 --> PHASE4
-    PHASE4 -->|"siguiente tick"| TICK_LOOP
-
-    TICK_LOOP -->|"ticks completados"| SHUTDOWN
-    SHUTDOWN --> END_NODE
+    Start --> Main --> Config --> Logger --> Mode
+    Mode --> Cli --> Engine
+    Mode --> Ipc --> Engine
+    Engine --> State --> Plugins --> Tick
+    Tick --> Sequential --> Parallel --> Physics --> Output --> Tick
+    Tick --> Shutdown --> End
 ```

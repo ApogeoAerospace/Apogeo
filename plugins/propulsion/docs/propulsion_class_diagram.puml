@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title MoLab Propulsion Plugin - Proposed Class Architecture
+title Apogeo Propulsion Plugin - Proposed Class Architecture
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -19,7 +19,7 @@ skinparam interface {
   BorderColor #2563EB
 }
 
-package "MoLab Host" #F1F5F9 {
+package "Apogeo Host" #F1F5F9 {
   class "MoLab::PluginManager" as PluginManager {
     + load_plugin(path: string, type: PluginType): bool
     + run_simulation_cycle(state: byte[], dt: double): void
