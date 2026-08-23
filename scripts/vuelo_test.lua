@@ -2,7 +2,6 @@
 -- Defines on_tick(dt) called each simulation step.
 
 
--- Activate full throttle when falling fast at low altitude.
 function on_tick(dt)
     local alt = get_altitude()
     local vel = get_vertical_velocity()

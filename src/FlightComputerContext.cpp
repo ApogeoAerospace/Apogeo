@@ -170,6 +170,9 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
         for (size_t i = 0; i < engines->size(); ++i) {
             const state_vector::EngineCmd* ec = engines->Get(i);
             const state_vector::Vec3 tvc = ec->tvc_angles();
+            // The script command overrides throttle on engine[0].
+            // A PARALLEL_PHYSICS_CALCULATOR propulsion plugin is expected
+            // to read this value and produce the corresponding thrust force.
             float throttle = (i == 0) ? throttle_cmd_ : ec->throttle();
             eng_vec.emplace_back(throttle, tvc);
         }
