@@ -11,6 +11,9 @@
     "nlohmann-json",
     "gtest",
     "boost-odeint",
-    "hdf5"
+    {
+      "name": "hdf5",
+      "default-features": false
+    }
   ]
 }

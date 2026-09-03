@@ -210,9 +210,6 @@ endforeach()
 # --- Deprecated Plugins ---
 
 set(DEPRECATED_PLUGIN_NAMES
-    aerodynamics
-    propulsion
-    environment
 )
 
 # Standardized plugin output layout:
