@@ -92,6 +92,21 @@ const UI = {
         if (activeTab) {
             activeTab.classList.add('active');
         }
+
+        // Re-render with current dataset when switching tabs to avoid
+        // stale hidden-layout chart sizing/parsing artifacts.
+        const currentData = window.app?.results?.currentResultData;
+        if (currentData && window.Charts && typeof window.Charts.renderChart === 'function') {
+            window.Charts.renderChart(chartName, currentData);
+        }
+
+        // Charts rendered while hidden need an explicit resize once visible.
+        if (window.Charts && typeof window.Charts.resizeChart === 'function') {
+            requestAnimationFrame(() => {
+                setTimeout(() => window.Charts.resizeChart(chartName), 50);
+                setTimeout(() => window.Charts.resizeChart(chartName), 200);
+            });
+        }
     },
     
     /**
@@ -102,11 +117,11 @@ const UI = {
         statusDiv.className = `status ${type}`;
         
         const icon = {
-            'success': '✅',
-            'error': '❌',
-            'info': '🔄',
-            'warning': '⚠️'
-        }[type] || 'ℹ️';
+            'success': '',
+            'error': '',
+            'info': '',
+            'warning': ''
+        }[type] || ' ';
         
         statusDiv.innerHTML = `${icon} ${message}`;
     },
@@ -187,11 +202,17 @@ const UI = {
      * Get form configuration
      */
     getFormConfig() {
+        const timeStep = parseFloat(document.getElementById('time-step')?.value || 0.1);
+        const duration = parseFloat(document.getElementById('duration')?.value || 10);
+        const maxIterations = (timeStep > 0 && duration > 0)
+            ? Math.max(1, Math.ceil(duration / timeStep))
+            : 1000;
+
         const config = {
             simulation: {
-                time_step: parseFloat(document.getElementById('time-step')?.value || 0.1),
-                duration: parseFloat(document.getElementById('duration')?.value || 10),
-                max_iterations: 1000,
+                time_step: timeStep,
+                duration: duration,
+                max_iterations: maxIterations,
                 enable_logging: document.getElementById('enable-logging')?.checked ?? true,
                 log_level: document.getElementById('log-level')?.value || 'INFO',
                 log_file: 'logs/molab_web.log'
@@ -203,7 +224,15 @@ const UI = {
                 integration_tolerance: 1e-6,
                 integrator_type: document.getElementById('integrator-type')?.value || 'runge_kutta_4'
             },
-            plugins: window.availablePlugins?.filter(p => p.enabled) || [],
+            plugins: (window.availablePlugins || [])
+                .filter(p => p.enabled)
+                .map(p => ({
+                    name: p.id || p.name,
+                    type: Number.isInteger(p.type) ? p.type : 0,
+                    library_path: p.library_path || '',
+                    enabled: true,
+                    parameters: p.parameters || {}
+                })),
             output: {
                 enable_csv: document.getElementById('enable-csv')?.checked ?? true,
                 enable_json: document.getElementById('enable-json')?.checked ?? false,

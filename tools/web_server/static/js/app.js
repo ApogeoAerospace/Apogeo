@@ -58,11 +58,11 @@ const App = {
             const status = await API.getStatus();
             
             if (status.simulator_built && status.simulator_executable) {
-                UI.updateStatus('✅ System ready - Simulator built and available', 'success');
+                UI.updateStatus('System ready - Simulator built and available', 'success');
             } else if (status.simulator_exists && !status.simulator_executable) {
-                UI.updateStatus('⚠️ Simulator exists but is not executable', 'warning');
+                UI.updateStatus('Simulator exists but is not executable', 'warning');
             } else {
-                UI.updateStatus('❌ Simulator not built - Please build the project first', 'error');
+                UI.updateStatus('Simulator not built - Please build the project first', 'error');
             }
             
             // Log detailed status for debugging
@@ -116,7 +116,7 @@ const App = {
                 <div class="plugin-card ${enabledClass}" onclick="app.togglePlugin(${index})">
                     <div class="plugin-header">
                         <div>
-                            <h4>${plugin.enabled ? '✅' : '❌'} ${this.escapeHtml(plugin.name)}</h4>
+                            <h4>${plugin.enabled ? '' : ''} ${this.escapeHtml(plugin.name)}</h4>
                             <p class="plugin-description">${this.escapeHtml(plugin.description)}</p>
                             <span class="plugin-type">Type: ${plugin.type === 0 ? 'Sequential' : 'Parallel Physics'}</span>
                         </div>
@@ -228,7 +228,7 @@ const App = {
      * Force refresh of status and plugins
      */
     async forceRefresh() {
-        UI.updateStatus('🔄 Refreshing...', 'info');
+        UI.updateStatus(' Refreshing...', 'info');
         await this.loadInitialData();
     },
     
@@ -255,11 +255,30 @@ const App = {
     }
 };
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+let appStarted = false;
+
+function startMoLabApp() {
+    if (appStarted) {
+        return;
+    }
+
+    appStarted = true;
     console.log('DOM loaded, starting application...');
     App.init();
-});
+}
+
+// Expose manual bootstrap entry-point for layout loader.
+window.startMoLabApp = startMoLabApp;
+
+if (window.__MOLAB_LAYOUT_LOADER__) {
+    if (window.__MOLAB_LAYOUT_READY__) {
+        startMoLabApp();
+    } else {
+        document.addEventListener('molab:layout-ready', startMoLabApp, { once: true });
+    }
+} else {
+    document.addEventListener('DOMContentLoaded', startMoLabApp);
+}
 
 // Export globally
 window.app = App;

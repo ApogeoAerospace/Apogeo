@@ -1,0 +1,209 @@
+@startuml
+!pragma layout smetana
+title Apogeo Propulsion Plugin - Proposed Class Architecture
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam class {
+  BackgroundColor #F8FAFC
+  BorderColor #334155
+  ArrowColor #475569
+}
+skinparam interface {
+  BackgroundColor #EFF6FF
+  BorderColor #2563EB
+}
+
+package "Apogeo Host" #F1F5F9 {
+  class "MoLab::PluginManager" as PluginManager {
+    + load_plugin(path: string, type: PluginType): bool
+    + run_simulation_cycle(state: byte[], dt: double): void
+  }
+
+  class PluginTickData <<C struct>> {
+    + state_buffer: uint8_t*
+    + buffer_size: uint32_t
+    + delta_time: double
+    + output_force: PluginVector3*
+    + output_torque: PluginVector3*
+  }
+
+  class PluginHostServices <<C struct>> {
+    + api_version: uint32_t
+    + log: PluginLogFn
+    + user_data: void*
+  }
+}
+
+package "Public C ABI" #FFF7ED {
+  interface PropulsionPluginAPI <<C ABI>> {
+    + plugin_create_instance(): PluginHandle
+    + plugin_configure(handle: PluginHandle, json_params: const char*): int32_t
+    + plugin_tick(handle: PluginHandle, data: PluginTickData*): int32_t
+    + plugin_destroy_instance(handle: PluginHandle): void
+    + plugin_set_host_services(services: const PluginHostServices*): void
+  }
+}
+
+package "Boundary / Communication" #F0FDFA {
+  class PluginAdapter {
+    - module_: unique_ptr<IPropulsionModule>
+    - state_mapper_: unique_ptr<IStateMapper>
+    + configure(json_parameters: const char*): int32_t
+    + tick(data: PluginTickData*): int32_t
+    + setHostServices(services: PluginHostServices*): void
+  }
+
+  interface IStateMapper {
+    + read(source: PluginTickData, target: TickInput): Status
+    + write(source: TickResult, target: PluginTickData): Status
+  }
+
+  class FlatBufferStateMapper {
+    + read(source: PluginTickData, target: TickInput): Status
+    + write(source: TickResult, target: PluginTickData): Status
+  }
+}
+
+package "Application" #F5F3FF {
+  interface IPropulsionModule {
+    + configure(configuration: PropulsionConfig): Status
+    + tick(input: TickInput, output: TickResult): Status
+    + reset(): void
+    + snapshot(): PropulsionSnapshot
+  }
+
+  class PropulsionModule {
+    - engines_: vector<unique_ptr<IEngineModel>>
+    - propellant_system_: unique_ptr<IPropellantSystem>
+    - engine_factory_: shared_ptr<IEngineFactory>
+    - configured_: bool
+    + configure(configuration: PropulsionConfig): Status
+    + tick(input: TickInput, output: TickResult): Status
+    + reset(): void
+    + snapshot(): PropulsionSnapshot
+  }
+}
+
+package "Propulsion Domain" #FEFCE8 {
+  interface IEngineModel {
+    + id(): EngineId
+    + evaluate(command: EngineCommand, environment: EnvironmentState, dt: double): EngineDemand
+    + resolve(demand: EngineDemand, allocation: PropellantAllocation): EngineOutput
+    + state(): EngineState
+    + reset(): void
+  }
+
+  class LiquidRocketEngine {
+    - configuration_: EngineConfig
+    - state_: EngineState
+    + evaluate(command, environment, dt): EngineDemand
+    + resolve(demand, allocation): EngineOutput
+  }
+
+  class SolidRocketEngine {
+    - configuration_: EngineConfig
+    - state_: EngineState
+    - burn_time_s_: double
+    + evaluate(command, environment, dt): EngineDemand
+    + resolve(demand, allocation): EngineOutput
+  }
+
+  class TabulatedEngineModel {
+    - configuration_: EngineConfig
+    - state_: EngineState
+    + evaluate(command, environment, dt): EngineDemand
+    + resolve(demand, allocation): EngineOutput
+  }
+
+  interface IPropellantSystem {
+    + configure(tanks: vector<TankConfig>): Status
+    + allocate(demands: vector<EngineDemand>, dt: double): vector<PropellantAllocation>
+    + snapshot(): vector<TankState>
+    + reset(): void
+  }
+
+  class TankPropellantSystem {
+    - configuration_: vector<TankConfig>
+    - tanks_: vector<TankState>
+    + allocate(demands, dt): vector<PropellantAllocation>
+    + snapshot(): vector<TankState>
+  }
+
+  interface IEngineFactory {
+    + create(configuration: EngineConfig): unique_ptr<IEngineModel>
+  }
+
+  class EngineRegistry {
+    - creators_: map<string, Creator>
+    + registerModel(model_type: string, creator: Creator): bool
+    + create(configuration: EngineConfig): unique_ptr<IEngineModel>
+  }
+
+  class TickInput <<value>> {
+    + delta_time_s: double
+    + vehicle: VehicleState
+    + environment: EnvironmentState
+    + engine_commands: vector<EngineCommand>
+  }
+
+  class TickResult <<value>> {
+    + net_force_inertial_n: Vector3d
+    + net_torque_body_nm: Vector3d
+    + engines: vector<EngineOutput>
+    + tanks: vector<TankState>
+    + consumed_mass_kg: double
+  }
+}
+
+PluginManager --> PropulsionPluginAPI : resolves and invokes
+PropulsionPluginAPI ..> PluginTickData
+PropulsionPluginAPI ..> PluginHostServices
+PropulsionPluginAPI ..> PluginAdapter : delegates
+
+PluginAdapter *-- IPropulsionModule
+PluginAdapter *-- IStateMapper
+IStateMapper <|.. FlatBufferStateMapper
+FlatBufferStateMapper ..> PluginTickData : maps read-only state
+FlatBufferStateMapper ..> TickInput
+FlatBufferStateMapper ..> TickResult
+
+IPropulsionModule <|.. PropulsionModule
+PropulsionModule *-- "1..*" IEngineModel : owns
+PropulsionModule *-- IPropellantSystem : owns
+PropulsionModule o-- IEngineFactory : creates models
+PropulsionModule ..> TickInput
+PropulsionModule ..> TickResult
+
+IEngineModel <|.. LiquidRocketEngine
+IEngineModel <|.. SolidRocketEngine
+IEngineModel <|.. TabulatedEngineModel
+IPropellantSystem <|.. TankPropellantSystem
+IEngineFactory <|.. EngineRegistry
+EngineRegistry ..> IEngineModel : constructs
+
+note right of PropulsionPluginAPI
+  Stable orchestrator contract.
+  No C++ exceptions or domain
+  types cross this boundary.
+end note
+
+note bottom of PropulsionModule
+  Two-phase engine evaluation:
+  1. collect all demands
+  2. allocate tanks atomically
+  3. resolve actual outputs
+end note
+
+note bottom of FlatBufferStateMapper
+  Current type-1 execution is parallel.
+  state_buffer must remain read-only;
+  only force/torque outputs are written.
+end note
+
+@enduml

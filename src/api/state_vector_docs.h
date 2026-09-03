@@ -63,6 +63,9 @@ struct EngineCmd;
  * - Aerodynamics: `mach_number`, `dynamic_pressure`, `angle_of_attack`, `sideslip_angle`
  * - Environment: `atm_density`, `atm_pressure`, `atm_temperature`, `wind_velocity`, `gravity`
  * - Control/actuation: `engines`, `surface_deflections`
+ *
+ * `gravity` is stored as part of `GeneralState` and is preserved by runtime
+ * state rebuilding; it is not owned by `PluginManager`.
  */
 struct GeneralState;
 
