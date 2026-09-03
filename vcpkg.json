@@ -10,6 +10,10 @@
     "flatbuffers",
     "nlohmann-json",
     "gtest",
-    "boost-odeint"
+    "boost-odeint",
+    {
+      "name": "hdf5",
+      "default-features": false
+    }
   ]
 }
