@@ -15,6 +15,7 @@
 
 namespace MoLab {
     class PluginManager;
+    class FlightComputerContext;
 }
 
 namespace state_vector {
@@ -148,6 +149,7 @@ public:
 private:
     // Plugin manager
     std::unique_ptr<PluginManager> plugin_manager_;
+    std::unique_ptr<FlightComputerContext> flight_computer_;
 
     // Current state buffer (thread-safe)
     std::vector<uint8_t> current_state_buffer_;
