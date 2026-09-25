@@ -1,0 +1,50 @@
+{
+  "simulation": {
+    "time_step": 0.01,
+    "duration": 30,
+    "max_iterations": 3000,
+    "enable_logging": true,
+    "log_level": "INFO",
+    "log_file": "logs/molab_web.log"
+  },
+  "physics": {
+    "enable_gravity": true,
+    "gravity_magnitude": 9.81,
+    "enable_atmospheric_drag": false,
+    "integration_tolerance": 1e-06,
+    "integrator_type": "runge_kutta_4"
+  },
+  "plugins": [
+    {
+      "name": "environment",
+      "type": 0,
+      "library_path": "plugins/environment",
+      "enabled": false,
+      "parameters": {
+        "enable_atmospheric_model": false,
+        "enable_wind_effects": false,
+        "enable_gravity_variation": true
+      }
+    }
+  ],
+  "output": {
+    "enable_csv": true,
+    "enable_json": false,
+    "enable_binary": false,
+    "output_interval": 1,
+    "output_directory": "output"
+  },
+  "initial_state": {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "velocity": [
+      120,
+      0,
+      120
+    ],
+    "mass": 1000
+  }
+}

@@ -13,7 +13,7 @@
 
 /**
  * @file Logger.h
- * @brief Centralized logging system for MoLab.
+ * @brief Centralized logging system for Apogeo.
  */
 
 namespace MoLab {

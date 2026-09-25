@@ -8,7 +8,7 @@
  * para evitar errores de include en esta copia.
  */
 
-#if __has_include("../../../../src/api/plugin_api.h") && __has_include("state_vector_generated.h")
+#if __has_include("../../../src/api/plugin_api.h") && __has_include("state_vector_generated.h")
 
 /*
  * Structures Plugin - Análisis Estructural y Dinámico
@@ -21,7 +21,7 @@
  * - Cambios de masa por consumo de combustible
  */
 
-#include "../../../../src/api/plugin_api.h"
+#include "../../../src/api/plugin_api.h"
 #include "state_vector_generated.h"
 #include <cmath>
 #include <algorithm>
@@ -256,6 +256,24 @@ PLUGIN_EXPORT PluginHandle plugin_create_instance() {
     instance->initialized = true;
 
     return reinterpret_cast<PluginHandle>(instance);
+}
+
+PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_params) {
+    (void)json_params;
+    if (!handle) {
+        return -1;
+    }
+
+    StructuresPluginInstance* instance = reinterpret_cast<StructuresPluginInstance*>(handle);
+    if (!instance->initialized) {
+        return -2;
+    }
+
+    return 0;
+}
+
+PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) {
+    (void)services;
 }
 
 PLUGIN_EXPORT int32_t plugin_tick(PluginHandle handle, PluginTickData* data) {

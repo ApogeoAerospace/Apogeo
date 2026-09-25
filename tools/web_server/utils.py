@@ -3,6 +3,7 @@ Utility functions for MoLab Web Server
 """
 import platform
 import json
+import copy
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import csv
@@ -18,12 +19,37 @@ def get_simulator_path(build_dir: Path) -> Path:
     Returns:
         Path to simulator executable
     """
-    bin_dir = build_dir / "bin"
-    
-    if platform.system() == "Windows":
-        return bin_dir / "simulator.exe"
-    else:
-        return bin_dir / "simulator"
+    is_windows = platform.system() == "Windows"
+    exe_name = "simulator.exe" if is_windows else "simulator"
+
+    # Common layouts seen in this repository and CMake multi-config builds.
+    candidates = [
+        build_dir / "bin" / exe_name,
+        build_dir / exe_name,
+        build_dir / "Debug" / exe_name,
+        build_dir / "Release" / exe_name,
+        build_dir / "x64-Debug" / "bin" / exe_name,
+        build_dir / "x64-Debug" / exe_name,
+        build_dir / "x64-Debug" / "Debug" / exe_name,
+        build_dir / "x64-Release" / "bin" / exe_name,
+        build_dir / "x64-Release" / exe_name,
+        build_dir / "x64-Release" / "Release" / exe_name,
+    ]
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return candidate
+
+    # Fallback: search below build dir for an executable named simulator.
+    try:
+        for candidate in build_dir.rglob(exe_name):
+            if candidate.is_file():
+                return candidate
+    except OSError:
+        pass
+
+    # Keep previous behavior as deterministic fallback when not found.
+    return build_dir / "bin" / exe_name
 
 
 def is_port_available(port: int) -> bool:
@@ -261,33 +287,97 @@ def validate_config(config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    required_sections = ['simulation', 'physics', 'output']
+    required_sections = ['simulation']
     
     for section in required_sections:
         if section not in config:
             return False, f"Missing required section: {section}"
     
-    # Validate simulation section
+    # Validate simulation section (supports both legacy and current schema)
     sim = config['simulation']
-    if 'time_step' not in sim or not isinstance(sim['time_step'], (int, float)):
-        return False, "Invalid or missing simulation.time_step"
-    
-    if sim['time_step'] <= 0:
-        return False, "simulation.time_step must be positive"
     
     if 'duration' not in sim or not isinstance(sim['duration'], (int, float)):
         return False, "Invalid or missing simulation.duration"
     
     if sim['duration'] <= 0:
         return False, "simulation.duration must be positive"
+
+    # Legacy support: if time_step is provided, validate it and derive max_iterations compatibility.
+    if 'time_step' in sim:
+        if not isinstance(sim['time_step'], (int, float)):
+            return False, "simulation.time_step must be numeric"
+        if sim['time_step'] <= 0:
+            return False, "simulation.time_step must be positive"
+
+    if 'max_iterations' in sim:
+        if not isinstance(sim['max_iterations'], int):
+            return False, "simulation.max_iterations must be an integer"
+        if sim['max_iterations'] <= 0:
+            return False, "simulation.max_iterations must be positive"
     
-    # Validate physics section
-    physics = config['physics']
-    if 'integrator_type' not in physics:
-        return False, "Missing physics.integrator_type"
-    
-    valid_integrators = ['euler', 'runge_kutta_4', 'verlet']
-    if physics['integrator_type'] not in valid_integrators:
-        return False, f"Invalid integrator_type. Must be one of: {valid_integrators}"
+    # Optional physics section validation (legacy web payload)
+    physics = config.get('physics')
+    if physics is not None:
+        if not isinstance(physics, dict):
+            return False, "physics section must be an object"
+
+        integrator_type = physics.get('integrator_type')
+        if integrator_type is not None:
+            valid_integrators = ['euler', 'runge_kutta_4', 'verlet']
+            if integrator_type not in valid_integrators:
+                return False, f"Invalid integrator_type. Must be one of: {valid_integrators}"
     
     return True, None
+
+
+def normalize_config_for_simulator(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize web UI config to the current simulator config schema.
+
+    This keeps backward compatibility with legacy web payload fields while
+    producing a config accepted by the current C++ codebase.
+
+    Args:
+        config: Incoming web configuration
+
+    Returns:
+        Normalized configuration dictionary
+    """
+    normalized = copy.deepcopy(config)
+
+    simulation = normalized.setdefault('simulation', {})
+    duration = float(simulation.get('duration', 100.0))
+
+    # Current schema uses max_iterations. If legacy time_step is available,
+    # always derive max_iterations from duration/time_step to keep duration
+    # and end-conditions consistent with UI changes.
+    time_step = simulation.get('time_step')
+    if isinstance(time_step, (int, float)) and time_step > 0:
+        simulation['max_iterations'] = max(1, int(duration / float(time_step)))
+    elif 'max_iterations' not in simulation:
+        simulation['max_iterations'] = 10000
+
+    # Keep duration/logging fields expected by current ConfigManager.
+    simulation.setdefault('enable_logging', True)
+    simulation.setdefault('log_file', 'logs/molab_web.log')
+    simulation.setdefault('log_level', 'INFO')
+
+    # Legacy output block -> current root output_directory.
+    output = normalized.get('output')
+    if isinstance(output, dict) and output.get('output_directory'):
+        normalized['output_directory'] = output['output_directory']
+    normalized.setdefault('output_directory', 'output/')
+
+    # Legacy physics.integrator_type -> current mission_environment.integrator_config.method.
+    physics = normalized.get('physics')
+    if isinstance(physics, dict) and physics.get('integrator_type'):
+        mission_environment = normalized.setdefault('mission_environment', {})
+        integrator_config = mission_environment.setdefault('integrator_config', {})
+        integrator_config['method'] = physics['integrator_type']
+
+    # Ensure ipc block exists for IPC mode throttling defaults.
+    ipc = normalized.setdefault('ipc', {})
+    ipc.setdefault('tick_event_interval', 50)
+    ipc.setdefault('telemetry_interval_ticks', 5)
+
+    return normalized

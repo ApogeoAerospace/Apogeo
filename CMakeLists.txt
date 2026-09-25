@@ -1,6 +1,6 @@
 # Minimum CMake version 3.20
 cmake_minimum_required(VERSION 3.20)
-project(Molab VERSION 0.0.0 LANGUAGES CXX)
+project(Apogeo VERSION 0.0.0 LANGUAGES CXX)
 include(FetchContent)
 
 # C++17
@@ -17,6 +17,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers for data serialization/deserialization
 find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json for JSON handling
 find_package(Boost REQUIRED) # Boost (header-only, used by Odeint)
+find_package(lua CONFIG REQUIRED)
+find_package(sol2 CONFIG REQUIRED)
 
 # Directories for FlatBuffers schemas and generated files
 set(SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/schemas")
@@ -70,6 +72,7 @@ set(CORE_SOURCES
     src/core/PhysicsIntegrator.cpp
     src/core/OutputManager.cpp
     src/core/TimeManager.cpp
+    src/FlightComputerContext.cpp
 )
 
 # Create core library
@@ -88,6 +91,8 @@ target_link_libraries(core PUBLIC
     flatbuffers::flatbuffers
     nlohmann_json::nlohmann_json
     Eigen3::Eigen
+    lua
+    sol2::sol2
 )
 
 target_include_directories(core PUBLIC
@@ -125,6 +130,10 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/data/limits/structural_limits.csv
             "$<TARGET_FILE_DIR:simulator>/data/limits"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/scripts"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vuelo_test.lua
+            "$<TARGET_FILE_DIR:simulator>/scripts"
     COMMENT "Copying runtime configuration and data files..."
 )
 
@@ -206,6 +215,48 @@ add_custom_command(TARGET propulsion POST_BUILD
 set_property(TARGET propulsion APPEND PROPERTY LINK_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion/data/engine_curves.csv")
 
+# --- Deprecated Plugins ---
+
+set(DEPRECATED_PLUGIN_NAMES
+    aerodynamics
+    environment
+)
+
+# Standardized plugin output layout:
+# - Plugin runtime binaries (.dll/.so/.dylib) -> bin/plugins
+# - Archive/import libraries (.lib/.a)        -> lib/plugins
+set(PLUGIN_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/plugins")
+set(PLUGIN_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/plugins")
+
+foreach(_plugin_name IN LISTS DEPRECATED_PLUGIN_NAMES)
+
+    set(_plugin_sources
+        plugins/deprecated/${_plugin_name}/${_plugin_name}.cpp
+    )
+
+    set(_plugin_private_libs
+        flatbuffers::flatbuffers
+    )
+
+    add_library(${_plugin_name} SHARED ${_plugin_sources})
+    add_dependencies(${_plugin_name} generate_flatbuffers)
+
+    # Keep plugin binary output path consistent across platforms/configurations
+    set_target_properties(${_plugin_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        LIBRARY_OUTPUT_DIRECTORY "${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${PLUGIN_ARCHIVE_OUTPUT_DIRECTORY}"
+    )
+
+    target_include_directories(${_plugin_name} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/api"
+        "${GENERATED_DIR}"
+    )
+
+    target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
+
+endforeach()
+
 message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
 message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")
 
@@ -242,6 +293,7 @@ if(ENABLE_TESTING)
         tests/test_initial_state_loader.cpp
         tests/test_command_event_protocol.cpp
         tests/test_ipc_session.cpp
+        tests/test_flight_computer.cpp
         src/ipc/IpcSession.cpp
     )
 
@@ -262,6 +314,15 @@ if(ENABLE_TESTING)
     # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(core_tests)
+
+    add_custom_command(
+        TARGET core_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/scripts"
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vuelo_test.lua
+                "${CMAKE_BINARY_DIR}/scripts"
+        COMMENT "Copying test scripts to binary dir..."
+    )
 
     add_executable(propulsion_tests plugins/propulsion/tests/test_propulsion.cpp)
     target_link_libraries(propulsion_tests PRIVATE

@@ -482,47 +482,47 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 MoLab</h1>
+            <h1> MoLab</h1>
             <p>Web Interface for Realistic Aerospace Simulations</p>
         </div>
         
         <div class="main-content">
             <div id="status" class="status info">
-                🔄 Loading system status... 
-                <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;">🔄 Force Refresh</button>
+                 Loading system status... 
+                <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;"> Force Refresh</button>
             </div>
             
             <div class="tabs">
-                <button class="tab active" onclick="showTab('simulation', event)">⚙️ Simulation</button>
-                <button class="tab" onclick="showTab('physics', event)">⚗️ Physics</button>
-                <button class="tab" onclick="showTab('plugins', event)">🔌 Plugins</button>
-                <button class="tab" onclick="showTab('output', event)">📊 Output</button>
-                <button class="tab" onclick="showTab('results', event)">📈 Results</button>
-                <button class="tab" onclick="showTab('earth', event)">🌍 Earth View</button>
-                <button class="tab" onclick="showTab('analysis', event)">🔬 Physics Analysis</button>
+                <button class="tab active" onclick="showTab('simulation', event)"> Simulation</button>
+                <button class="tab" onclick="showTab('physics', event)"> Physics</button>
+                <button class="tab" onclick="showTab('plugins', event)"> Plugins</button>
+                <button class="tab" onclick="showTab('output', event)"> Output</button>
+                <button class="tab" onclick="showTab('results', event)"> Results</button>
+                <button class="tab" onclick="showTab('earth', event)"> Earth View</button>
+                <button class="tab" onclick="showTab('analysis', event)"> Physics Analysis</button>
             </div>
             
             <div id="simulation-tab" class="tab-content active">
-                <h3>⚙️ Simulation Configuration</h3>
+                <h3> Simulation Configuration</h3>
                 
                 <!-- Mission Templates -->
                 <div class="mission-templates">
-                    <h4>🚀 Mission Templates</h4>
+                    <h4> Mission Templates</h4>
                     <div class="template-cards">
                         <div class="template-card" onclick="loadTemplate('suborbital')">
-                            <h5>🌌 Suborbital Flight</h5>
+                            <h5> Suborbital Flight</h5>
                             <p>High altitude trajectory with parabolic arc</p>
                         </div>
                         <div class="template-card" onclick="loadTemplate('atmospheric')">
-                            <h5>🌍 Atmospheric Test</h5>
+                            <h5> Atmospheric Test</h5>
                             <p>Low altitude flight with atmospheric effects</p>
                         </div>
                         <div class="template-card" onclick="loadTemplate('landing')">
-                            <h5>🚀 Landing Simulation</h5>
+                            <h5> Landing Simulation</h5>
                             <p>Controlled descent and landing sequence</p>
                         </div>
                         <div class="template-card" onclick="loadTemplate('orbital')">
-                            <h5>🛰️ Orbital Insertion</h5>
+                            <h5> Orbital Insertion</h5>
                             <p>Multi-stage ascent to orbital velocity</p>
                         </div>
                     </div>
@@ -555,7 +555,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             </div>
             
             <div id="physics-tab" class="tab-content">
-                <h3>⚗️ Physics Configuration</h3>
+                <h3> Physics Configuration</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label><input type="checkbox" id="enable-gravity" checked> Enable Gravity</label>
@@ -595,7 +595,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                         <input type="number" id="reference-area" min="0.01" max="1000" step="0.1" value="1.0">
                     </div>
                 </div>
-                <h3 style="margin-top:20px;">🚀 Propulsion Plugin</h3>
+                <h3 style="margin-top:20px;"> Propulsion Plugin</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label><input type="checkbox" id="enable-propulsion" checked> Enable Propulsion</label>
@@ -658,7 +658,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             </div>
             
             <div id="output-tab" class="tab-content">
-                <h3>📊 Output Configuration</h3>
+                <h3> Output Configuration</h3>
                 <div class="form-group">
                     <label>Output Formats:</label>
                     <div>
@@ -679,19 +679,19 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             </div>
             
             <div id="results-tab" class="tab-content">
-                <h3>📈 Simulation Results</h3>
+                <h3> Simulation Results</h3>
                 <div class="results-controls">
-                    <button class="btn btn-info" onclick="loadResults()">🔄 Refresh Results</button>
-                    <button class="btn btn-secondary" onclick="toggleComparisonMode()">📊 Compare Mode</button>
-                    <button class="btn btn-success" onclick="exportReport()" style="display: none;" id="export-btn">📄 Export Report</button>
+                    <button class="btn btn-info" onclick="loadResults()"> Refresh Results</button>
+                    <button class="btn btn-secondary" onclick="toggleComparisonMode()"> Compare Mode</button>
+                    <button class="btn btn-success" onclick="exportReport()" style="display: none;" id="export-btn"> Export Report</button>
                 </div>
                 
                 <div id="comparison-panel" class="comparison-panel" style="display: none;">
-                    <h4>📊 Comparison Mode</h4>
+                    <h4> Comparison Mode</h4>
                     <p>Select up to 3 simulations to compare:</p>
                     <div id="selected-results" class="selected-results"></div>
-                    <button class="btn btn-primary" onclick="compareSelected()">🔍 Compare Selected</button>
-                    <button class="btn btn-secondary" onclick="clearComparison()">🗑️ Clear Selection</button>
+                    <button class="btn btn-primary" onclick="compareSelected()"> Compare Selected</button>
+                    <button class="btn btn-secondary" onclick="clearComparison()"> Clear Selection</button>
                 </div>
                 
                 <div id="results-list" class="results-list">
@@ -699,7 +699,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 </div>
                 
                 <div id="plots-gallery" style="display: none; margin-top: 20px;">
-                    <h3 style="margin-bottom: 10px;">📊 Generated Plots</h3>
+                    <h3 style="margin-bottom: 10px;"> Generated Plots</h3>
                     <div id="plots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;"></div>
                 </div>
                 
@@ -708,60 +708,60 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     
                     <!-- Chart Navigation Tabs -->
                     <div class="chart-tabs">
-                        <button class="chart-tab active" onclick="showChart('trajectory')">🛸 Trajectory</button>
-                        <button class="chart-tab" onclick="showChart('velocity')">🚀 Velocity</button>
-                        <button class="chart-tab" onclick="showChart('altitude')">🏔️ Altitude</button>
-                        <button class="chart-tab" onclick="showChart('speed')">⚡ Speed</button>
-                        <button class="chart-tab" onclick="showChart('earth')">🌡️ Atmosphere</button>
-                        <button class="chart-tab" onclick="showChart('physics')">⚛️ Physics</button>
-                        <button class="chart-tab" onclick="showChart('comparison')" id="comparison-tab" style="display: none;">📊 Comparison</button>
+                        <button class="chart-tab active" onclick="showChart('trajectory')"> Trajectory</button>
+                        <button class="chart-tab" onclick="showChart('velocity')"> Velocity</button>
+                        <button class="chart-tab" onclick="showChart('altitude')"> Altitude</button>
+                        <button class="chart-tab" onclick="showChart('speed')"> Speed</button>
+                        <button class="chart-tab" onclick="showChart('earth')"> Atmosphere</button>
+                        <button class="chart-tab" onclick="showChart('physics')"> Physics</button>
+                        <button class="chart-tab" onclick="showChart('comparison')" id="comparison-tab" style="display: none;"> Comparison</button>
                     </div>
                     
                     <!-- Chart Containers -->
                     <div id="trajectory-chart-container" class="chart-panel active">
-                        <h4>🛸 3D Trajectory Analysis</h4>
+                        <h4> 3D Trajectory Analysis</h4>
                         <div class="chart-wrapper"><canvas id="trajectory-chart"></canvas></div>
                     </div>
                     
                     <div id="velocity-chart-container" class="chart-panel">
-                        <h4>🚀 Velocity Components</h4>
+                        <h4> Velocity Components</h4>
                         <div class="chart-wrapper"><canvas id="velocity-chart"></canvas></div>
                     </div>
                     
                     <div id="altitude-chart-container" class="chart-panel">
-                        <h4>🏔️ Altitude Profile</h4>
+                        <h4> Altitude Profile</h4>
                         <div class="chart-wrapper"><canvas id="altitude-chart"></canvas></div>
                     </div>
                     
                     <div id="speed-chart-container" class="chart-panel">
-                        <h4>⚡ Speed Analysis</h4>
+                        <h4> Speed Analysis</h4>
                         <div class="chart-wrapper"><canvas id="speed-chart"></canvas></div>
                     </div>
                     
                     <div id="earth-chart-container" class="chart-panel">
-                        <h4>🌡️ Atmospheric Conditions</h4>
+                        <h4> Atmospheric Conditions</h4>
                         <div class="chart-wrapper"><canvas id="earth-chart"></canvas></div>
                     </div>
                     
                     <div id="physics-chart-container" class="chart-panel">
-                        <h4>⚛️ Gravity, Energy & Pressure</h4>
+                        <h4> Gravity, Energy & Pressure</h4>
                         <div class="chart-wrapper"><canvas id="physics-chart"></canvas></div>
                     </div>
                     
                     <div id="comparison-chart-container" class="chart-panel">
-                        <h4>📊 Multi-Simulation Comparison</h4>
+                        <h4> Multi-Simulation Comparison</h4>
                         <div class="chart-wrapper"><canvas id="comparison-chart"></canvas></div>
                     </div>
                 </div>
             </div>
             
             <div id="earth-tab" class="tab-content">
-                <h3>🌍 Earth View</h3>
+                <h3> Earth View</h3>
                 <div id="earth-view"></div>
             </div>
             
             <div id="analysis-tab" class="tab-content">
-                <h3>🔬 Physics Analysis</h3>
+                <h3> Physics Analysis</h3>
                 <div id="physics-analysis"></div>
             </div>
             
@@ -770,7 +770,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 
                 <!-- Real-time Progress Section -->
                 <div id="progress-section" class="progress-section" style="display: none;">
-                    <h4>🚀 Simulation Progress</h4>
+                    <h4> Simulation Progress</h4>
                     <div class="progress-bar">
                         <div id="progress-fill" class="progress-fill"></div>
                     </div>
@@ -792,10 +792,10 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 </div>
                 
                 <div class="control-buttons">
-                    <button class="btn btn-info" onclick="saveConfig()">💾 Save Config</button>
-                    <button class="btn btn-primary" onclick="runSimulation()" id="run-btn">🚀 Run Simulation</button>
-                    <button class="btn btn-success" onclick="loadResults()">📊 View Results</button>
-                    <button class="btn btn-warning" onclick="stopSimulation()" id="stop-btn" style="display: none;">⏹️ Stop Simulation</button>
+                    <button class="btn btn-info" onclick="saveConfig()"> Save Config</button>
+                    <button class="btn btn-primary" onclick="runSimulation()" id="run-btn"> Run Simulation</button>
+                    <button class="btn btn-success" onclick="loadResults()"> View Results</button>
+                    <button class="btn btn-warning" onclick="stopSimulation()" id="stop-btn" style="display: none;">⏹ Stop Simulation</button>
                 </div>
             </div>
         </div>
@@ -846,18 +846,18 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 
                 if (status.simulator_built) {
                     statusDiv.className = 'status success';
-                    statusDiv.innerHTML = '✅ System ready - Simulator built and available';
+                    statusDiv.innerHTML = ' System ready - Simulator built and available';
                 } else {
                     statusDiv.className = 'status error';
-                    statusDiv.innerHTML = '❌ Simulator not built - Please build the project first';
+                    statusDiv.innerHTML = ' Simulator not built - Please build the project first';
                 }
             } catch (error) {
                 console.error('Status loading error:', error);
                 statusDiv.className = 'status error';
                 if (error.name === 'AbortError') {
-                    statusDiv.innerHTML = '⏱️ Status loading timed out - Server may be starting up. <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>';
+                    statusDiv.innerHTML = ' Status loading timed out - Server may be starting up. <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>';
                 } else {
-                    statusDiv.innerHTML = `❌ Error loading status: ${error.message} <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>`;
+                    statusDiv.innerHTML = ` Error loading status: ${error.message} <button onclick="loadStatus()" class="btn btn-info">🔄 Retry</button>`;
                 }
             }
         }
@@ -866,7 +866,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             console.log('Force refresh triggered');
             const statusDiv = document.getElementById('status');
             statusDiv.className = 'status info';
-            statusDiv.innerHTML = '🔄 Loading system status... <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;">🔄 Force Refresh</button>';
+            statusDiv.innerHTML = ' Loading system status... <button onclick="forceRefresh()" class="btn btn-secondary" style="margin-left: 10px;">🔄 Force Refresh</button>';
             
             // Clear any caches and reload status
             if ('caches' in window) {
@@ -1283,10 +1283,10 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     const size = (result.size / 1024).toFixed(1);
                     html += `
                         <div class="result-item">
-                            <h4>📊 ${result.filename}</h4>
-                            <p>📅 Modified: ${date} | 📁 Size: ${size} KB</p>
-                            <button class="btn btn-primary" onclick="visualizeResult('${result.filename}')">📈 Visualize</button>
-                            ${comparisonMode ? `<button class="btn btn-secondary" onclick="selectResult('${result.filename}')">📊 Select for Comparison</button>` : ''}
+                            <h4> ${result.filename}</h4>
+                            <p> Modified: ${date} |  Size: ${size} KB</p>
+                            <button class="btn btn-primary" onclick="visualizeResult('${result.filename}')"> Visualize</button>
+                            ${comparisonMode ? `<button class="btn btn-secondary" onclick="selectResult('${result.filename}')"> Select for Comparison</button>` : ''}
                         </div>
                     `;
                 });
@@ -1397,25 +1397,25 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             statsDiv.innerHTML = `
                 <div class="stats-row primary">
                     <div class="stat-section">
-                        <h3>🚀 Mission Overview</h3>
+                        <h3> Mission Overview</h3>
                         <div class="stat-cards">
                             <div class="stat-card highlight">
-                                <h4>⏱️ Flight Duration</h4>
+                                <h4> Flight Duration</h4>
                                 <div class="value">${duration}</div>
                                 <div class="unit">seconds</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📊 Data Points</h4>
+                                <h4> Data Points</h4>
                                 <div class="value">${totalPoints}</div>
                                 <div class="unit">samples</div>
                             </div>
                             <div class="stat-card highlight">
-                                <h4>📏 Total Distance</h4>
+                                <h4> Total Distance</h4>
                                 <div class="value">${distance}</div>
                                 <div class="unit">meters</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📐 Straight Distance</h4>
+                                <h4> Straight Distance</h4>
                                 <div class="value">${straightLineDistance.toFixed(1)}</div>
                                 <div class="unit">meters</div>
                             </div>
@@ -1423,25 +1423,25 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     </div>
                     
                     <div class="stat-section">
-                        <h3>📈 Trajectory Analysis</h3>
+                        <h3> Trajectory Analysis</h3>
                         <div class="stat-cards">
                             <div class="stat-card">
-                                <h4>🏔️ Altitude Change</h4>
+                                <h4> Altitude Change</h4>
                                 <div class="value ${altitudeChange >= 0 ? 'positive' : 'negative'}">${altitudeChange >= 0 ? '+' : ''}${altitudeChange.toFixed(1)}</div>
                                 <div class="unit">meters</div>
                             </div>
                             <div class="stat-card">
-                                <h4>🌍 Horizontal Distance</h4>
+                                <h4> Horizontal Distance</h4>
                                 <div class="value">${horizontalDistance.toFixed(1)}</div>
                                 <div class="unit">meters</div>
                             </div>
                             <div class="stat-card highlight">
-                                <h4>⛰️ Maximum Altitude</h4>
+                                <h4> Maximum Altitude</h4>
                                 <div class="value">${maxAltitude.toFixed(1)}</div>
                                 <div class="unit">meters</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📊 Flight Efficiency</h4>
+                                <h4> Flight Efficiency</h4>
                                 <div class="value ${flightEfficiency >= 80 ? 'positive' : flightEfficiency >= 60 ? 'neutral' : 'negative'}">${flightEfficiency.toFixed(1)}</div>
                                 <div class="unit">%</div>
                             </div>
@@ -1449,25 +1449,25 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     </div>
                     
                     <div class="stat-section">
-                        <h3>⚡ Performance Metrics</h3>
+                        <h3> Performance Metrics</h3>
                         <div class="stat-cards">
                             <div class="stat-card">
-                                <h4>🚀 Initial Speed</h4>
+                                <h4> Initial Speed</h4>
                                 <div class="value">${initialSpeed.toFixed(1)}</div>
                                 <div class="unit">m/s</div>
                             </div>
                             <div class="stat-card">
-                                <h4>🎯 Final Speed</h4>
+                                <h4> Final Speed</h4>
                                 <div class="value">${finalSpeed.toFixed(1)}</div>
                                 <div class="unit">m/s</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📊 Speed Change</h4>
+                                <h4> Speed Change</h4>
                                 <div class="value ${speedChange >= 0 ? 'positive' : 'negative'}">${speedChange >= 0 ? '+' : ''}${speedChange.toFixed(1)}</div>
                                 <div class="unit">m/s</div>
                             </div>
                             <div class="stat-card">
-                                <h4>🔥 Avg Acceleration</h4>
+                                <h4> Avg Acceleration</h4>
                                 <div class="value ${Math.abs(avgAcceleration) > 9.81 ? 'highlight' : ''}">${avgAcceleration.toFixed(2)}</div>
                                 <div class="unit">m/s²</div>
                             </div>
@@ -1477,25 +1477,25 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 
                 <div class="stats-row secondary">
                     <div class="stat-section">
-                        <h3>🔬 Advanced Analysis</h3>
+                        <h3> Advanced Analysis</h3>
                         <div class="stat-cards">
                             <div class="stat-card">
-                                <h4>🌊 Average Speed</h4>
+                                <h4> Average Speed</h4>
                                 <div class="value">${avgSpeed.toFixed(1)}</div>
                                 <div class="unit">m/s</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📈 Ascent Rate</h4>
+                                <h4> Ascent Rate</h4>
                                 <div class="value ${ascentRate >= 0 ? 'positive' : 'negative'}">${ascentRate >= 0 ? '+' : ''}${ascentRate.toFixed(1)}</div>
                                 <div class="unit">m/s</div>
                             </div>
                             <div class="stat-card">
-                                <h4>⚡ Energy Change</h4>
+                                <h4> Energy Change</h4>
                                 <div class="value ${energyChange >= 0 ? 'positive' : 'negative'}">${energyChange >= 0 ? '+' : ''}${energyChange.toFixed(1)}</div>
                                 <div class="unit">J/kg</div>
                             </div>
                             <div class="stat-card">
-                                <h4>🎯 Final H/V Ratio</h4>
+                                <h4> Final H/V Ratio</h4>
                                 <div class="value">${verticalVelocity > 0 ? (horizontalVelocity/verticalVelocity).toFixed(2) : 'N/A'}</div>
                                 <div class="unit">ratio</div>
                             </div>
@@ -1503,19 +1503,19 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     </div>
                     
                     <div class="stat-section">
-                        <h3>🚀 Velocity Analysis</h3>
+                        <h3> Velocity Analysis</h3>
                         <div class="stat-cards">
                             <div class="stat-card multi-value">
-                                <h4>🎯 Final Horizontal</h4>
+                                <h4> Final Horizontal</h4>
                                 <div class="value">X: ${finalVel.x.toFixed(1)} m/s</div>
                                 <div class="value">Y: ${finalVel.y.toFixed(1)} m/s</div>
                                 <div class="value">Total: ${horizontalVelocity.toFixed(1)} m/s</div>
                             </div>
                             <div class="stat-card multi-value">
-                                <h4>📈 Final Vertical</h4>
+                                <h4> Final Vertical</h4>
                                 <div class="value">Z: ${finalVel.z.toFixed(1)} m/s</div>
                                 <div class="value">|Z|: ${verticalVelocity.toFixed(1)} m/s</div>
-                                <div class="value">${finalVel.z >= 0 ? '⬆️ Ascending' : '⬇️ Descending'}</div>
+                                <div class="value">${finalVel.z >= 0 ? 'Ascending' : ' Descending'}</div>
                             </div>
                         </div>
                     </div>
@@ -1523,16 +1523,16 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                 
                 <div class="stats-row primary">
                     <div class="stat-section">
-                        <h3>📍 Position Details</h3>
+                        <h3> Position Details</h3>
                         <div class="stat-cards">
                             <div class="stat-card multi-value">
-                                <h4>🎯 Initial Position</h4>
+                                <h4> Initial Position</h4>
                                 <div class="value">X: ${initialPos.x.toFixed(1)}m</div>
                                 <div class="value">Y: ${initialPos.y.toFixed(1)}m</div>
                                 <div class="value">Z: ${initialPos.z.toFixed(1)}m</div>
                             </div>
                             <div class="stat-card multi-value">
-                                <h4>🏁 Final Position</h4>
+                                <h4> Final Position</h4>
                                 <div class="value">X: ${finalPos.x.toFixed(1)}m</div>
                                 <div class="value">Y: ${finalPos.y.toFixed(1)}m</div>
                                 <div class="value">Z: ${finalPos.z.toFixed(1)}m</div>
@@ -1541,7 +1541,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     </div>
                     
                     <div class="stat-section">
-                        <h3>🚀 Aerospace Physics</h3>
+                        <h3> Aerospace Physics</h3>
                         <div class="stat-cards">
                             <div class="stat-card">
                                 <h4>🌌 Max Altitude</h4>
@@ -1571,25 +1571,25 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     </div>
                     
                     <div class="stat-section">
-                        <h3>🎯 Mission Classification</h3>
+                        <h3> Mission Classification</h3>
                         <div class="stat-cards">
                             <div class="stat-card">
-                                <h4>🚀 Flight Type</h4>
+                                <h4> Flight Type</h4>
                                 <div class="value">${flightType}</div>
                                 <div class="unit">${flightTypeEmoji}</div>
                             </div>
                             <div class="stat-card">
-                                <h4>⏱️ Flight Phase</h4>
+                                <h4>⏱ Flight Phase</h4>
                                 <div class="value">${flightPhase}</div>
                                 <div class="unit">${flightPhaseEmoji}</div>
                             </div>
                             <div class="stat-card">
-                                <h4>🎖️ Mission Success</h4>
+                                <h4> Mission Success</h4>
                                 <div class="value ${missionSuccess ? 'positive' : 'negative'}">${missionSuccess ? 'SUCCESS' : 'PARTIAL'}</div>
-                                <div class="unit">${missionSuccess ? '✅' : '⚠️'}</div>
+                                <div class="unit">${missionSuccess ? ' ' : ' '}</div>
                             </div>
                             <div class="stat-card">
-                                <h4>📊 Realism Score</h4>
+                                <h4> Realism Score</h4>
                                 <div class="value ${realismScore > 80 ? 'positive' : realismScore > 60 ? 'warning' : 'negative'}">${realismScore.toFixed(0)}</div>
                                 <div class="unit">%</div>
                                 <div class="subtext">${realismScore > 80 ? 'Highly realistic' : realismScore > 60 ? 'Moderately realistic' : 'Check physics'}</div>
@@ -1611,13 +1611,13 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             if (metrics.flightEfficiency < 50) {
                 alerts.push({
                     type: 'error',
-                    title: '⚠️ Low Flight Efficiency',
+                    title: ' Low Flight Efficiency',
                     message: `Flight efficiency is ${metrics.flightEfficiency.toFixed(1)}%. Consider optimizing trajectory for more direct path.`
                 });
             } else if (metrics.flightEfficiency > 90) {
                 alerts.push({
                     type: 'success',
-                    title: '✅ Excellent Flight Efficiency',
+                    title: ' Excellent Flight Efficiency',
                     message: `Outstanding flight efficiency of ${metrics.flightEfficiency.toFixed(1)}%. Very direct trajectory achieved.`
                 });
             }
@@ -1626,13 +1626,13 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             if (metrics.energyChange > 1000) {
                 alerts.push({
                     type: 'warning',
-                    title: '🔥 High Energy Gain',
+                    title: ' High Energy Gain',
                     message: `Significant energy increase of ${metrics.energyChange.toFixed(1)} J/kg detected. Check propulsion systems.`
                 });
             } else if (metrics.energyChange < -1000) {
                 alerts.push({
                     type: 'warning',
-                    title: '🛑 High Energy Loss',
+                    title: ' High Energy Loss',
                     message: `Significant energy loss of ${Math.abs(metrics.energyChange).toFixed(1)} J/kg detected. Check for excessive drag.`
                 });
             }
@@ -1682,7 +1682,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             // Generate alerts HTML
             if (alerts.length === 0) {
                 return `<div class="performance-alert success">
-                    <h4>✅ All Systems Nominal</h4>
+                    <h4> All Systems Nominal</h4>
                     <p>Mission parameters are within acceptable ranges. No performance issues detected.</p>
                 </div>`;
             }
@@ -1808,15 +1808,15 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         function getFlightPhaseEmoji(flightPhase) {
             switch (flightPhase) {
                 case 'Deep Space':
-                    return '🚀';
+                    return '';
                 case 'Space':
-                    return '🛰️';
+                    return '';
                 case 'Upper Atmosphere':
-                    return '☁️';
+                    return '';
                 case 'Stratosphere':
-                    return '🌌';
+                    return '';
                 case 'Ground Level':
-                    return '🏔️';
+                    return '';
                 default:
                     return '';
             }
@@ -2297,14 +2297,14 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             
             if (comparisonMode) {
                 comparisonPanel.style.display = 'block';
-                toggleButton.textContent = '📊 Exit Comparison Mode';
+                toggleButton.textContent = ' Exit Comparison Mode';
                 toggleButton.className = 'btn btn-warning';
                 
                 // Reload results to add comparison buttons
                 loadResults();
             } else {
                 comparisonPanel.style.display = 'none';
-                toggleButton.textContent = '📊 Compare Simulations';
+                toggleButton.textContent = ' Compare Simulations';
                 toggleButton.className = 'btn btn-info';
                 selectedResults = [];
                 updateComparisonChart();
@@ -2380,15 +2380,15 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: '📊 Multi-Simulation Comparison'
+                                    text: ' Multi-Simulation Comparison'
                                 }
                             },
                             scales: {
                                 x: {
-                                    title: { display: true, text: '⏱️ Time (seconds)' }
+                                    title: { display: true, text: ' Time (seconds)' }
                                 },
                                 y: {
-                                    title: { display: true, text: '🏔️ Altitude (meters)' }
+                                    title: { display: true, text: ' Altitude (meters)' }
                                 }
                             }
                         }

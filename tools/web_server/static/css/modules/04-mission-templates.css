@@ -1,0 +1,78 @@
+/* === Mission Templates === */
+.mission-templates {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 25px;
+}
+
+.mission-templates h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.template-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.template-card {
+    background: #ffffff;
+    color: #2f2f2f;
+    padding: 24px 18px;
+    min-height: 170px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    border: 1px solid #d4d4d1;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.template-card:hover {
+    transform: translateY(-3px);
+    background: #ce6e6e;
+    border-color: #ce6e6e;
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.template-card:hover h5,
+.template-card:hover p {
+    color: #ffffff;
+}
+
+.template-card:hover p {
+    opacity: 0.96;
+}
+
+.template-card.selected {
+    background: #ce6e6e;
+    border-color: #ce6e6e;
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.template-card.selected h5,
+.template-card.selected p {
+    color: #ffffff;
+}
+
+.template-card.selected p {
+    opacity: 0.96;
+}
+
+.template-card h5 {
+    margin: 0 0 10px 0;
+    font-size: 1.14em;
+    font-weight: 600;
+}
+
+.template-card p {
+    margin: 0;
+    font-size: 0.92em;
+    opacity: 0.85;
+}

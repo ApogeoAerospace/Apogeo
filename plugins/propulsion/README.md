@@ -2,10 +2,20 @@
 
 Status: Current — data-loading skeleton; physical engine-cycle calculations pending.
 
-This module follows the Structures split between domain code and the C ABI adapter.
-It loads a strict numeric CSV into memory and interpolates tabulated thrust / ISP.
-The thrust and mass-flow solver methods return `std::nullopt`. Runtime ticks emit
-zero force/torque and leave the FlatBuffers state untouched.
+This module builds on the architecture and interface contracts already defined for
+propulsion. The current implementation follows the Structures split between domain
+code and the C ABI adapter. It loads a strict numeric CSV into memory and interpolates
+tabulated thrust / ISP. The thrust and mass-flow solver methods return `std::nullopt`.
+Runtime ticks emit zero force/torque and leave the FlatBuffers state untouched.
+
+## Architecture deliverables
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Editable UML source](docs/propulsion_class_diagram.puml)
+- [Rendered UML diagram](docs/propulsion_class_diagram.png)
+- [Initial C++ interfaces](include/propulsion/interfaces.hpp)
+- [Initial model hierarchy](include/propulsion/models.hpp)
+- [Host boundary adapter](include/propulsion/plugin_adapter.hpp)
 
 ## Build and test
 
