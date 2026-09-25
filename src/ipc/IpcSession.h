@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include "../core/ConfigManager.h"
 
-namespace MoLab {
+namespace Apogeo {
 
 class SimulationEngine;
 class Logger;
@@ -28,4 +28,4 @@ bool resolveIpcThrottleSettings(const SimulationConfig& simulation_config,
 
 int runIpcStdioSession(SimulationEngine& engine, Logger& logger);
 
-} // namespace MoLab
+} // namespace Apogeo

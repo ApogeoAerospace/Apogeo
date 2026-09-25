@@ -18,7 +18,7 @@
  * @brief Persistence and export management for simulation results.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
  * @struct SimulationDataPoint
@@ -215,4 +215,4 @@ private:
     void writerLoop();
 };
 
-} // namespace MoLab
+} // namespace Apogeo

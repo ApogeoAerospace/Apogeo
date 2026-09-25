@@ -294,7 +294,7 @@ if(ENABLE_TESTING)
     # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(core_tests)
-    
+
     add_custom_command(
         TARGET core_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/scripts"

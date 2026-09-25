@@ -1,5 +1,5 @@
 """
-Configuration module for MoLab Web Server
+Configuration module for Apogeo Web Server
 Centralizes all configuration values
 """
 from pathlib import Path

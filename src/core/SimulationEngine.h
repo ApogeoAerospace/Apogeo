@@ -13,7 +13,7 @@
  * @brief Declaration of the main Apogeo simulation engine.
  */
 
-namespace MoLab {
+namespace Apogeo {
     class PluginManager;
     class FlightComputerContext;
 }
@@ -26,7 +26,7 @@ namespace state_vector {
  * @class SimulationEngine
  * @brief Main engine that orchestrates state, plugins, time, and output.
  */
-namespace MoLab {
+namespace Apogeo {
 
 class SimulationEngine {
 public:
@@ -172,6 +172,6 @@ private:
     bool validate_simulation_state(const state_vector::GeneralState* state) const;
 };
 
-} // namespace MoLab
+} // namespace Apogeo
 
 #endif // SIMULATION_ENGINE_H

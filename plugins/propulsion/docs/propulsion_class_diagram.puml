@@ -20,7 +20,7 @@ skinparam interface {
 }
 
 package "Apogeo Host" #F1F5F9 {
-  class "MoLab::PluginManager" as PluginManager {
+  class "Apogeo::PluginManager" as PluginManager {
     + load_plugin(path: string, type: PluginType): bool
     + run_simulation_cycle(state: byte[], dt: double): void
   }

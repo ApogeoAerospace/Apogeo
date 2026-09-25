@@ -12,7 +12,7 @@
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
-using MoLab::SimulationEngine;
+using Apogeo::SimulationEngine;
 
 class SimulationEngineTest : public ::testing::Test {
 protected:
@@ -113,7 +113,7 @@ TEST_F(SimulationEngineTest, InitializeWithNonExistentFile) {
 
 TEST_F(SimulationEngineTest, InitializeWithConfig) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     EXPECT_TRUE(engine.initialize_from_loaded_config());
 }
@@ -138,7 +138,7 @@ TEST_F(SimulationEngineTest, ValidateInitialState) {
 
 TEST_F(SimulationEngineTest, RunSingleTick) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -150,7 +150,7 @@ TEST_F(SimulationEngineTest, RunSingleTick) {
 
 TEST_F(SimulationEngineTest, RunMultipleTicks) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -184,7 +184,7 @@ TEST_F(SimulationEngineTest, LoadPluginWithValidTypes) {
 
 TEST_F(SimulationEngineTest, GetLastTickDuration) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -196,7 +196,7 @@ TEST_F(SimulationEngineTest, GetLastTickDuration) {
 
 TEST_F(SimulationEngineTest, PrintPerformanceMetrics) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -206,7 +206,7 @@ TEST_F(SimulationEngineTest, PrintPerformanceMetrics) {
 
 TEST_F(SimulationEngineTest, RunFullSimulation) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -216,7 +216,7 @@ TEST_F(SimulationEngineTest, RunFullSimulation) {
 
 TEST_F(SimulationEngineTest, ValidateStateAfterTick) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -241,7 +241,7 @@ TEST_F(SimulationEngineTest, ShutdownWithoutInitialization) {
 
 TEST_F(SimulationEngineTest, TickWithoutInitialization) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
 
     EXPECT_TRUE(engine.initialize(test_state_file));
@@ -255,7 +255,7 @@ TEST_F(SimulationEngineTest, StateValidationWithEmptyBuffer) {
 
 TEST_F(SimulationEngineTest, SimulationTimeProgression) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -268,7 +268,7 @@ TEST_F(SimulationEngineTest, SimulationTimeProgression) {
 
 TEST_F(SimulationEngineTest, IterationCountIncrement) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -282,7 +282,7 @@ TEST_F(SimulationEngineTest, IterationCountIncrement) {
 
 TEST_F(SimulationEngineTest, IsRunningAfterTick) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 
@@ -293,7 +293,7 @@ TEST_F(SimulationEngineTest, IsRunningAfterTick) {
 
 TEST_F(SimulationEngineTest, IsRunningAfterShutdown) {
     SimulationEngine engine;
-    auto& config = MoLab::ConfigManager::getInstance();
+    auto& config = Apogeo::ConfigManager::getInstance();
     config.loadConfig(test_config_file);
     engine.initialize(test_state_file);
 

@@ -6,10 +6,10 @@
 
 /**
  * @file ConfigManager.cpp
- * @brief Implementation of the MoLab configuration manager.
+ * @brief Implementation of the Apogeo configuration manager.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 ConfigManager::ConfigManager() {
     setDefaults();
@@ -142,7 +142,7 @@ void ConfigManager::setDefaults() {
     simulation_config_.simulation_duration = 100.0;
     simulation_config_.max_iterations = 10000;
     simulation_config_.enable_logging = true;
-    simulation_config_.log_file = "logs/molab.log";
+    simulation_config_.log_file = "logs/apogeo.log";
     simulation_config_.log_level = "INFO";
     simulation_config_.console_output = true;
     simulation_config_.file_output = true;
@@ -167,14 +167,14 @@ bool ConfigManager::parseSimulationConfig(const nlohmann::json& json, std::strin
             simulation_config_.simulation_duration = sim.value("duration", 100.0);
             simulation_config_.max_iterations = sim.value("max_iterations", 10000);
             simulation_config_.enable_logging = sim.value("enable_logging", true);
-            simulation_config_.log_file = sim.value("log_file", "logs/molab.log");
+            simulation_config_.log_file = sim.value("log_file", "logs/apogeo.log");
             simulation_config_.log_level = sim.value("log_level", "INFO");
         } else {
             // If section is missing, use defaults
             simulation_config_.simulation_duration = 100.0;
             simulation_config_.max_iterations = 10000;
             simulation_config_.enable_logging = true;
-            simulation_config_.log_file = "logs/molab.log";
+            simulation_config_.log_file = "logs/apogeo.log";
             simulation_config_.log_level = "INFO";
         }
 
@@ -288,4 +288,4 @@ void ConfigManager::logLoadFailure(const std::string& message) {
     logger.error(message, "ConfigManager");
 }
 
-} // namespace MoLab
+} // namespace Apogeo

@@ -3,7 +3,7 @@
  * Loads large static HTML fragments before app startup to keep index.html compact.
  */
 (function () {
-    window.__MOLAB_LAYOUT_LOADER__ = true;
+    window.__APOGEO_LAYOUT_LOADER__ = true;
 
     async function loadFragment(slotId, path) {
         const slot = document.getElementById(slotId);
@@ -30,19 +30,19 @@
                 loadFragment('html-templates-slot', 'fragments/html-templates.html')
             ]);
 
-            window.__MOLAB_LAYOUT_READY__ = true;
-            document.dispatchEvent(new Event('molab:layout-ready'));
+            window.__APOGEO_LAYOUT_READY__ = true;
+            document.dispatchEvent(new Event('apogeo:layout-ready'));
 
-            if (typeof window.startMoLabApp === 'function') {
-                window.startMoLabApp();
+            if (typeof window.startApogeoApp === 'function') {
+                window.startApogeoApp();
             }
         } catch (error) {
             console.error('Layout loader error:', error);
-            window.__MOLAB_LAYOUT_READY__ = true;
-            document.dispatchEvent(new Event('molab:layout-ready'));
+            window.__APOGEO_LAYOUT_READY__ = true;
+            document.dispatchEvent(new Event('apogeo:layout-ready'));
 
-            if (typeof window.startMoLabApp === 'function') {
-                window.startMoLabApp();
+            if (typeof window.startApogeoApp === 'function') {
+                window.startApogeoApp();
             }
         }
     }

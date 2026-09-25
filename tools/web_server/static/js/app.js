@@ -16,7 +16,7 @@ const App = {
      * Initialize the application
      */
     async init() {
-        console.log('Initializing MoLab Web GUI v2.0...');
+        console.log('Initializing Apogeo Web GUI v2.0...');
         
         // Initialize sub-modules
         this.simulation = Simulation;
@@ -34,7 +34,7 @@ const App = {
         // Setup auto-retry for status loading
         this.setupStatusRetry();
         
-        console.log('MoLab Web GUI initialized successfully');
+        console.log('Apogeo Web GUI initialized successfully');
     },
     
     /**
@@ -257,7 +257,7 @@ const App = {
 
 let appStarted = false;
 
-function startMoLabApp() {
+function startApogeoApp() {
     if (appStarted) {
         return;
     }
@@ -268,16 +268,16 @@ function startMoLabApp() {
 }
 
 // Expose manual bootstrap entry-point for layout loader.
-window.startMoLabApp = startMoLabApp;
+window.startApogeoApp = startApogeoApp;
 
-if (window.__MOLAB_LAYOUT_LOADER__) {
-    if (window.__MOLAB_LAYOUT_READY__) {
-        startMoLabApp();
+if (window.__APOGEO_LAYOUT_LOADER__) {
+    if (window.__APOGEO_LAYOUT_READY__) {
+        startApogeoApp();
     } else {
-        document.addEventListener('molab:layout-ready', startMoLabApp, { once: true });
+        document.addEventListener('apogeo:layout-ready', startApogeoApp, { once: true });
     }
 } else {
-    document.addEventListener('DOMContentLoaded', startMoLabApp);
+    document.addEventListener('DOMContentLoaded', startApogeoApp);
 }
 
 // Export globally

@@ -8,7 +8,7 @@
 
 /**
  * @file main.cpp
- * @brief Entry point for the MoLab application.
+ * @brief Entry point for the Apogeo application.
  */
 
 /**
@@ -35,9 +35,9 @@ void print_usage(const char* program_name) {
  * @brief Prints current simulator version.
  */
 void print_version() {
-    std::cout << "MoLab Aerospace Simulator v1.0.0\n";
+    std::cout << "Apogeo Aerospace Simulator v1.0.0\n";
     std::cout << "Built with C++17, FlatBuffers, and nlohmann_json\n";
-    std::cout << "Copyright (c) 2026 MoLab Team\n";
+    std::cout << "Copyright (c) 2026 Apogeo Team\n";
 }
 
 /**
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    auto& logger = MoLab::Logger::getInstance();
+    auto& logger = Apogeo::Logger::getInstance();
     if (ipc_stdio_mode) {
         logger.setConsoleOutputEnabled(false);
     }
@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
     // `SimulationEngine::initialize_from_loaded_config()` consumes this loaded state.
     // ConfigManager is data-focused (load/parse/validate) and does not own
     // logger runtime bootstrap side effects on successful load.
-    auto& config_manager = MoLab::ConfigManager::getInstance();
+    auto& config_manager = Apogeo::ConfigManager::getInstance();
     const bool config_loaded = config_manager.loadConfig(config_file);
     if (!config_loaded) {
         // Defaults are already applied by ConfigManager when file is missing/invalid.
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Centralized logger bootstrap policy (single source of side effects).
-    MoLab::applyLogLevel(logger, log_level);
+    Apogeo::applyLogLevel(logger, log_level);
 
     if (config_loaded) {
         LOG_INFO("Configuration loaded successfully", "Main");
@@ -155,13 +155,13 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        MoLab::SimulationEngine engine;
+        Apogeo::SimulationEngine engine;
 
         if (ipc_stdio_mode) {
-            return MoLab::runIpcStdioSession(engine, logger);
+            return Apogeo::runIpcStdioSession(engine, logger);
         }
 
-        LOG_INFO("Starting MoLab Aerospace Simulator", "Main");
+        LOG_INFO("Starting Apogeo Aerospace Simulator", "Main");
         LOG_INFO("Configuration file: " + config_file, "Main");
 
         // Initialize from already loaded configuration
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
 
         // Shutdown
         engine.shutdown();
-        LOG_INFO("MoLab Aerospace Simulator finished successfully", "Main");
+        LOG_INFO("Apogeo Aerospace Simulator finished successfully", "Main");
 
         return 0;
 
