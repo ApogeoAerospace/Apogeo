@@ -1,6 +1,6 @@
 # Minimum CMake version 3.20
 cmake_minimum_required(VERSION 3.20)
-project(Molab VERSION 0.0.0 LANGUAGES CXX)
+project(Apogeo VERSION 0.0.0 LANGUAGES CXX)
 include(FetchContent)
 
 # C++17

@@ -2,7 +2,7 @@
 
 \page state_vector_model State Vector Model
 
-This page describes the serialized simulation state model used by MoLab.
+This page describes the serialized simulation state model used by Apogeo.
 The model is defined in `src/schemas/state_vector.fbs` and generated to C++.
 
 ## Namespace

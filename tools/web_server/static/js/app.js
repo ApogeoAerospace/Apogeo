@@ -16,7 +16,7 @@ const App = {
      * Initialize the application
      */
     async init() {
-        console.log('Initializing MoLab Web GUI v2.0...');
+        console.log('Initializing Apogeo Web GUI v2.0...');
         
         // Initialize sub-modules
         this.simulation = Simulation;
@@ -34,7 +34,7 @@ const App = {
         // Setup auto-retry for status loading
         this.setupStatusRetry();
         
-        console.log('MoLab Web GUI initialized successfully');
+        console.log('Apogeo Web GUI initialized successfully');
     },
     
     /**

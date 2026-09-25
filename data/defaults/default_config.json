@@ -3,7 +3,7 @@
         "duration": 100.0,
         "max_iterations": 10,
         "enable_logging": true,
-        "log_file": "logs/molab.log",
+        "log_file": "logs/apogeo.log",
         "log_level": "INFO"
     },
     "plugins": [

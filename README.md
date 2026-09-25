@@ -132,7 +132,7 @@ Main test coverage includes:
 ## Repository structure
 
 ```text
-MoLab/
+Apogeo/
 ├── src/                  # Core engine, API headers, schema
 ├── plugins/              # Runtime plugins (active + deprecated)
 ├── tests/                # Google Test-based unit tests

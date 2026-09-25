@@ -17,10 +17,10 @@
  * @brief Implementation of the main simulation engine.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 SimulationEngine::SimulationEngine()
-    : plugin_manager_(std::make_unique<MoLab::PluginManager>()),
+    : plugin_manager_(std::make_unique<Apogeo::PluginManager>()),
       simulation_time_(0.0),
       iteration_count_(0),
       is_running_(false)
@@ -71,7 +71,7 @@ bool SimulationEngine::initialize(const std::string& state_filepath) {
     output_manager.setOutputDirectory("output");
     output_manager.setOutputFormats(true, true, false); // CSV and JSON
     output_manager.setOutputInterval(5); // Optimized: Save every 5 ticks (balance speed/detail)
-    output_manager.initializeOutput("molab_simulation");    // Reset simulation state
+    output_manager.initializeOutput("apogeo_simulation");    // Reset simulation state
     simulation_time_ = 0.0;
     iteration_count_ = 0;
     last_tick_duration_ = 0.0;
@@ -344,4 +344,4 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
     }
 }
 
-} // namespace MoLab
+} // namespace Apogeo

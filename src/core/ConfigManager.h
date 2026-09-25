@@ -7,11 +7,11 @@
 
 /**
  * @file ConfigManager.h
- * @brief Declaration of the central MoLab configuration manager.
+ * @brief Declaration of the central Apogeo configuration manager.
  */
 
-// Main namespace for MoLab core.
-namespace MoLab {
+// Main namespace for Apogeo core.
+namespace Apogeo {
 
 /**
  * @struct PluginConfig
@@ -156,4 +156,4 @@ private:
     bool config_loaded_ = false;
 };
 
-} // namespace MoLab
+} // namespace Apogeo

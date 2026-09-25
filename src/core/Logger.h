@@ -13,10 +13,10 @@
 
 /**
  * @file Logger.h
- * @brief Centralized logging system for MoLab.
+ * @brief Centralized logging system for Apogeo.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
  * @enum LogLevel
@@ -268,14 +268,14 @@ private:
 };
 
 /** @brief Convenience macro for `DEBUG` level. */
-#define LOG_DEBUG(msg, component) MoLab::Logger::getInstance().debug(msg, component)
+#define LOG_DEBUG(msg, component) Apogeo::Logger::getInstance().debug(msg, component)
 /** @brief Convenience macro for `INFO` level. */
-#define LOG_INFO(msg, component) MoLab::Logger::getInstance().info(msg, component)
+#define LOG_INFO(msg, component) Apogeo::Logger::getInstance().info(msg, component)
 /** @brief Convenience macro for `WARNING` level. */
-#define LOG_WARNING(msg, component) MoLab::Logger::getInstance().warning(msg, component)
+#define LOG_WARNING(msg, component) Apogeo::Logger::getInstance().warning(msg, component)
 /** @brief Convenience macro for `ERROR` level. */
-#define LOG_ERROR(msg, component) MoLab::Logger::getInstance().error(msg, component)
+#define LOG_ERROR(msg, component) Apogeo::Logger::getInstance().error(msg, component)
 /** @brief Convenience macro for `CRITICAL` level. */
-#define LOG_CRITICAL(msg, component) MoLab::Logger::getInstance().critical(msg, component)
+#define LOG_CRITICAL(msg, component) Apogeo::Logger::getInstance().critical(msg, component)
 
-} // namespace MoLab
+} // namespace Apogeo

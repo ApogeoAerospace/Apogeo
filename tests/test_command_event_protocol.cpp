@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "CommandEventProtocol.h"
 
-using namespace MoLab;
+using namespace Apogeo;
 
 TEST(CommandEventProtocolTest, ParseCommandJsonLineValidAndInvalid) {
     ParsedCommand command;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MoLab Web GUI - Local Web Interface
+Apogeo Web GUI - Local Web Interface
 A web-based GUI that runs locally and works in any browser
 """
 
@@ -18,7 +18,7 @@ import urllib.parse
 import time
 import platform
 
-class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
+class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
     # Class-level simulation status (shared across all request instances)
     _sim_lock = threading.Lock()
     _sim_status = {"state": "idle"}  # idle | running | completed | failed
@@ -80,7 +80,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MoLab Aerospace Simulator</title>
+    <title>Apogeo Aerospace Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -482,7 +482,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 MoLab</h1>
+            <h1>🚀 Apogeo</h1>
             <p>Web Interface for Realistic Aerospace Simulations</p>
         </div>
         
@@ -996,7 +996,7 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
                     "max_iterations": 1000,
                     "enable_logging": document.getElementById('enable-logging').checked,
                     "log_level": document.getElementById('log-level').value,
-                    "log_file": "logs/molab_web.log"
+                    "log_file": "logs/apogeo_web.log"
                 },
                 "physics": {
                     "enable_gravity": document.getElementById('enable-gravity').checked,
@@ -2751,8 +2751,8 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
         """Serve system status including simulation state"""
         simulator_path = self.get_simulator_path()
         simulator_exists = simulator_path.exists()
-        with MoLabWebHandler._sim_lock:
-            sim = dict(MoLabWebHandler._sim_status)
+        with ApogeoWebHandler._sim_lock:
+            sim = dict(ApogeoWebHandler._sim_status)
         status = {
             "simulator_built": simulator_exists,
             "simulator_path": str(simulator_path),
@@ -2961,11 +2961,11 @@ class MoLabWebHandler(http.server.SimpleHTTPRequestHandler):
             output_dir = self.output_dir
 
             # Mark running BEFORE starting thread (prevents frontend from seeing stale state)
-            with MoLabWebHandler._sim_lock:
-                MoLabWebHandler._sim_status = {"state": "running", "message": "Simulator starting..."}
+            with ApogeoWebHandler._sim_lock:
+                ApogeoWebHandler._sim_status = {"state": "running", "message": "Simulator starting..."}
 
             def run_sim():
-                cls = MoLabWebHandler
+                cls = ApogeoWebHandler
                 try:
                     with cls._sim_lock:
                         cls._sim_status = {"state": "running", "message": "Simulator running..."}
@@ -3085,12 +3085,12 @@ def main():
     """Start the web server"""
     port = 8082
     
-    print(f"[WEB] Starting MoLab Web Interface...")
+    print(f"[WEB] Starting Apogeo Web Interface...")
     print(f"[WEB] Server will be available at: http://localhost:{port}")
     print(f"[WEB] Project root: {Path(__file__).parent.parent}")
     
     try:
-        with socketserver.TCPServer(("", port), MoLabWebHandler) as httpd:
+        with socketserver.TCPServer(("", port), ApogeoWebHandler) as httpd:
             print(f"[OK] Server started on port {port}")
             print(f"[WEB] Opening browser...")
             

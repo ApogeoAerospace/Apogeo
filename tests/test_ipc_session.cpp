@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ipc/IpcSession.h"
 
-using namespace MoLab;
+using namespace Apogeo;
 
 TEST(IpcSessionTest, ResolveThrottleSettingsUsesConfigDefaults) {
     SimulationConfig config{};

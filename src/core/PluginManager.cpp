@@ -26,7 +26,7 @@
 #include <windows.h>
 #endif
 
-namespace MoLab {
+namespace Apogeo {
 
 namespace {
 
@@ -551,7 +551,7 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
         return;
     }
 
-    PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
+    PhysicsState physics_state = Apogeo::PhysicsIntegrator::fromFlatBuffer(current_state);
     PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
 
     flatbuffers::FlatBufferBuilder builder;
@@ -741,4 +741,4 @@ void PluginManager::cleanup_plugin(LoadedPlugin& plugin) {
     }
 }
 
-} // namespace MoLab
+} // namespace Apogeo

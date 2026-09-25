@@ -8,7 +8,7 @@
  * @brief Implementation of simulation-time and UTC manager.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 TimeManager& TimeManager::getInstance() {
     static TimeManager instance;
@@ -108,4 +108,4 @@ double TimeManager::getCurrentRealTimeUTC() const {
     return static_cast<double>(seconds.count()) + static_cast<double>(milliseconds.count()) / 1000.0;
 }
 
-} // namespace MoLab
+} // namespace Apogeo

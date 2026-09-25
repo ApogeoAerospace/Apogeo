@@ -1,5 +1,5 @@
 """
-Utility functions for MoLab Web Server
+Utility functions for Apogeo Web Server
 """
 import platform
 import json

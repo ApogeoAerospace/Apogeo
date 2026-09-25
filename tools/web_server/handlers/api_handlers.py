@@ -156,7 +156,7 @@ class PluginsHandler(BaseHandler):
                     plugin_name = plugin_file.stem
                     
                     # Remove common prefixes
-                    for prefix in ['lib', 'plugin_', 'molab_']:
+                    for prefix in ['lib', 'plugin_', 'apogeo_']:
                         if plugin_name.startswith(prefix):
                             plugin_name = plugin_name[len(prefix):]
                     

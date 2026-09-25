@@ -1,12 +1,12 @@
-# Doxyfile - Doxygen configuration for MoLab
-# Generated for the MoLab Aerospace Simulator project
+# Doxyfile - Doxygen configuration for Apogeo
+# Generated for the Apogeo Aerospace Simulator project
 # Date: February 2026
 
 #---------------------------------------------------------------------------
 # Project Information
 #---------------------------------------------------------------------------
 
-PROJECT_NAME           = "MoLab Aerospace Simulator"
+PROJECT_NAME           = "Apogeo Aerospace Simulator"
 PROJECT_NUMBER         = "1.0.0"
 PROJECT_BRIEF          = "Modular aerospace simulator with plugin architecture"
 PROJECT_LOGO           = 

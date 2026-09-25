@@ -1,4 +1,4 @@
-# MoLab Web Interface Launcher (Windows-native)
+# Apogeo Web Interface Launcher (Windows-native)
 
 $ErrorActionPreference = 'Stop'
 
@@ -34,12 +34,12 @@ if (-not (Test-Path $simulator)) {
     exit 1
 }
 
-Write-Host "🌐 Starting MoLab web interface"
+Write-Host "🌐 Starting Apogeo web interface"
 Write-Host "   URL: http://localhost:8082"
 Write-Host "   Stop with Ctrl+C"
 
 if ($pythonCmd.Length -gt 1) {
-    & $pythonCmd[0] $pythonCmd[1] 'tools/molab_web_gui_v2.py'
+    & $pythonCmd[0] $pythonCmd[1] 'tools/apogeo_web_gui_v2.py'
 } else {
-    & $pythonCmd[0] 'tools/molab_web_gui_v2.py'
+    & $pythonCmd[0] 'tools/apogeo_web_gui_v2.py'
 }
