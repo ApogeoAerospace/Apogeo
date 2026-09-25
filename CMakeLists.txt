@@ -132,7 +132,16 @@ add_custom_command(
 
 set(PLUGIN_NAMES
     structures
+    propulsion
 )
+
+# Keep propulsion data ingestion independent of the host ABI.
+add_library(propulsion_domain STATIC
+    plugins/propulsion/propulsion_module.cpp
+    plugins/propulsion/propulsion_csv.cpp
+)
+set_target_properties(propulsion_domain PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(propulsion_domain PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion")
 
 # Standardized plugin output layout:
 # - Plugin runtime binaries (.dll/.so/.dylib) -> bin/plugins
@@ -160,6 +169,9 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     endif()
 
     add_library(${_plugin_name} SHARED ${_plugin_sources})
+    if(_plugin_name STREQUAL "propulsion")
+        list(APPEND _plugin_private_libs propulsion_domain nlohmann_json::nlohmann_json)
+    endif()
     add_dependencies(${_plugin_name} generate_flatbuffers)
 
     # Keep plugin binary output path consistent across platforms/configurations
@@ -183,6 +195,16 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     target_link_libraries(${_plugin_name} PRIVATE ${_plugin_private_libs})
 
 endforeach()
+
+# Ship the synthetic table even when building only the propulsion target.
+add_custom_command(TARGET propulsion POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/propulsion"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion/data/engine_curves.csv"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/propulsion/engine_curves.csv"
+)
+set_property(TARGET propulsion APPEND PROPERTY LINK_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion/data/engine_curves.csv")
 
 message(STATUS "Configured plugins: ${PLUGIN_NAMES}")
 message(STATUS "Plugin runtime output dir: ${PLUGIN_RUNTIME_OUTPUT_DIRECTORY}")
@@ -240,6 +262,22 @@ if(ENABLE_TESTING)
     # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(core_tests)
+
+    add_executable(propulsion_tests plugins/propulsion/tests/test_propulsion.cpp)
+    target_link_libraries(propulsion_tests PRIVATE
+        propulsion_domain propulsion flatbuffers::flatbuffers
+        nlohmann_json::nlohmann_json GTest::gtest_main)
+    target_include_directories(propulsion_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/api" "${GENERATED_DIR}")
+    target_compile_definitions(propulsion_tests PRIVATE
+        PROPULSION_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion/data")
+    add_dependencies(propulsion_tests generate_flatbuffers)
+    if(WIN32)
+        add_custom_command(TARGET propulsion_tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:propulsion>" "$<TARGET_FILE_DIR:propulsion_tests>")
+    endif()
+    gtest_discover_tests(propulsion_tests WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
     message(STATUS "Unit tests enabled")
 endif()
