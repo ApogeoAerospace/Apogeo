@@ -43,7 +43,7 @@
           "library_path": "plugins/propulsion",
           "enabled": false,
           "parameters": {
-
+            "engine_curves_path": "data/propulsion/engine_curves.csv"
             }
         },
         {
