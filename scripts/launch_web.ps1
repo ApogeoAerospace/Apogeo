@@ -39,7 +39,7 @@ Write-Host "   URL: http://localhost:8082"
 Write-Host "   Stop with Ctrl+C"
 
 if ($pythonCmd.Length -gt 1) {
-    & $pythonCmd[0] $pythonCmd[1] 'tools/apogeo_web_gui_v2.py'
+    & $pythonCmd[0] $pythonCmd[1] 'tools/web_gui.py'
 } else {
-    & $pythonCmd[0] 'tools/apogeo_web_gui_v2.py'
+    & $pythonCmd[0] 'tools/web_gui.py'
 }

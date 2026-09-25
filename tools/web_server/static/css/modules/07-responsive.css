@@ -1,0 +1,100 @@
+/* === Responsive Design === */
+@media (max-width: 1200px) {
+    .main-content::after {
+        top: 34%;
+        width: clamp(240px, 22vw, 360px);
+        opacity: 0.88;
+    }
+}
+
+@media (max-width: 992px) {
+    .main-content::after {
+        top: 30%;
+        right: -20px;
+        width: clamp(180px, 26vw, 280px);
+        opacity: 0.8;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-row.secondary .stat-section {
+        min-height: auto;
+    }
+
+    .container {
+        padding: 8px;
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+        border-radius: 14px;
+        padding: 0;
+        min-height: 0;
+    }
+
+    .main-content::after {
+        display: none;
+    }
+
+    .status,
+    .tab-content,
+    .tab-content.active,
+    .control-panel {
+        grid-column: 1;
+    }
+
+    .tabs {
+        grid-column: 1;
+        grid-row: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        border-radius: 0;
+        border-right: none;
+        border-bottom: 1px solid #262d3b;
+    }
+
+    .sidebar-brand {
+        flex: 0 0 auto;
+        border-bottom: none;
+        border-right: 1px solid #2a2a2a;
+        padding: 14px 10px 12px 10px;
+    }
+
+    .sidebar-brand-logo {
+        width: 54px;
+        height: 54px;
+    }
+
+    .tab {
+        flex: 0 0 auto;
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .status,
+    .tab-content.active,
+    .control-panel {
+        width: auto;
+        max-width: none;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    .header h1 {
+        font-size: 2em;
+    }
+
+    .template-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .control-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        margin-right: 0;
+    }
+}

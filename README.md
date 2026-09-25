@@ -145,4 +145,4 @@ Apogeo/
 
 ## License
 
-GNU Affero General Public License v3.0 (AGPL-3.0)
+Apache License 2.0

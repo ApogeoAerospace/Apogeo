@@ -59,6 +59,6 @@ ctest --test-dir build --output-on-failure
 ## Web launcher notes
 
 - `scripts/launch_web.sh` opens the browser on `http://localhost:8082`
-- `tools/apogeo_web_gui_v2.py` is the current launcher entry point
+- `tools/web_gui.py` is the current launcher entry point
 
 This behavior is now aligned with the current scripts.

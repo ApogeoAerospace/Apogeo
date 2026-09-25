@@ -15,24 +15,34 @@ const Templates = {
         // In a production system, these would be loaded from the server
         this.templates = {
             suborbital: {
-                name: "Launch - Suborbital Flight",
-                description: "Rocket launch with ascent and descent (parabolic trajectory)",
+                name: "Parabolic Trajectory",
+                description: "Pure ballistic arc under gravity (no propulsion/aero plugins)",
                 config: {
                     simulation: {
-                        time_step: 0.05,
-                        duration: 300.0,
-                        max_iterations: 6000
+                        time_step: 0.01,
+                        duration: 30.0,
+                        max_iterations: 3000
                     },
                     physics: {
                         enable_gravity: true,
                         gravity_magnitude: 9.81,
-                        enable_atmospheric_drag: true,
+                        enable_atmospheric_drag: false,
                         integrator_type: "runge_kutta_4"
                     },
                     initial_state: {
                         position: [0.0, 0.0, 0.0],
-                        velocity: [0.0, 0.0, 150.0],
-                        mass: 50000.0
+                        velocity: [120.0, 0.0, 120.0],
+                        mass: 1000.0
+                    },
+                    plugins: {
+                        enabled: ["environment"],
+                        overrides: {
+                            environment: {
+                                enable_atmospheric_model: false,
+                                enable_wind_effects: false,
+                                enable_gravity_variation: true
+                            }
+                        }
                     }
                 }
             },
@@ -115,10 +125,20 @@ const Templates = {
         
         templateButtons.forEach(button => {
             button.addEventListener('click', () => {
+                this.setSelectedTemplate(button);
                 const templateName = button.dataset.template;
                 this.loadTemplate(templateName);
             });
         });
+    },
+
+    /**
+     * Mark the selected template button with a persistent visual state
+     */
+    setSelectedTemplate(selectedButton) {
+        const templateButtons = document.querySelectorAll('.template-card[data-template]');
+        templateButtons.forEach(button => button.classList.remove('selected'));
+        selectedButton.classList.add('selected');
     },
     
     /**
@@ -194,6 +214,10 @@ const Templates = {
             console.log(`  Velocity: [${config.initial_state.velocity}]`);
             console.log(`  Mass: ${config.initial_state.mass} kg`);
         }
+
+        if (config.plugins) {
+            this.applyPluginPreset(config.plugins);
+        }
         
         // Note: Plugin configuration would be applied here if plugins are loaded
         // This is handled separately in the plugins module
@@ -215,6 +239,31 @@ const Templates = {
             name: this.templates[key].name,
             description: this.templates[key].description
         }));
+    },
+
+    applyPluginPreset(pluginConfig) {
+        if (!window.availablePlugins || !Array.isArray(window.availablePlugins)) {
+            return;
+        }
+
+        const enabledSet = new Set((pluginConfig.enabled || []).map(p => String(p).toLowerCase()));
+        const overrides = pluginConfig.overrides || {};
+
+        window.availablePlugins.forEach(plugin => {
+            const id = String(plugin.id || plugin.name || '').toLowerCase().replace(/\s+/g, '_');
+            plugin.enabled = enabledSet.has(id);
+
+            if (plugin.enabled && overrides[id] && typeof overrides[id] === 'object') {
+                plugin.parameters = {
+                    ...(plugin.parameters || {}),
+                    ...overrides[id]
+                };
+            }
+        });
+
+        if (window.app && typeof window.app.updatePluginsList === 'function') {
+            window.app.updatePluginsList();
+        }
     }
 };
 

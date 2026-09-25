@@ -56,4 +56,6 @@ All generated types are under `state_vector`.
 
 - `GeneralState` is the root schema type (`root_type GeneralState`).
 - The schema is consumed by core modules such as `InitialStateLoader`,
-  `PhysicsIntegrator`, `PluginManager`, and `SimulationEngine`.
+  `PhysicsIntegrator`, and `SimulationEngine`.
+- `gravity` is part of the serialized state and is preserved by the runtime
+  when state buffers are rebuilt; it is not owned by `PluginManager`.

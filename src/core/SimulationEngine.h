@@ -15,6 +15,7 @@
 
 namespace Apogeo {
     class PluginManager;
+    class FlightComputerContext;
 }
 
 namespace state_vector {
@@ -148,6 +149,7 @@ public:
 private:
     // Plugin manager
     std::unique_ptr<PluginManager> plugin_manager_;
+    std::unique_ptr<FlightComputerContext> flight_computer_;
 
     // Current state buffer (thread-safe)
     std::vector<uint8_t> current_state_buffer_;
@@ -160,6 +162,7 @@ private:
     std::atomic<double> compute_tick_duration_ms_{0.0};
     std::atomic<double> io_tick_duration_ms_{0.0};
     std::atomic<bool> is_running_{false};
+    std::atomic<bool> is_shutdown_{false};
 
     /**
      * @brief Validates an already parsed state.

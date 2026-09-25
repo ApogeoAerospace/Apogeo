@@ -125,7 +125,7 @@ consumo másico está pendiente y el tick devuelve aportes neutros. Ver
 
 ## 7. Cómo funciona la visualización
 
-La entrada web actual es `tools/apogeo_web_gui_v2.py`. Sirve los recursos de
+La entrada web actual es `tools/web_gui.py`. Sirve los recursos de
 `tools/web_server/static/` y expone endpoints HTTP.
 
 El navegador envía una solicitud; el servidor prepara archivos de configuración

@@ -158,7 +158,7 @@ public:
      * @param type Plugin type to register.
      * @return `true` if plugin is loaded successfully.
      */
-    bool load_plugin(const std::string& path, PluginType type);
+    bool load_plugin(const std::string& path, PluginType type, bool enable_host_logger = false);
 
     /**
      * @brief Loads plugins defined in global configuration.
