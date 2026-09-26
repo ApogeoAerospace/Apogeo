@@ -15,5 +15,7 @@
       "name": "hdf5",
       "default-features": false
     }
+    "lua",
+    "sol2"
   ]
 }

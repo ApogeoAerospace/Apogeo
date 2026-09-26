@@ -104,6 +104,11 @@ public:
     std::string getOutputDirectory() const { return output_directory_; }
 
     /**
+     * @brief Path to the Lua flight script loaded by FlightComputerContext.
+     */
+    std::string flight_script_path;
+
+    /**
      * @brief Replaces the current simulation configuration.
      * @param config New simulation configuration.
      */
