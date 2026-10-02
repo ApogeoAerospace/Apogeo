@@ -11,7 +11,7 @@
  */
 
 using json = nlohmann::json;
-namespace InitialStateLoader = MoLab::InitialStateLoader;
+namespace InitialStateLoader = Apogeo::InitialStateLoader;
 
 class InitialStateLoaderTest : public ::testing::Test {
 protected:

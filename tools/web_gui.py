@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-MoLab Web GUI v2.0 - Refactored Version
+Apogeo Web GUI v2.0 - Refactored Version
 Clean, modular architecture with proper separation of concerns
 
-This is the new entry point that replaces the monolithic molab_web_gui.py
+This is the new entry point that replaces the monolithic apogeo_web_gui.py
 
 Improvements:
 - Modular architecture with separate modules for each concern
@@ -22,14 +22,14 @@ from pathlib import Path
 # Add web_server package to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from web_server import ServerConfig, MoLabWebServer
+from web_server import ServerConfig, ApogeoWebServer
 from web_server.logger import setup_logger
 
 
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description='MoLab Web GUI - Aerospace Simulation Interface'
+        description='Apogeo Web GUI - Aerospace Simulation Interface'
     )
     
     parser.add_argument(
@@ -61,10 +61,10 @@ def main():
     # Setup logging
     import logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
-    logger = setup_logger('molab_web_gui', log_level)
+    logger = setup_logger('apogeo_web_gui', log_level)
     
     logger.info("=" * 60)
-    logger.info("MoLab Web GUI v2.0 - Refactored")
+    logger.info("Apogeo Web GUI v2.0 - Refactored")
     logger.info("=" * 60)
     
     try:
@@ -78,7 +78,7 @@ def main():
         config.validate()
         
         # Create and start server
-        server = MoLabWebServer(config)
+        server = ApogeoWebServer(config)
         server.start()
         
     except ValueError as e:

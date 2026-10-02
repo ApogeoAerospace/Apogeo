@@ -10,7 +10,7 @@
  */
 
 // Utilities to create initial simulation state from JSON.
-namespace MoLab::InitialStateLoader {
+namespace Apogeo::InitialStateLoader {
     /**
      * @brief Builds a `GeneralState` from a JSON file.
      *
@@ -19,6 +19,6 @@ namespace MoLab::InitialStateLoader {
      * @return `true` if state was created successfully.
      */
     bool create_state_from_json(flatbuffers::FlatBufferBuilder& builder, const std::string& filepath);
-} // namespace MoLab::InitialStateLoader
+} // namespace Apogeo::InitialStateLoader
 
 #endif // INITIAL_STATE_GENERATOR_H

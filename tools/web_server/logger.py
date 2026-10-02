@@ -1,5 +1,5 @@
 """
-Logging configuration for MoLab Web Server
+Logging configuration for Apogeo Web Server
 """
 import logging
 import sys

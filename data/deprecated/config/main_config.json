@@ -4,7 +4,7 @@
     "duration": 10.0,
     "max_iterations": 100,
     "enable_logging": true,
-    "log_file": "logs/molab_simulation.log",
+    "log_file": "logs/apogeo_simulation.log",
     "log_level": "INFO"
   },
   "physics": {

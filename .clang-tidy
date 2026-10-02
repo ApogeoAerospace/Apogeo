@@ -1,5 +1,5 @@
 ---
-# clang-tidy configuration for MoLab
+# clang-tidy configuration for Apogeo
 Checks: >
   -*,
   bugprone-*,

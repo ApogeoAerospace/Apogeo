@@ -1,13 +1,13 @@
-#ifndef MOLAB_NAMESPACE_DOCS_H
-#define MOLAB_NAMESPACE_DOCS_H
+#ifndef APOGEO_NAMESPACE_DOCS_H
+#define APOGEO_NAMESPACE_DOCS_H
 
 /**
- * @file molab_namespace_docs.h
+ * @file apogeo_namespace_docs.h
  * @brief High-level documentation for the project's main namespace.
  */
 
 /**
- * @namespace MoLab
+ * @namespace Apogeo
  * @brief Main namespace for the Apogeo simulator core.
  *
  * Groups the main simulation components, plugin management,
@@ -22,6 +22,6 @@
  * - `OutputManager`: state persistence and export.
  * - `Logger`: core logging system.
  */
-namespace MoLab {}
+namespace Apogeo {}
 
-#endif // MOLAB_NAMESPACE_DOCS_H
+#endif // APOGEO_NAMESPACE_DOCS_H

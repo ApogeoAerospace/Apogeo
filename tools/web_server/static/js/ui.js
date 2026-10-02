@@ -215,7 +215,7 @@ const UI = {
                 max_iterations: maxIterations,
                 enable_logging: document.getElementById('enable-logging')?.checked ?? true,
                 log_level: document.getElementById('log-level')?.value || 'INFO',
-                log_file: 'logs/molab_web.log'
+                log_file: 'logs/apogeo_web.log'
             },
             physics: {
                 enable_gravity: document.getElementById('enable-gravity')?.checked ?? true,

@@ -1,5 +1,5 @@
 """
-Example tests for MoLab Web Server
+Example tests for Apogeo Web Server
 Demonstrates how to test the modular architecture
 
 Run with: pytest tools/web_server/tests/
@@ -179,8 +179,8 @@ class TestIntegration:
         config.validate()
         
         # This creates the server but doesn't start it
-        from web_server.server import MoLabWebServer
-        server = MoLabWebServer(config)
+        from web_server.server import ApogeoWebServer
+        server = ApogeoWebServer(config)
         
         assert server.config.port == 8083
         assert len(server.router.routes) > 0

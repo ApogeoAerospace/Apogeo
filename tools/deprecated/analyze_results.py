@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-MoLab Simulation Results Analyzer
+Apogeo Simulation Results Analyzer
 
-This script analyzes the output from MoLab simulations and provides
+This script analyzes the output from Apogeo simulations and provides
 comprehensive summaries of the simulation results.
 
 Usage:
@@ -82,7 +82,7 @@ def print_summary(data, metadata):
     last_row = data[-1]
     
     print("============================================================")
-    print("MOLAB SIMULATION RESULTS SUMMARY")
+    print("APOGEO SIMULATION RESULTS SUMMARY")
     print("============================================================")
     print(f"Run Name: {metadata.get('run_name', 'Unknown')}")
     print(f"Timestamp: {metadata.get('timestamp', 'Unknown')}")

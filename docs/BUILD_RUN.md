@@ -13,6 +13,12 @@
 
 ## Build
 
+Run these commands from the `Apogeo` repository directory. The C++ core namespace
+is `Apogeo`; generated logs use `apogeo` in their names. If the checkout directory
+has moved, configure a fresh build directory: CMake caches contain absolute paths.
+Existing build directories can be retained as previous artifacts but should not be
+reused without reconfiguration at the new location.
+
 ```bash
 cmake -S . -B build -G Ninja
 cmake --build build
@@ -53,6 +59,6 @@ ctest --test-dir build --output-on-failure
 ## Web launcher notes
 
 - `scripts/launch_web.sh` opens the browser on `http://localhost:8082`
-- `tools/molab_web_gui_v2.py` is the current launcher entry point
+- `tools/web_gui.py` is the current launcher entry point
 
 This behavior is now aligned with the current scripts.

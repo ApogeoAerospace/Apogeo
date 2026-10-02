@@ -10,13 +10,13 @@
  * @brief Unit tests for `Logger`.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 namespace fs = std::filesystem;
 
 class LoggerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_log_file = "test_molab.log";
+        test_log_file = "test_apogeo.log";
         if (fs::exists(test_log_file)) {
             fs::remove(test_log_file);
         }

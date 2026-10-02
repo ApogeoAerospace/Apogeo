@@ -12,10 +12,10 @@
  * @brief Declaration of centralized simulation-time and UTC manager.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
- * @brief Centralized time manager for MoLab
+ * @brief Centralized time manager for Apogeo
  *
  * Handles both simulation time (relative) and UTC time (absolute).
  * Provides conversions across time formats and synchronization support.
@@ -137,6 +137,6 @@ private:
     bool initialized_{false};
 };
 
-} // namespace MoLab
+} // namespace Apogeo
 
 #endif // TIME_MANAGER_H

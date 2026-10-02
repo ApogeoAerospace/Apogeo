@@ -1,4 +1,4 @@
-# MoLab Documentation
+# Apogeo Documentation
 
 This directory contains the project's technical and functional documentation.
 
@@ -13,6 +13,9 @@ This directory contains the project's technical and functional documentation.
 
 - [Build and run](./BUILD_RUN.md)
 - [Current architecture](./ARCHITECTURE.md)
+- [Team architecture walkthrough (Spanish)](./team/introduccion-apogeo-equipo.md)
+- [Interactive team presentation (Spanish, offline HTML)](./team/presentacion-apogeo.html)
+- [Team presentation PDF](./team/presentacion-apogeo.pdf)
 - [Current configuration](./CONFIG.md)
 - [Configuration reference](./CONFIG_REFERENCE.md)
 - [IPC protocol](./IPC_PROTOCOL.md)

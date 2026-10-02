@@ -8,7 +8,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from web_server import ServerConfig, MoLabWebServer
+from web_server import ServerConfig, ApogeoWebServer
 from web_server.logger import setup_logger
 
 
@@ -20,7 +20,7 @@ def main():
         config = ServerConfig()
         config.validate()
         
-        server = MoLabWebServer(config)
+        server = ApogeoWebServer(config)
         server.start()
         
     except Exception as e:

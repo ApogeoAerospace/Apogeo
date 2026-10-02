@@ -1,8 +1,8 @@
-# MoLab Dependencies Checker (Windows-native)
+# Apogeo Dependencies Checker (Windows-native)
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host "🔧 MoLab dependency check (PowerShell)"
+Write-Host "🔧 Apogeo dependency check (PowerShell)"
 Write-Host ""
 
 function Test-Tool {

@@ -18,7 +18,7 @@
  * @brief Numerical integration of simulation physical state.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
  * @brief Flat ODE state type: `pos(3), vel(3), quat(4), omega(3)`.
@@ -199,4 +199,4 @@ private:
                                       const Vector3& torque);
 };
 
-} // namespace MoLab
+} // namespace Apogeo

@@ -2,7 +2,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MoLab CI Pipeline                            │
+│                    Apogeo CI Pipeline                            │
 │                    (6 Jobs in Parallel)                         │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -52,8 +52,8 @@
 
 | Artifact | Job | Retention | Content |
 |-----------|-----|-----------|-----------|
-| `molab-build-ubuntu-latest` | build-and-test | 7 days | Linux binaries |
-| `molab-build-macos-latest` | build-and-test | 7 days | macOS binaries |
+| `apogeo-build-ubuntu-latest` | build-and-test | 7 days | Linux binaries |
+| `apogeo-build-macos-latest` | build-and-test | 7 days | macOS binaries |
 | `test-results` | unit-tests | 7 days | XML test results |
 | `coverage-report` | code-coverage | 30 days | HTML coverage report |
 | `static-analysis-report` | static-analysis | 30 days | clang-tidy TXT report |
@@ -148,7 +148,7 @@ The pipeline **FAILS** if:
 ### View CI status:
 ```bash
 # On GitHub
-https://github.com/tu-usuario/MoLab/actions
+https://github.com/tu-usuario/Apogeo/actions
 ```
 
 ### Run locally (CI equivalent):

@@ -1,4 +1,4 @@
-# Development and Testing Requirements for MoLab Web Server
+# Development and Testing Requirements for Apogeo Web Server
 
 # Testing
 pytest>=7.0.0
