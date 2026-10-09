@@ -1,0 +1,33 @@
+digraph "MoLab::SimulationEngine::run_simulation"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node1 [id="Node000001",label="MoLab::SimulationEngine\l::run_simulation",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Runs the full simulation using active configuration."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="MoLab::ConfigManager\l::getInstance",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d2e/class_mo_lab_1_1_config_manager.html#aedd1a6fbf8b248ca3bd16e1ec69184e4",tooltip="Gets the global manager instance."];
+  Node2 -> Node3 [id="edge2_Node000002_Node000003",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="MoLab::ConfigManager\l::ConfigManager",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d2e/class_mo_lab_1_1_config_manager.html#a52bd7ad4a11f352a63484923bc6181e3",tooltip=" "];
+  Node3 -> Node4 [id="edge3_Node000003_Node000004",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="MoLab::ConfigManager\l::setDefaults",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d2e/class_mo_lab_1_1_config_manager.html#a88b2ab325466916e139b6d315f619945",tooltip="Sets default values for all configuration fields."];
+  Node1 -> Node5 [id="edge4_Node000001_Node000005",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="MoLab::ConfigManager\l::getSimulationConfig",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d2e/class_mo_lab_1_1_config_manager.html#a7a8f8016ad026d2d5bc08ba3c8295294",tooltip="Gets the current simulation configuration."];
+  Node1 -> Node6 [id="edge5_Node000001_Node000006",color="steelblue1",style="solid",tooltip=" "];
+  Node6 [id="Node000006",label="MoLab::SimulationEngine\l::print_performance_metrics",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#ab912ef790716899d955b51db4d9507d4",tooltip="Prints simulation and plugin performance metrics."];
+  Node1 -> Node7 [id="edge6_Node000001_Node000007",color="steelblue1",style="solid",tooltip=" "];
+  Node7 [id="Node000007",label="MoLab::SimulationEngine\l::run_tick",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#acf9a695557c6f3ef92e6dbec718cdb5b",tooltip="Executes a full simulation tick."];
+  Node7 -> Node8 [id="edge7_Node000007_Node000008",color="steelblue1",style="solid",tooltip=" "];
+  Node8 [id="Node000008",label="MoLab::OutputManager\l::getInstance",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#a4a4141af7b84bdba36e085009133a388",tooltip="Gets the global output manager instance."];
+  Node8 -> Node9 [id="edge8_Node000008_Node000009",color="steelblue1",style="solid",tooltip=" "];
+  Node9 [id="Node000009",label="MoLab::OutputManager\l::OutputManager",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#ac583f15b1be4eb4f93b5fbb3f3e1b9b6",tooltip=" "];
+  Node7 -> Node10 [id="edge9_Node000007_Node000010",color="steelblue1",style="solid",tooltip=" "];
+  Node10 [id="Node000010",label="MoLab::TimeManager\l::getInstance",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/d89/class_mo_lab_1_1_time_manager.html#ac187f1f6c7f6342818b6cb7082a3c69e",tooltip="Gets the global time manager instance."];
+  Node10 -> Node11 [id="edge10_Node000010_Node000011",color="steelblue1",style="solid",tooltip=" "];
+  Node11 [id="Node000011",label="MoLab::TimeManager\l::TimeManager",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/d89/class_mo_lab_1_1_time_manager.html#a0c42cc88237cd4dcfcb7ec05322edcf1",tooltip=" "];
+  Node7 -> Node12 [id="edge11_Node000007_Node000012",color="steelblue1",style="solid",tooltip=" "];
+  Node12 [id="Node000012",label="MoLab::SimulationEngine\l::validate_simulation_state",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#a5d119c46210f3f7e7d446c8d3cddb8d7",tooltip="Validates current internal simulation state."];
+  Node12 -> Node12 [id="edge12_Node000012_Node000012",color="steelblue1",style="solid",tooltip=" "];
+}

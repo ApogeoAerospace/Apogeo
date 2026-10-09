@@ -1,0 +1,25 @@
+digraph "MoLab::SimulationEngine::shutdown"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="RL";
+  Node1 [id="Node000001",label="MoLab::SimulationEngine\l::shutdown",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Releases resources and shuts down simulation."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="main",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$df/d0a/main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip="Runs simulator initialization and main loop."];
+  Node1 -> Node3 [id="edge2_Node000001_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="MoLab::SimulationEngine\l::operator=",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#a1245e1af8d97f5f9b7f0eaae2b656324",tooltip=" "];
+  Node1 -> Node4 [id="edge3_Node000001_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="MoLab::runIpcStdioSession",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d11/namespace_mo_lab.html#af20938716f4d8fbbfb43263e7b9a7448",tooltip=" "];
+  Node4 -> Node2 [id="edge4_Node000004_Node000002",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node1 -> Node5 [id="edge5_Node000001_Node000005",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="TEST_F",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d6/dd3/test__simulation__engine_8cpp.html#a0a5db5ff70c65fd18317cb6dd3f43b01",tooltip=" "];
+  Node1 -> Node6 [id="edge6_Node000001_Node000006",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node6 [id="Node000006",label="TEST_F",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d6/dd3/test__simulation__engine_8cpp.html#ac76e0b3d86983db62f137335ecd96d6d",tooltip=" "];
+  Node1 -> Node7 [id="edge7_Node000001_Node000007",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node7 [id="Node000007",label="TEST_F",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d6/dd3/test__simulation__engine_8cpp.html#a3f33dddcd583c37e2fc3384e1f8bef03",tooltip=" "];
+  Node1 -> Node8 [id="edge8_Node000001_Node000008",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node8 [id="Node000008",label="MoLab::SimulationEngine\l::~SimulationEngine",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#a31dfbd29dc9ebdc7af7bd57b084d75bd",tooltip="Destroys the simulation engine and releases resources."];
+}

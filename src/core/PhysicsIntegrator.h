@@ -151,9 +151,10 @@ public:
      * @return New integrated state.
      */
     PhysicsState integrate(const PhysicsState& current_state,
-                          const Vector3& total_force,
-                          const Vector3& total_torque,
-                          double dt);
+                           const Vector3& total_force,
+                           const Vector3& total_torque,
+                           double dt,
+                           const Vector3& gravity_acceleration = Vector3::Zero());
 
     /**
      * @brief Changes active integrator by enum.
@@ -196,7 +197,8 @@ private:
                                       double mass,
                                       const InertiaTensor3& inertia,
                                       const Vector3& force,
-                                      const Vector3& torque);
+                                      const Vector3& torque,
+                                      const Vector3& gravity_acceleration);
 };
 
 } // namespace MoLab

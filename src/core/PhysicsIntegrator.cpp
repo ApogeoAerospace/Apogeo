@@ -78,7 +78,8 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
                                               double mass,
                                               const InertiaTensor3& inertia,
                                               const Vector3& force,
-                                              const Vector3& torque) {
+                                              const Vector3& torque,
+                                              const Vector3& gravity_acceleration) {
     dydt.fill(0.0);
 
     // Extract dynamic variables from flat vector
@@ -91,12 +92,16 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
     dydt[1] = vel.y();
     dydt[2] = vel.z();
 
-    // --- Newton's second law: v_dot = F / m ---
+    // --- Newton's second law: v_dot = F / m + g ---
+    Vector3 linear_acceleration = gravity_acceleration;
     if (hasValidMass(mass)) {
-        double inv_mass = 1.0 / mass;
-        dydt[3] = force.x() * inv_mass;
-        dydt[4] = force.y() * inv_mass;
-        dydt[5] = force.z() * inv_mass;
+        linear_acceleration += (force / mass);
+    }
+
+    if (linear_acceleration.allFinite()) {
+        dydt[3] = linear_acceleration.x();
+        dydt[4] = linear_acceleration.y();
+        dydt[5] = linear_acceleration.z();
     } else {
         dydt[3] = 0.0; dydt[4] = 0.0; dydt[5] = 0.0;
     }
@@ -142,7 +147,8 @@ void PhysicsIntegrator::computeOdeDerivatives(const OdeState& y, OdeState& dydt,
 PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
                                           const Vector3& force,
                                           const Vector3& torque,
-                                          double dt) {
+                                          double dt,
+                                          const Vector3& gravity_acceleration) {
     if (!std::isfinite(dt)) {
         LOG_WARNING("Invalid time step (NaN/Inf), skipping integration step", "PhysicsIntegrator");
         return state;
@@ -152,7 +158,7 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
     // ODE system lambda. Captures constant step parameters
     // (mass, inertia, forces) by reference without copying.
     auto system = [&](const OdeState& y_in, OdeState& dydt, double /*t*/) {
-        computeOdeDerivatives(y_in, dydt, state.mass, state.inertia, force, torque);
+        computeOdeDerivatives(y_in, dydt, state.mass, state.inertia, force, torque, gravity_acceleration);
     };
 
     switch (integrator_type_) {
@@ -171,10 +177,11 @@ PhysicsState PhysicsIntegrator::integrate(const PhysicsState& state,
             // Odeint does not provide velocity_verlet for mixed
             // first- and second-order systems, so this is manual.
 
-            // --- Translation: Velocity-Verlet (a = F/m) ---
-            Vector3 a_n = Vector3::Zero();
-            if (hasValidMass(state.mass))
-                a_n = force / state.mass;
+            // --- Translation: Velocity-Verlet (a = F/m + g) ---
+            Vector3 a_n = gravity_acceleration;
+            if (hasValidMass(state.mass)) {
+                a_n += (force / state.mass);
+            }
 
             Vector3 v_half  = state.velocity + a_n * (0.5 * dt);
             Vector3 new_pos = state.position + v_half * dt;

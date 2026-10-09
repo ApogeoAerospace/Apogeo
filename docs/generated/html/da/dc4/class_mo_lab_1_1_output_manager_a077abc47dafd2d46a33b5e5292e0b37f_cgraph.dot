@@ -1,0 +1,22 @@
+digraph "MoLab::OutputManager::operator="
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node1 [id="Node000001",label="MoLab::OutputManager\l::operator=",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="MoLab::OutputManager\l::extractDataPoint",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#aada88202ab589ab5ef7707f50eeec6fc",tooltip="Extracts an output sample from a FlatBuffers state."];
+  Node1 -> Node3 [id="edge2_Node000001_Node000003",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="MoLab::OutputManager\l::OutputManager",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#ac583f15b1be4eb4f93b5fbb3f3e1b9b6",tooltip=" "];
+  Node1 -> Node4 [id="edge3_Node000001_Node000004",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="MoLab::OutputManager\l::writeCSVHeader",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#a0c88dcd97588c033fb62ec1032f875e4",tooltip="Writes CSV column headers."];
+  Node1 -> Node5 [id="edge4_Node000001_Node000005",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="MoLab::OutputManager\l::writeDataPointCSV",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#a856ad1795681e61633c860cd6e181757",tooltip="Writes one sample in CSV format."];
+  Node1 -> Node6 [id="edge5_Node000001_Node000006",color="steelblue1",style="solid",tooltip=" "];
+  Node6 [id="Node000006",label="MoLab::OutputManager\l::writeDataPointJSON",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#a114a0734b4afe1d548555a47011b58cc",tooltip="Writes one sample in JSON format."];
+  Node1 -> Node7 [id="edge6_Node000001_Node000007",color="steelblue1",style="solid",tooltip=" "];
+  Node7 [id="Node000007",label="MoLab::OutputManager\l::writeMetricsJSON",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#aebd38d9225639c5d5fbc76a4e0013864",tooltip="Writes aggregated metrics in final JSON block."];
+}

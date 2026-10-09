@@ -1,0 +1,20 @@
+digraph "MoLab::SimulationEngine::print_performance_metrics"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="RL";
+  Node1 [id="Node000001",label="MoLab::SimulationEngine\l::print_performance_metrics",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Prints simulation and plugin performance metrics."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="MoLab::SimulationEngine\l::run_simulation",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#a359c6964126c4888bb02dd2fb8f1ecd1",tooltip="Runs the full simulation using active configuration."];
+  Node2 -> Node3 [id="edge2_Node000002_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="main",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$df/d0a/main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip="Runs simulator initialization and main loop."];
+  Node2 -> Node4 [id="edge3_Node000002_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="MoLab::SimulationEngine\l::operator=",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d35/class_mo_lab_1_1_simulation_engine.html#a1245e1af8d97f5f9b7f0eaae2b656324",tooltip=" "];
+  Node2 -> Node5 [id="edge4_Node000002_Node000005",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="TEST_F",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d6/dd3/test__simulation__engine_8cpp.html#a653e79a47afe9d8f23d4feebcf2b3d79",tooltip=" "];
+  Node1 -> Node6 [id="edge5_Node000001_Node000006",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node6 [id="Node000006",label="TEST_F",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d6/dd3/test__simulation__engine_8cpp.html#a579f9c9e281eeaa0dfe14cbccd883d4b",tooltip=" "];
+}

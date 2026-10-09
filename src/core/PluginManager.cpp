@@ -550,9 +550,12 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     Vector3 total_force(plugin_force.x, plugin_force.y, plugin_force.z);
     Vector3 total_torque(plugin_torque.x, plugin_torque.y, plugin_torque.z);
+    Vector3 gravity_acceleration = current_state->gravity()
+        ? Vector3(current_state->gravity()->x(), current_state->gravity()->y(), current_state->gravity()->z())
+        : Vector3::Zero();
 
-    // If there are no forces/torques, only advance time without rebuilding buffer
-    if (total_force.isZero() && total_torque.isZero()) {
+    // If there are no forces/torques and no gravity, only advance time without rebuilding buffer
+    if (total_force.isZero() && total_torque.isZero() && gravity_acceleration.isZero()) {
 
         auto* mutable_state = flatbuffers::GetMutableRoot<state_vector::GeneralState>(state_buffer.data());
         if (mutable_state) {
@@ -563,7 +566,13 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     }
 
     PhysicsState physics_state = MoLab::PhysicsIntegrator::fromFlatBuffer(current_state);
-    PhysicsState new_state = physics_integrator_->integrate(physics_state, total_force, total_torque, delta_time);
+    PhysicsState new_state = physics_integrator_->integrate(
+        physics_state,
+        total_force,
+        total_torque,
+        delta_time,
+        gravity_acceleration
+    );
 
     flatbuffers::FlatBufferBuilder builder;
 

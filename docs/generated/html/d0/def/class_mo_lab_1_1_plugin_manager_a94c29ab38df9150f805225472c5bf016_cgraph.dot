@@ -1,0 +1,14 @@
+digraph "MoLab::PluginManager::load_plugin"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node1 [id="Node000001",label="MoLab::PluginManager\l::load_plugin",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Loads a dynamic plugin and classifies it by type."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="MoLab::build_plugin\l_candidates",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d11/namespace_mo_lab.html#a98d69583517626660e5e2bba06827eaf",tooltip=" "];
+  Node1 -> Node3 [id="edge2_Node000001_Node000003",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="MoLab::normalize_plugin_path",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d8/d11/namespace_mo_lab.html#a42671cac38ecbb1dbc75370aeca11a46",tooltip=" "];
+}
