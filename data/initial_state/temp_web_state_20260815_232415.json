@@ -1,0 +1,62 @@
+{
+  "sim_time": 0.0,
+  "dt": 0.01,
+  "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  },
+  "velocity": {
+    "x": 120,
+    "y": 0,
+    "z": 120
+  },
+  "orientation": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "w": 1.0
+  },
+  "angular_velocity": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "total_mass": 1000,
+  "cg_location": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "inertia_tensor": {
+    "ixx": 10.0,
+    "iyy": 12.0,
+    "izz": 8.0,
+    "ixy": 0.0,
+    "ixz": 0.0,
+    "iyz": 0.0
+  },
+  "propellant_masses": [
+    200.0,
+    150.0
+  ],
+  "mach_number": 0.0,
+  "dynamic_pressure": 0.0,
+  "angle_of_attack": 0.0,
+  "sideslip_angle": 0.0,
+  "atm_density": 1.225,
+  "atm_pressure": 101325.0,
+  "atm_temperature": 288.15,
+  "gravity": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "wind_velocity": {
+    "x": 5.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "engines": [],
+  "surface_deflections": []
+}
