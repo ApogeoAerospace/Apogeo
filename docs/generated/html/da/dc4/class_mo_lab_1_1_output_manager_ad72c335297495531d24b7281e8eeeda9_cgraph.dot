@@ -1,0 +1,12 @@
+digraph "MoLab::OutputManager::recordState"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node1 [id="Node000001",label="MoLab::OutputManager\l::recordState",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Records state using a GeneralState pointer."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="MoLab::OutputManager\l::extractDataPoint",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$da/dc4/class_mo_lab_1_1_output_manager.html#aada88202ab589ab5ef7707f50eeec6fc",tooltip="Extracts an output sample from a FlatBuffers state."];
+}

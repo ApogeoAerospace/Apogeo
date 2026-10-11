@@ -17,6 +17,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 find_package(flatbuffers CONFIG REQUIRED) # FlatBuffers for data serialization/deserialization
 find_package(nlohmann_json CONFIG REQUIRED) # nlohmann_json for JSON handling
 find_package(Boost REQUIRED) # Boost (header-only, used by Odeint)
+find_package(HDF5 REQUIRED COMPONENTS C) # HDF5 aerodynamic lookup databases
 find_package(lua CONFIG REQUIRED)
 find_package(sol2 CONFIG REQUIRED)
 
@@ -114,6 +115,7 @@ target_include_directories(simulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 add_custom_command(
     TARGET simulator POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/aero"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/mass"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/data/limits"
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:simulator>/logs"
@@ -127,6 +129,9 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/data/mass/mass_properties.json
             "$<TARGET_FILE_DIR:simulator>/data/mass"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/data/aero
+            "$<TARGET_FILE_DIR:simulator>/data/aero"
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/data/limits/structural_limits.csv
             "$<TARGET_FILE_DIR:simulator>/data/limits"
@@ -140,6 +145,7 @@ add_custom_command(
 # --- Plugins ---
 
 set(PLUGIN_NAMES
+    aerodynamics
     structures
     propulsion
 )
@@ -177,6 +183,16 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         )
     endif()
 
+    if(_plugin_name STREQUAL "aerodynamics")
+        list(APPEND _plugin_sources
+            "plugins/aerodynamics/aerodynamics_module.cpp"
+        )
+        list(APPEND _plugin_private_libs
+            nlohmann_json::nlohmann_json
+            ${HDF5_C_LIBRARIES}
+        )
+    endif()
+
     add_library(${_plugin_name} SHARED ${_plugin_sources})
     if(_plugin_name STREQUAL "propulsion")
         list(APPEND _plugin_private_libs propulsion_domain nlohmann_json::nlohmann_json)
@@ -198,6 +214,13 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     if(_plugin_name STREQUAL "structures")
         target_include_directories(${_plugin_name} PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures"
+        )
+    endif()
+
+    if(_plugin_name STREQUAL "aerodynamics")
+        target_include_directories(${_plugin_name} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics"
+            ${HDF5_INCLUDE_DIRS}
         )
     endif()
 
@@ -293,6 +316,8 @@ if(ENABLE_TESTING)
         tests/test_initial_state_loader.cpp
         tests/test_command_event_protocol.cpp
         tests/test_ipc_session.cpp
+        tests/test_aerodynamics_module.cpp
+        plugins/aerodynamics/aerodynamics_module.cpp
         tests/test_flight_computer.cpp
         src/ipc/IpcSession.cpp
     )
@@ -301,6 +326,7 @@ if(ENABLE_TESTING)
         core
         GTest::gtest
         GTest::gtest_main
+        ${HDF5_C_LIBRARIES}
     )
 
     target_include_directories(core_tests PRIVATE
@@ -308,6 +334,8 @@ if(ENABLE_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics
+        ${HDF5_INCLUDE_DIRS}
         ${GENERATED_DIR}
     )
 

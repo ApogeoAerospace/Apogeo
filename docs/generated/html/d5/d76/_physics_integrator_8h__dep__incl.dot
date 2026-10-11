@@ -1,0 +1,15 @@
+digraph "PhysicsIntegrator.h"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  Node1 [id="Node000001",label="PhysicsIntegrator.h",height=0.2,width=0.4,color="gray40", fillcolor="grey60", style="filled", fontcolor="black",tooltip="Numerical integration of simulation physical state."];
+  Node1 -> Node2 [id="edge1_Node000001_Node000002",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node2 [id="Node000002",label="PhysicsIntegrator.cpp",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d5/d01/_physics_integrator_8cpp.html",tooltip="Implementation of numerical integration for physical state."];
+  Node1 -> Node3 [id="edge2_Node000001_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="PluginManager.cpp",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$dd/df0/_plugin_manager_8cpp.html",tooltip="Implementation of plugin load and execution manager."];
+  Node1 -> Node4 [id="edge3_Node000001_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="test_physics_integrator.cpp",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$d4/d57/test__physics__integrator_8cpp.html",tooltip="Unit tests for PhysicsIntegrator."];
+}
