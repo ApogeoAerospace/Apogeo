@@ -18,6 +18,8 @@ This directory contains the project's technical and functional documentation.
 - [IPC protocol](./IPC_PROTOCOL.md)
 - [Plugin API](./PLUGIN_API.md)
 - [Structures module](./STRUCTURES_MODULE.md)
+- [Propulsion module](../plugins/propulsion/README.md)
+- [Propulsion skeleton specifications and work plan](./specs/propulsion-module-skeleton/task_list.md)
 - [Known gaps](./KNOWN_GAPS.md)
 - [Doxygen style guide](./DOXYGEN_STYLE.md)
 - [Documentation writing guide](./DOCUMENTATION_STYLE_GUIDE.md)
