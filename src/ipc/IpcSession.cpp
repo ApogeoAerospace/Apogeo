@@ -12,7 +12,7 @@
 #include "../core/Logger.h"
 #include "../core/OutputManager.h"
 
-namespace MoLab {
+namespace Apogeo {
 
 namespace {
 
@@ -435,4 +435,4 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
     return 0;
 }
 
-} // namespace MoLab
+} // namespace Apogeo

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-MoLab Simulation Results Visualizer
+Apogeo Simulation Results Visualizer
 
 This script loads simulation output CSV files and generates a standardized
 set of key plots for quick visual analysis of simulation results.
 
 Usage:
     python visualize_results.py
-    python visualize_results.py --file output/molab_simulation_20251126_222234.csv
+    python visualize_results.py --file output/apogeo_simulation_20251126_222234.csv
     python visualize_results.py --no-show
     python visualize_results.py --plots-dir output/my_plots
 """
@@ -35,7 +35,7 @@ from mpl_toolkits.mplot3d import Axes3D
 def parse_arguments() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="MoLab Simulation Results Visualizer — generates key plots from CSV output."
+        description="Apogeo Simulation Results Visualizer — generates key plots from CSV output."
     )
     parser.add_argument(
         "--file", type=str, default=None,
@@ -64,7 +64,7 @@ def load_csv_data(file_path: str = None, output_dir: str = "output") -> pd.DataF
     """Load simulation CSV data into a DataFrame.
 
     If *file_path* is provided, that file is loaded directly.
-    Otherwise the most recent ``molab_simulation_*.csv`` in *output_dir* is used.
+    Otherwise the most recent ``apogeo_simulation_*.csv`` in *output_dir* is used.
     """
     if file_path is not None:
         csv_path = Path(file_path)
@@ -76,7 +76,7 @@ def load_csv_data(file_path: str = None, output_dir: str = "output") -> pd.DataF
         if not out.exists():
             print(f"Error: output directory '{output_dir}' not found.")
             sys.exit(1)
-        csv_files = sorted(out.glob("molab_simulation_*.csv"))
+        csv_files = sorted(out.glob("apogeo_simulation_*.csv"))
         if not csv_files:
             print(f"Error: no CSV files found in '{output_dir}'.")
             sys.exit(1)
@@ -154,7 +154,7 @@ def _apply_style():
 def _title_prefix(metadata: dict) -> str:
     """Build a title prefix from metadata."""
     name = metadata.get("run_name", "")
-    return f"{name} — " if name else "MoLab — "
+    return f"{name} — " if name else "Apogeo — "
 
 
 def _save(fig: plt.Figure, plots_dir: str, filename: str):

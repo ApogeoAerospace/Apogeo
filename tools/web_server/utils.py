@@ -1,5 +1,5 @@
 """
-Utility functions for MoLab Web Server
+Utility functions for Apogeo Web Server
 """
 import platform
 import json
@@ -359,7 +359,7 @@ def normalize_config_for_simulator(config: Dict[str, Any]) -> Dict[str, Any]:
 
     # Keep duration/logging fields expected by current ConfigManager.
     simulation.setdefault('enable_logging', True)
-    simulation.setdefault('log_file', 'logs/molab_web.log')
+    simulation.setdefault('log_file', 'logs/apogeo_web.log')
     simulation.setdefault('log_level', 'INFO')
 
     # Legacy output block -> current root output_directory.

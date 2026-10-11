@@ -1,5 +1,5 @@
 """
-MoLab Web Server - Main server implementation
+Apogeo Web Server - Main server implementation
 Clean, modular HTTP server using router pattern
 """
 import http.server
@@ -23,9 +23,9 @@ from .handlers import (
 logger = setup_logger(__name__)
 
 
-class MoLabRequestHandler(http.server.SimpleHTTPRequestHandler):
+class ApogeoRequestHandler(http.server.SimpleHTTPRequestHandler):
     """
-    HTTP Request Handler for MoLab Web Interface
+    HTTP Request Handler for Apogeo Web Interface
     Uses router pattern instead of manual if/elif cascading
     """
     
@@ -91,9 +91,9 @@ class MoLabRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-class MoLabWebServer:
+class ApogeoWebServer:
     """
-    MoLab Web Server
+    Apogeo Web Server
     
     Main server class that coordinates all components
     """
@@ -108,7 +108,7 @@ class MoLabWebServer:
         self.config = config or ServerConfig()
         self.config.validate()
         
-        self.logger = setup_logger(f"{__name__}.MoLabWebServer")
+        self.logger = setup_logger(f"{__name__}.ApogeoWebServer")
         self.simulation_manager = SimulationManager(self.config)
         self.router = Router()
         self.handlers = {}
@@ -117,10 +117,10 @@ class MoLabWebServer:
         self._setup_routes()
         
         # Set class variables for request handler
-        MoLabRequestHandler.router = self.router
-        MoLabRequestHandler.config = self.config
-        MoLabRequestHandler.simulation_manager = self.simulation_manager
-        MoLabRequestHandler.handlers = self.handlers
+        ApogeoRequestHandler.router = self.router
+        ApogeoRequestHandler.config = self.config
+        ApogeoRequestHandler.simulation_manager = self.simulation_manager
+        ApogeoRequestHandler.handlers = self.handlers
     
     def _setup_handlers(self):
         """Initialize all handlers"""
@@ -161,7 +161,7 @@ class MoLabWebServer:
     
     def start(self):
         """Start the web server"""
-        self.logger.info(f"Starting MoLab Web Interface on port {self.config.port}")
+        self.logger.info(f"Starting Apogeo Web Interface on port {self.config.port}")
         self.logger.info(f"Project root: {self.config.project_root}")
         self.logger.info(f"Static files: {self.config.static_dir}")
         
@@ -178,7 +178,7 @@ class MoLabWebServer:
         
         try:
             # Create server
-            with socketserver.TCPServer(("", self.config.port), MoLabRequestHandler) as httpd:
+            with socketserver.TCPServer(("", self.config.port), ApogeoRequestHandler) as httpd:
                 self.logger.info(f"Server started on http://localhost:{self.config.port}")
                 
                 # Open browser if configured

@@ -10,7 +10,7 @@
  * @brief Declaration of the embedded Lua flight computer context.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
  * @class FlightComputerContext
@@ -60,4 +60,4 @@ private:
     float throttle_cmd_      = 0.0f;
 };
 
-} // namespace MoLab
+} // namespace Apogeo

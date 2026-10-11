@@ -1,3 +1,3 @@
 """
-Tests for MoLab Web Server
+Tests for Apogeo Web Server
 """

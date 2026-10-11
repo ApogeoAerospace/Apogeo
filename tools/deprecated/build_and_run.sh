@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# MoLab Build and Run Script
+# Apogeo Build and Run Script
 # Simplified version for clean codebase
 
 set -e
 
-echo "=== MoLab Aerospace Simulator - Build and Run ==="
+echo "=== Apogeo Aerospace Simulator - Build and Run ==="
 
 # Change to project root
 cd "$(dirname "$0")/.."
@@ -22,7 +22,7 @@ cd build
 echo "Configuring CMake..."
 cmake ..
 
-echo "Building MoLab..."
+echo "Building Apogeo..."
 make -j4
 
 echo "Build completed successfully!"

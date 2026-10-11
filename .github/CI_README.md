@@ -1,4 +1,4 @@
-# MoLab CI Pipeline
+# Apogeo CI Pipeline
 
 This document summarizes the automated validation run in GitHub Actions.
 

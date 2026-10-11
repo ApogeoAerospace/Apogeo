@@ -9,7 +9,7 @@
  * and validation failures for invalid values.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 
 TEST(IpcSessionTest, ResolveThrottleSettingsUsesConfigDefaults) {
     SimulationConfig config{};
