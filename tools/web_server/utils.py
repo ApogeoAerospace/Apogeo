@@ -4,9 +4,15 @@ Utility functions for MoLab Web Server
 import platform
 import json
 import copy
+import math
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import csv
+
+# Gravity defaults shared by the validator, the normalizer and the state seeding.
+DEFAULT_GRAVITY_MAGNITUDE = 9.81
+DEFAULT_GRAVITY_DIRECTION = (0.0, 0.0, -1.0)  # +Z is altitude in the web templates
+MAX_GRAVITY_MAGNITUDE = 50.0
 
 
 def get_simulator_path(build_dir: Path) -> Path:
@@ -326,8 +332,118 @@ def validate_config(config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
             valid_integrators = ['euler', 'runge_kutta_4', 'verlet']
             if integrator_type not in valid_integrators:
                 return False, f"Invalid integrator_type. Must be one of: {valid_integrators}"
-    
+
+        # Deprecated gravity fields (now owned by the environment domain).
+        if 'enable_gravity' in physics and not isinstance(physics['enable_gravity'], bool):
+            return False, "physics.enable_gravity must be a boolean"
+        if 'gravity_magnitude' in physics:
+            ok, error = _validate_gravity_magnitude(physics['gravity_magnitude'], 'physics.gravity_magnitude')
+            if not ok:
+                return False, error
+
+    # Gravity lives in the environment domain.
+    environment = config.get('environment')
+    if environment is not None:
+        if not isinstance(environment, dict):
+            return False, "environment section must be an object"
+        gravity = environment.get('gravity')
+        if gravity is not None:
+            ok, error = _validate_gravity_block(gravity)
+            if not ok:
+                return False, error
+
+    plugins = config.get('plugins')
+    if plugins is not None and not isinstance(plugins, list):
+        return False, "plugins section must be a list"
+
     return True, None
+
+
+def _validate_gravity_magnitude(value: Any, field: str) -> tuple[bool, Optional[str]]:
+    """Gravity magnitude must be a finite number in [0, MAX_GRAVITY_MAGNITUDE]."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return False, f"{field} must be a finite number"
+    if value < 0 or value > MAX_GRAVITY_MAGNITUDE:
+        return False, f"{field} must be between 0 and {MAX_GRAVITY_MAGNITUDE:g} m/s^2"
+    return True, None
+
+
+def _validate_gravity_block(gravity: Any) -> tuple[bool, Optional[str]]:
+    if not isinstance(gravity, dict):
+        return False, "environment.gravity must be an object"
+
+    if 'enabled' in gravity and not isinstance(gravity['enabled'], bool):
+        return False, "environment.gravity.enabled must be a boolean"
+
+    if 'magnitude' in gravity:
+        ok, error = _validate_gravity_magnitude(gravity['magnitude'], 'environment.gravity.magnitude')
+        if not ok:
+            return False, error
+
+    if 'direction' in gravity:
+        direction = gravity['direction']
+        valid_vector = (
+            isinstance(direction, (list, tuple)) and len(direction) == 3 and
+            all(isinstance(c, (int, float)) and not isinstance(c, bool) and math.isfinite(c) for c in direction)
+        )
+        if not valid_vector:
+            return False, "environment.gravity.direction must be [x, y, z] with finite numbers"
+        if math.sqrt(sum(float(c) ** 2 for c in direction)) == 0.0:
+            return False, "environment.gravity.direction must not be the zero vector"
+
+    return True, None
+
+
+def resolve_gravity(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Resolve the effective gravity settings of a web payload.
+
+    Gravity is owned by the environment domain: ``environment.gravity`` is the
+    current contract. The legacy ``physics.enable_gravity`` and
+    ``physics.gravity_magnitude`` fields are still accepted so older clients and
+    saved configs keep working; ``environment.gravity`` wins when both exist.
+
+    Returns:
+        Dict with ``enabled``, ``magnitude``, ``direction`` (unit vector),
+        ``vector`` (m/s^2, zero when disabled) and ``source``
+        (``environment`` or ``legacy_physics`` or ``default``).
+    """
+    enabled = True
+    magnitude = DEFAULT_GRAVITY_MAGNITUDE
+    direction = list(DEFAULT_GRAVITY_DIRECTION)
+    source = 'default'
+
+    physics = config.get('physics') if isinstance(config, dict) else None
+    if isinstance(physics, dict):
+        if 'enable_gravity' in physics:
+            enabled = bool(physics['enable_gravity'])
+            source = 'legacy_physics'
+        if 'gravity_magnitude' in physics:
+            magnitude = float(physics['gravity_magnitude'])
+            source = 'legacy_physics'
+
+    environment = config.get('environment') if isinstance(config, dict) else None
+    gravity = environment.get('gravity') if isinstance(environment, dict) else None
+    if isinstance(gravity, dict):
+        if 'enabled' in gravity:
+            enabled = bool(gravity['enabled'])
+        if 'magnitude' in gravity:
+            magnitude = float(gravity['magnitude'])
+        if 'direction' in gravity:
+            direction = [float(c) for c in gravity['direction']]
+        source = 'environment'
+
+    norm = math.sqrt(sum(c * c for c in direction)) or 1.0
+    direction = [c / norm for c in direction]
+    vector = [c * magnitude for c in direction] if enabled else [0.0, 0.0, 0.0]
+
+    return {
+        'enabled': enabled,
+        'magnitude': magnitude,
+        'direction': direction,
+        'vector': vector,
+        'source': source,
+    }
 
 
 def normalize_config_for_simulator(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -374,6 +490,19 @@ def normalize_config_for_simulator(config: Dict[str, Any]) -> Dict[str, Any]:
         mission_environment = normalized.setdefault('mission_environment', {})
         integrator_config = mission_environment.setdefault('integrator_config', {})
         integrator_config['method'] = physics['integrator_type']
+
+    # Gravity belongs to the environment domain. Keep one canonical block; the web
+    # server seeds the effective vector into GeneralState.gravity. Plugin parameters
+    # are plugin-owned (docs/CONFIG_REFERENCE.md), so nothing is injected into them.
+    gravity = resolve_gravity(normalized)
+    environment = normalized.get('environment')
+    if not isinstance(environment, dict):
+        environment = normalized['environment'] = {}
+    environment['gravity'] = {
+        'enabled': gravity['enabled'],
+        'magnitude': gravity['magnitude'],
+        'direction': gravity['direction'],
+    }
 
     # Ensure ipc block exists for IPC mode throttling defaults.
     ipc = normalized.setdefault('ipc', {})

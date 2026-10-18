@@ -199,7 +199,22 @@ const UI = {
     },
     
     /**
+     * Read the gravity direction inputs as [x, y, z] (defaults to straight down).
+     */
+    getGravityDirection() {
+        const read = (id, fallback) => {
+            const value = parseFloat(document.getElementById(id)?.value);
+            return Number.isFinite(value) ? value : fallback;
+        };
+        return [read('gravity-dir-x', 0), read('gravity-dir-y', 0), read('gravity-dir-z', -1)];
+    },
+
+    /**
      * Get form configuration
+     *
+     * Plugins are intentionally NOT part of this payload: their enabled state and
+     * parameters live in the backend registry (toggled with /api/plugins/*), which is
+     * the single source of truth the simulator is started from.
      */
     getFormConfig() {
         const timeStep = parseFloat(document.getElementById('time-step')?.value || 0.1);
@@ -207,6 +222,7 @@ const UI = {
         const maxIterations = (timeStep > 0 && duration > 0)
             ? Math.max(1, Math.ceil(duration / timeStep))
             : 1000;
+        const gravityMagnitude = parseFloat(document.getElementById('gravity-magnitude')?.value);
 
         const config = {
             simulation: {
@@ -218,21 +234,17 @@ const UI = {
                 log_file: 'logs/molab_web.log'
             },
             physics: {
-                enable_gravity: document.getElementById('enable-gravity')?.checked ?? true,
-                gravity_magnitude: parseFloat(document.getElementById('gravity-magnitude')?.value || 9.81),
                 enable_atmospheric_drag: document.getElementById('enable-drag')?.checked ?? false,
                 integration_tolerance: 1e-6,
                 integrator_type: document.getElementById('integrator-type')?.value || 'runge_kutta_4'
             },
-            plugins: (window.availablePlugins || [])
-                .filter(p => p.enabled)
-                .map(p => ({
-                    name: p.id || p.name,
-                    type: Number.isInteger(p.type) ? p.type : 0,
-                    library_path: p.library_path || '',
-                    enabled: true,
-                    parameters: p.parameters || {}
-                })),
+            environment: {
+                gravity: {
+                    enabled: document.getElementById('enable-gravity')?.checked ?? true,
+                    magnitude: Number.isFinite(gravityMagnitude) ? gravityMagnitude : 9.81,
+                    direction: this.getGravityDirection()
+                }
+            },
             output: {
                 enable_csv: document.getElementById('enable-csv')?.checked ?? true,
                 enable_json: document.getElementById('enable-json')?.checked ?? false,
@@ -264,11 +276,11 @@ const UI = {
         
         if (config.physics) {
             const phys = config.physics;
-            this.setCheckboxValue('enable-gravity', phys.enable_gravity);
-            this.setInputValue('gravity-magnitude', phys.gravity_magnitude);
             this.setCheckboxValue('enable-drag', phys.enable_atmospheric_drag);
             this.setInputValue('integrator-type', phys.integrator_type);
         }
+
+        this.setGravityFormValues(config);
         
         if (config.output) {
             const out = config.output;
@@ -299,6 +311,88 @@ const UI = {
         }
     },
     
+    /**
+     * Fill the gravity inputs from a config. `environment.gravity` is the current
+     * contract; `physics.enable_gravity` / `physics.gravity_magnitude` are the
+     * deprecated fields still found in older saved configs and templates.
+     */
+    setGravityFormValues(config) {
+        const legacy = config.physics || {};
+        const gravity = (config.environment && config.environment.gravity) || {};
+
+        const enabled = gravity.enabled !== undefined ? gravity.enabled : legacy.enable_gravity;
+        const magnitude = gravity.magnitude !== undefined ? gravity.magnitude : legacy.gravity_magnitude;
+
+        this.setCheckboxValue('enable-gravity', enabled);
+        this.setInputValue('gravity-magnitude', magnitude);
+
+        if (Array.isArray(gravity.direction) && gravity.direction.length === 3) {
+            this.setInputValue('gravity-dir-x', gravity.direction[0]);
+            this.setInputValue('gravity-dir-y', gravity.direction[1]);
+            this.setInputValue('gravity-dir-z', gravity.direction[2]);
+        }
+    },
+
+    /**
+     * Render the gravity notice under the gravity inputs.
+     *
+     * Gravity only affects a trajectory when an enabled plugin applies it, either from the
+     * vector in the state ("state_vector", e.g. the Example Plugin) or with its own model
+     * ("own_model", the Environment module). The notice explains which case applies, and
+     * warns when gravity would be missing or applied twice.
+     *
+     * @param {Object|null} env  Response of GET /api/environment (null = unknown)
+     */
+    renderGravityNotice(env) {
+        const notice = document.getElementById('gravity-notice');
+        if (!notice) {
+            return;
+        }
+
+        notice.className = 'gravity-notice';
+        notice.textContent = '';
+
+        if (!env) {
+            return;
+        }
+
+        const gravity = this.getFormConfig().environment.gravity;
+        const wantsGravity = gravity.enabled && gravity.magnitude > 0;
+        const providers = env.gravity_providers || [];
+        const ownModel = providers.filter(p => p.mode === 'own_model').map(p => p.id);
+        const fromState = providers.filter(p => p.mode === 'state_vector').map(p => p.id);
+
+        const show = (kind, text) => {
+            notice.classList.add(kind);
+            notice.textContent = text;
+        };
+
+        if (providers.length > 1) {
+            show('warning',
+                `Gravity is applied by more than one plugin (${providers.map(p => p.id).join(', ')}): ` +
+                'their forces add up and the vehicle falls too fast. Keep only one.');
+        } else if (ownModel.length && !wantsGravity) {
+            show('warning',
+                `Gravity is off here, but ${ownModel.join(', ')} applies its own gravity model and cannot be ` +
+                'switched off from the panel. Disable that plugin to remove gravity.');
+        } else if (ownModel.length) {
+            show('info',
+                `${ownModel.join(', ')} applies its own gravity model (about 9.8 m/s² toward the ground). ` +
+                'The magnitude and direction above are only written to the simulation state and the CSV.');
+        } else if (fromState.length && wantsGravity) {
+            show('info', `Gravity is applied by ${fromState.join(', ')} using the vector above.`);
+        } else if (!wantsGravity) {
+            show('info', 'Gravity is off: nothing will accelerate the vehicle downwards.');
+        } else {
+            show('warning',
+                env.environment_plugin && !env.environment_plugin.available
+                    ? 'Gravity is enabled, but nothing applies it: the Environment module is not built in this checkout. '
+                      + 'Enable the Example Plugin and turn on "Apply Gravity" to see it in action.'
+                    : 'Gravity is enabled, but no enabled plugin applies it. Enable the Environment module '
+                      + 'or the Example Plugin with "Apply Gravity".');
+        }
+    },
+
     /**
      * Show error modal
      */

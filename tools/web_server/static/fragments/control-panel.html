@@ -10,7 +10,14 @@
         </div>
         <div id="progress-text" class="progress-text">0% - Initializing...</div>
         <div id="progress-message" class="progress-message"></div>
+        <div id="progress-warnings" class="progress-warnings" role="alert"></div>
     </div>
+
+    <!-- Simulator log (IPC "log" events), kept after the run finishes -->
+    <details id="job-log-details" class="job-log" style="display: none;">
+        <summary>Simulator log <span id="job-log-count"></span></summary>
+        <pre id="job-log"></pre>
+    </details>
 
     <!-- Control Buttons -->
     <div class="control-buttons">

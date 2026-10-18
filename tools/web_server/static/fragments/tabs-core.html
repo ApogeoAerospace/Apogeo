@@ -62,19 +62,6 @@
 
     <div class="form-row">
         <div class="form-group">
-            <label>
-                <input type="checkbox" id="enable-gravity" checked>
-                Enable Gravity
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="gravity-magnitude">Gravity (m/s²)</label>
-            <input type="number" id="gravity-magnitude" min="0" max="50" step="0.01" value="9.81">
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="form-group">
             <label for="integrator-type">Integrator</label>
             <select id="integrator-type">
                 <option value="euler">Euler</option>
@@ -89,11 +76,58 @@
             </label>
         </div>
     </div>
+
+    <fieldset class="environment-fieldset">
+        <legend>🌍 Environment · Gravity</legend>
+        <p class="field-hint">
+            These values are written to <code>GeneralState.gravity</code> (and the output CSV). The core
+            does not apply gravity to the dynamics: a plugin has to. The Example Plugin does it with
+            <code>apply_gravity</code> using this vector; the Environment module uses its own model and
+            ignores it.
+        </p>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="enable-gravity" checked>
+                    Enable Gravity
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="gravity-magnitude">Magnitude (m/s²)</label>
+                <input type="number" id="gravity-magnitude" min="0" max="50" step="0.01" value="9.81">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="gravity-dir-x">Direction X</label>
+                <input type="number" id="gravity-dir-x" step="any" value="0">
+            </div>
+            <div class="form-group">
+                <label for="gravity-dir-y">Direction Y</label>
+                <input type="number" id="gravity-dir-y" step="any" value="0">
+            </div>
+            <div class="form-group">
+                <label for="gravity-dir-z">Direction Z</label>
+                <input type="number" id="gravity-dir-z" step="any" value="-1">
+            </div>
+        </div>
+
+        <div id="gravity-notice" class="gravity-notice" role="status" aria-live="polite"></div>
+    </fieldset>
 </section>
 
 <!-- Tab Content: Plugins -->
 <section id="plugins-tab" class="tab-content">
-    <h3>🔌 Plugin Configuration</h3>
+    <div class="plugins-toolbar">
+        <h3>🔌 Plugin Configuration</h3>
+        <button type="button" class="btn btn-secondary" data-action="reset-plugins">Reset to defaults</button>
+    </div>
+    <p class="field-hint">
+        Changes are applied immediately in the backend and kept between page reloads.
+        Plugins whose library has not been built cannot be enabled.
+    </p>
     <div id="plugins-list">
         <p class="loading">Loading plugins...</p>
     </div>

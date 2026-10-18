@@ -8,6 +8,22 @@ from pathlib import Path
 
 from ..logger import setup_logger
 
+# Largest request body the API accepts (a full simulation config is a few KB).
+MAX_BODY_BYTES = 1024 * 1024
+
+
+def allowed_cors_origin(config, origin: Optional[str]) -> Optional[str]:
+    """
+    Return ``origin`` when it is on the server's allow-list, otherwise ``None``.
+
+    The API can start processes and write files, so it must not answer
+    ``Access-Control-Allow-Origin: *``. Same-origin requests (the bundled UI) need
+    no CORS header at all; the allow-list only serves separate dev servers.
+    """
+    if origin and origin in getattr(config, 'allowed_origins', []):
+        return origin
+    return None
+
 
 class BaseHandler:
     """Base class for all handlers"""
@@ -34,14 +50,19 @@ class BaseHandler:
             data: Data to send as JSON
             status_code: HTTP status code
         """
+        payload = json.dumps(data, indent=2).encode('utf-8')
+
         request_handler.send_response(status_code)
         request_handler.send_header('Content-type', 'application/json')
-        request_handler.send_header('Access-Control-Allow-Origin', '*')
+        request_handler.send_header('Content-Length', str(len(payload)))
         request_handler.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        request_handler.send_header('Vary', 'Origin')
+        allowed = allowed_cors_origin(self.config, request_handler.headers.get('Origin'))
+        if allowed:
+            request_handler.send_header('Access-Control-Allow-Origin', allowed)
         request_handler.end_headers()
-        
-        json_data = json.dumps(data, indent=2)
-        request_handler.wfile.write(json_data.encode('utf-8'))
+
+        request_handler.wfile.write(payload)
     
     def send_error_response(self, request_handler: SimpleHTTPRequestHandler,
                            message: str, status_code: int = 400):
@@ -91,6 +112,9 @@ class BaseHandler:
         try:
             content_length = int(request_handler.headers.get('Content-Length', 0))
             if content_length == 0:
+                return None
+            if content_length > MAX_BODY_BYTES:
+                self.logger.error(f"Request body too large: {content_length} bytes")
                 return None
             
             post_data = request_handler.rfile.read(content_length)

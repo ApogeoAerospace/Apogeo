@@ -231,6 +231,9 @@ IPC runtime note:
 - File paths may be relative to the process working directory or repository root, depending on launcher/runtime.
 - Units should be treated as mandatory contract where specified (seconds, deg/s, MB, etc.).
 - `plugins[].parameters` keys are plugin-owned and may vary by plugin implementation.
-- Gravity is carried in the serialized initial state (`GeneralState.gravity`) and is consumed by the physics integration path as part of the force model.
-  It is not configured or owned by `PluginManager`.
-- The web UI legacy `physics.enable_gravity` / `physics.gravity_magnitude` fields are normalized into the initial state by the web server before simulation starts.
+- Gravity is carried in the serialized initial state (`GeneralState.gravity`), preserved when the state buffer is rebuilt, and written to the output.
+  The core does **not** apply it to the dynamics (the integrator only uses forces returned by plugins) and `PluginManager` does not own it.
+  A plugin has to turn it into a force: `example_plugin` with `apply_gravity` reads this vector, while the legacy Environment module computes its own gravity and ignores it.
+- The web server resolves gravity from `environment.gravity` (`enabled`, `magnitude`, `direction`) and seeds it into the initial state before the simulator starts.
+  The legacy `physics.enable_gravity` / `physics.gravity_magnitude` fields are still accepted and normalized the same way; `environment.gravity` wins when both are present.
+  See [WEB_CONTROL_PANEL.md](./WEB_CONTROL_PANEL.md#gravity).

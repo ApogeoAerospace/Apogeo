@@ -50,4 +50,4 @@ echo "🌐 Starting MoLab web interface"
 echo "   URL: http://localhost:8082"
 echo "   Stop with Ctrl+C"
 
-exec ${PYTHON_CMD} tools/molab_web_gui_v2.py
+exec ${PYTHON_CMD} tools/web_gui.py

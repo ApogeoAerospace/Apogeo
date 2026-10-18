@@ -8,11 +8,16 @@
     "log_file": "logs/molab_web.log"
   },
   "physics": {
-    "enable_gravity": true,
-    "gravity_magnitude": 9.81,
     "enable_atmospheric_drag": false,
     "integration_tolerance": 1e-06,
     "integrator_type": "runge_kutta_4"
+  },
+  "environment": {
+    "gravity": {
+      "enabled": true,
+      "magnitude": 9.81,
+      "direction": [0, 0, -1]
+    }
   },
   "plugins": [
     {

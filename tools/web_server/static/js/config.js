@@ -15,7 +15,10 @@ const CONFIG = {
         RESULTS_GET: '/api/results',
         CONFIG_SAVE: '/api/config/save',
         CONFIG_LOAD: '/api/config/load',
-        CONFIG_GET: '/api/config'
+        CONFIG_GET: '/api/config',
+        PLUGINS_PRESET: '/api/plugins/preset',
+        PLUGINS_RESET: '/api/plugins/reset',
+        ENVIRONMENT: '/api/environment'
     },
     
     // Polling intervals
@@ -49,13 +52,18 @@ const CONFIG = {
             log_file: "logs/molab_web.log"
         },
         physics: {
-            enable_gravity: true,
-            gravity_magnitude: 9.81,
             enable_atmospheric_drag: false,
             integration_tolerance: 1e-6,
             integrator_type: "runge_kutta_4"
         },
-        plugins: [],
+        // Gravity belongs to the environment domain (it is no longer a core physics setting).
+        environment: {
+            gravity: {
+                enabled: true,
+                magnitude: 9.81,
+                direction: [0, 0, -1]
+            }
+        },
         output: {
             enable_csv: true,
             enable_json: false,

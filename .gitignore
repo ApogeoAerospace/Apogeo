@@ -66,3 +66,6 @@ vcpkg_installed/
 /vcpkg_installed/vcpkg/status
 docs/generated/
 /Testing/Temporary
+
+# Web panel runtime state: plugin toggles/parameters chosen from the UI and temporary configs
+data/config/
