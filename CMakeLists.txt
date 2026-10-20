@@ -241,8 +241,6 @@ set_property(TARGET propulsion APPEND PROPERTY LINK_DEPENDS
 # --- Deprecated Plugins ---
 
 set(DEPRECATED_PLUGIN_NAMES
-    aerodynamics
-    environment
 )
 
 # Standardized plugin output layout:
