@@ -20,7 +20,14 @@ def allowed_cors_origin(config, origin: Optional[str]) -> Optional[str]:
     ``Access-Control-Allow-Origin: *``. Same-origin requests (the bundled UI) need
     no CORS header at all; the allow-list only serves separate dev servers.
     """
-    if origin and origin in getattr(config, 'allowed_origins', []):
+    if not origin:
+        return None
+
+    # Prevent HTTP response splitting via header value injection.
+    if '\r' in origin or '\n' in origin:
+        return None
+
+    if origin in getattr(config, 'allowed_origins', []):
         return origin
     return None
 
