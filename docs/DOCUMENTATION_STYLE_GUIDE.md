@@ -1,12 +1,12 @@
-# Documentation Style Guide - MoLab
+# Documentation Style Guide - Apogeo
 
 > Status: **Implemented (active official guide)**
 
-This document defines the official standard for documentation inside the MoLab source code. The entire team should follow these conventions to keep consistency and enable automated documentation generation.
+This document defines the official standard for documentation inside the Apogeo source code. The entire team should follow these conventions to keep consistency and enable automated documentation generation.
 
 ## Official Tool: Doxygen
 
-MoLab uses **Doxygen** as its documentation tool. Doxygen reads special comments in the code and generates HTML, PDF, or LaTeX documentation automatically.
+Apogeo uses **Doxygen** as its documentation tool. Doxygen reads special comments in the code and generates HTML, PDF, or LaTeX documentation automatically.
 
 ### Doxygen installation
 

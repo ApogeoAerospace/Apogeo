@@ -9,7 +9,7 @@
  */
 
 using json = nlohmann::json;
-using namespace MoLab;
+using namespace Apogeo;
 
 class ConfigManagerTest : public ::testing::Test {
 protected:

@@ -1,7 +1,7 @@
 # Scripts
 # Scripts
 
-Cross-platform helper scripts for MoLab.
+Cross-platform helper scripts for Apogeo.
 
 ## Dependency check
 - macOS/Linux: `./scripts/install_dependencies.sh`

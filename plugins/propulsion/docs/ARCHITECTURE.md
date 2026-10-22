@@ -2,13 +2,13 @@
 
 ## 1. Purpose
 
-This design defines the internal structure of the MoLab propulsion plugin. It
+This design defines the internal structure of the Apogeo propulsion plugin. It
 supports multiple engines and tanks while keeping engine physics, propellant
 consumption, host communication, and configuration independent.
 
 The design has two public boundaries:
 
-1. The stable C ABI consumed by `MoLab::PluginManager`.
+1. The stable C ABI consumed by `Apogeo::PluginManager`.
 2. The typed C++ `IPropulsionModule` contract used inside the plugin.
 
 The C boundary preserves dynamic loading across compilers and platforms. The C++

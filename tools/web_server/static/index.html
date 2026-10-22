@@ -41,7 +41,7 @@
         setTimeout(showStartButton, 5000);
 
         // If video falls, the idea is that it puts a black wallpaper and we can start normally
-        
+
         video.addEventListener('error', () => {
             setTimeout(showStartButton, 5000);
         }, { once: true });

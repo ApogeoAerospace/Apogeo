@@ -49,7 +49,7 @@ private:
 } // namespace propulsion
 
 /**
- * @brief Public C ABI consumed by MoLab::PluginManager.
+ * @brief Public C ABI consumed by Apogeo::PluginManager.
  *
  * These declarations intentionally match src/api/plugin_api.h. Keeping this
  * boundary free of C++ types preserves dynamic-loading compatibility.

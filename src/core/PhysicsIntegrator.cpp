@@ -10,7 +10,7 @@
 
 namespace odeint = boost::numeric::odeint;
 
-namespace MoLab {
+namespace Apogeo {
 
 namespace {
 
@@ -294,4 +294,4 @@ PhysicsState PhysicsIntegrator::fromFlatBuffer(const state_vector::GeneralState*
 
 // PluginManager is responsible for rebuilding the state FlatBuffer.
 
-} // namespace MoLab
+} // namespace Apogeo
