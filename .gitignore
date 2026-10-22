@@ -64,7 +64,6 @@ vcpkg_installed/
 /vcpkg_installed/vcpkg/compiler-file-hash-cache.json
 /vcpkg_installed/vcpkg/manifest-info.json
 /vcpkg_installed/vcpkg/status
-docs/generated/
 /Testing/Temporary
 
 # Web panel runtime state: plugin toggles/parameters chosen from the UI and temporary configs
