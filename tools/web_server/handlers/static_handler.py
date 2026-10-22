@@ -21,7 +21,11 @@ class StaticHandler(BaseHandler):
         '.jpeg': 'image/jpeg',
         '.gif': 'image/gif',
         '.svg': 'image/svg+xml',
-        '.ico': 'image/x-icon'
+        '.ico': 'image/x-icon',
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.woff2': 'font/woff2',
+        '.map': 'application/json'
     }
     
     def handle_static_file(self, request_handler: SimpleHTTPRequestHandler, 
@@ -49,17 +53,23 @@ class StaticHandler(BaseHandler):
         # Construct full file path
         full_path = self.config.static_dir / file_path
         
-        # Additional security: verify the resolved path is under static_dir
+        # Additional security: verify the resolved path is under static_dir.
+        # relative_to avoids the prefix trap of a sibling like "static_evil/".
         try:
             full_path = full_path.resolve()
-            if not str(full_path).startswith(str(self.config.static_dir.resolve())):
-                request_handler.send_error(403, "Forbidden")
-                return
-        except Exception:
+            full_path.relative_to(self.config.static_dir.resolve())
+        except (ValueError, OSError):
             request_handler.send_error(403, "Forbidden")
             return
-        
+
         if not full_path.exists():
+            # Browsers always ask for /favicon.ico; answer quietly instead of a 404
+            # that shows up as a console error.
+            if file_path == 'favicon.ico':
+                request_handler.send_response(204)
+                request_handler.end_headers()
+                return
+
             # Provide helpful message for missing files
             if file_path == 'index.html':
                 error_msg = (

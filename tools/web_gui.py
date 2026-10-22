@@ -22,7 +22,8 @@ from pathlib import Path
 # Add web_server package to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from web_server import ServerConfig, ApogeoWebServer
+from web_server import ServerConfig, MoLabWebServer
+from web_server.server import PortInUseError
 from web_server.logger import setup_logger
 
 
@@ -83,6 +84,9 @@ def main():
         
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
+        sys.exit(1)
+    except PortInUseError as e:
+        logger.error(str(e))
         sys.exit(1)
     except KeyboardInterrupt:
         logger.info("\nShutting down gracefully...")
