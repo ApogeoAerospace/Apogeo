@@ -1,7 +1,7 @@
 #!/bin/bash
 #!/usr/bin/env bash
 
-# MoLab Web Interface Launcher (cross-platform)
+# Apogeo Web Interface Launcher (cross-platform)
 
 set -euo pipefail
 
@@ -46,7 +46,7 @@ if [ ! -f "${SIMULATOR}" ]; then
     exit 1
 fi
 
-echo "🌐 Starting MoLab web interface"
+echo "🌐 Starting Apogeo web interface"
 echo "   URL: http://localhost:8082"
 echo "   Stop with Ctrl+C"
 

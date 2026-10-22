@@ -9,7 +9,7 @@
  * @brief Unit tests for `PhysicsIntegrator`.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 
 // ---------------------------------------------------------------------------
 // Fixture base

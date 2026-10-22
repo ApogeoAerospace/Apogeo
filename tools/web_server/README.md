@@ -1,4 +1,4 @@
-# MoLab Web Server
+﻿# Apogeo Web Server
 
 Local web control panel for MoLab. It starts the simulator in `--ipc stdio` mode, manages the
 plugin set and shows progress and results. Full documentation:

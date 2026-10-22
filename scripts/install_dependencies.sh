@@ -1,11 +1,11 @@
 #!/bin/bash
 #!/usr/bin/env bash
 
-# MoLab Dependencies Checker (cross-platform guidance)
+# Apogeo Dependencies Checker (cross-platform guidance)
 
 set -euo pipefail
 
-echo "🔧 MoLab dependency check"
+echo "🔧 Apogeo dependency check"
 
 command_exists() {
     command -v "$1" >/dev/null 2>&1

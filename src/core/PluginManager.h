@@ -32,12 +32,12 @@ enum class PluginType {
 };
 
 // Forward declarations
-namespace MoLab {
+namespace Apogeo {
     class PhysicsIntegrator;
     class PluginTaskScheduler;
 }
 
-namespace MoLab {
+namespace Apogeo {
 
 /**
  * @struct LoadedPlugin
@@ -227,7 +227,7 @@ private:
     void cleanup_plugin(LoadedPlugin& plugin);
 
     // Physics integrator
-    std::unique_ptr<MoLab::PhysicsIntegrator> physics_integrator_;
+    std::unique_ptr<Apogeo::PhysicsIntegrator> physics_integrator_;
 
     // Task scheduler for parallel plugins
     std::unique_ptr<PluginTaskScheduler> task_scheduler_;
@@ -238,6 +238,6 @@ private:
     mutable std::mutex force_mutex_;
 };
 
-} // namespace MoLab
+} // namespace Apogeo
 
 #endif

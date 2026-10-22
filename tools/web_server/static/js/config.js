@@ -49,7 +49,7 @@ const CONFIG = {
             max_iterations: 1000,
             enable_logging: true,
             log_level: "INFO",
-            log_file: "logs/molab_web.log"
+            log_file: "logs/apogeo_web.log"
         },
         physics: {
             enable_atmospheric_drag: false,

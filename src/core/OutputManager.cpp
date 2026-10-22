@@ -14,7 +14,7 @@
  * @brief Implementation of result export and asynchronous output writing.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 
 OutputManager& OutputManager::getInstance() {
   static OutputManager instance;

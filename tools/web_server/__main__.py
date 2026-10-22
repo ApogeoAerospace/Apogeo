@@ -21,7 +21,7 @@ def main():
         config = ServerConfig()
         config.validate()
         
-        server = MoLabWebServer(config)
+        server = ApogeoWebServer(config)
         server.start()
         
     except PortInUseError as e:

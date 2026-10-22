@@ -9,7 +9,7 @@
  * errors, and events used by the IPC command channel.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 
 TEST(CommandEventProtocolTest, ParseCommandJsonLineValidAndInvalid) {
     ParsedCommand command;

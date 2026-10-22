@@ -5,7 +5,7 @@
 
 /**
  * @file plugin_api.h
- * @brief C interoperability contract between the MoLab host and dynamic plugins.
+ * @brief C interoperability contract between the Apogeo host and dynamic plugins.
  */
 
 // Definition of PLUGIN_EXPORT macro for plugin function exports
