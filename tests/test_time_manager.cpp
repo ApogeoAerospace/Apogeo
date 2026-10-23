@@ -8,7 +8,7 @@
  * @brief Unit tests for `TimeManager`.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 
 class TimeManagerTest : public ::testing::Test {
 protected:

@@ -9,6 +9,6 @@
  */
 
 TEST(FlightComputerTest, LoadScriptSuccessfully) {
-    MoLab::FlightComputerContext context("scripts/vuelo_test.lua");
+    Apogeo::FlightComputerContext context("scripts/vuelo_test.lua");
     EXPECT_TRUE(context.is_valid());
 }

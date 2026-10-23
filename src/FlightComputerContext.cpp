@@ -7,7 +7,7 @@
  * @brief Implementation of the embedded Lua flight computer context.
  */
 
-namespace MoLab {
+namespace Apogeo {
 
 FlightComputerContext::FlightComputerContext(const std::string& script_path) {
     // ==========================================
@@ -223,4 +223,4 @@ void FlightComputerContext::update(const state_vector::GeneralState* in,
     fbb.Finish(general_state);
 }
 
-} // namespace MoLab
+} // namespace Apogeo

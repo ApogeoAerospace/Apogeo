@@ -38,7 +38,7 @@ venv/
 
 # GUI temporary files
 gui_temp_*.json
-molab_gui_*.json
+apogeo_gui_*.json
 
 # OS specific
 .DS_Store

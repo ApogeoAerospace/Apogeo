@@ -13,7 +13,7 @@
  * @brief Unit tests for `OutputManager`.
  */
 
-using namespace MoLab;
+using namespace Apogeo;
 namespace fs = std::filesystem;
 
 static std::vector<uint8_t> make_state_buffer() {

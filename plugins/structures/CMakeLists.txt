@@ -14,19 +14,19 @@ find_package(flatbuffers CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # Repository root directory (this CMake lives in plugins/structures).
-get_filename_component(MOLAB_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+get_filename_component(APOGEO_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 
 # Allows overriding generated FlatBuffers headers directory from CLI.
-set(MOLAB_GENERATED_DIR "" CACHE PATH "Directory containing state_vector_generated.h")
+set(APOGEO_GENERATED_DIR "" CACHE PATH "Directory containing state_vector_generated.h")
 
 # Resolves FlatBuffers-generated include path.
 set(_generated_candidates)
-if(MOLAB_GENERATED_DIR)
-    list(APPEND _generated_candidates "${MOLAB_GENERATED_DIR}")
+if(APOGEO_GENERATED_DIR)
+    list(APPEND _generated_candidates "${APOGEO_GENERATED_DIR}")
 endif()
 list(APPEND _generated_candidates
-    "${MOLAB_ROOT_DIR}/build/generated"
-    "${MOLAB_ROOT_DIR}/out/build/generated"
+    "${APOGEO_ROOT_DIR}/build/generated"
+    "${APOGEO_ROOT_DIR}/out/build/generated"
     "${CMAKE_BINARY_DIR}/generated"
 )
 
@@ -41,7 +41,7 @@ endforeach()
 if(NOT GENERATED_INCLUDE_DIR)
     message(FATAL_ERROR
         "state_vector_generated.h was not found. "
-        "Build the root project first or pass -DMOLAB_GENERATED_DIR=<path>/generated")
+        "Build the root project first or pass -DAPOGEO_GENERATED_DIR=<path>/generated")
 endif()
 
 # Plugin library.
@@ -52,8 +52,8 @@ add_library(structures SHARED
 
 # Include directories.
 target_include_directories(structures PRIVATE
-    "${MOLAB_ROOT_DIR}/src/api"
-    "${MOLAB_ROOT_DIR}/plugins/structures"
+    "${APOGEO_ROOT_DIR}/src/api"
+    "${APOGEO_ROOT_DIR}/plugins/structures"
     "${GENERATED_INCLUDE_DIR}"
 )
 

@@ -1,4 +1,4 @@
-﻿# MoLab Web Server
+﻿# Apogeo Web Server
 
 Backend/frontend module to run simulations and visualize results from a browser.
 
@@ -33,15 +33,15 @@ tools/web_server/
 Desde la raiz del repositorio:
 
 ```bash
-python tools/molab_web_gui_v2.py
+python tools/web_gui.py
 ```
 
 Common options:
 
 ```bash
-python tools/molab_web_gui_v2.py --port 8080
-python tools/molab_web_gui_v2.py --no-browser
-python tools/molab_web_gui_v2.py --verbose
+python tools/web_gui.py --port 8080
+python tools/web_gui.py --no-browser
+python tools/web_gui.py --verbose
 ```
 
 ## Main endpoints

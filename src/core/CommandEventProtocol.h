@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <nlohmann/json.hpp>
 
-namespace MoLab {
+namespace Apogeo {
 
 struct ParsedCommand {
     std::string command;
@@ -106,4 +106,4 @@ inline nlohmann::json buildEventJson(const std::string& event_name,
     return event;
 }
 
-} // namespace MoLab
+} // namespace Apogeo
