@@ -1,0 +1,31 @@
+#
+# ARCHIVO DE DATOS DE REFERENCIA AERODINAMICA - CASO NACA 0012
+# Proyecto: MOLAB - Validacion del modulo de aerodinamica
+# Perfil: NACA 0012 (definicion TMR de borde de salida afilado, espesor 11.894% c)
+# Condiciones: Re = 6.0e6, M = 0.15, flujo esencialmente incompresible, capa limite disparada (tripped)
+# Fuente primaria: Ladson, C. L., NASA TM 4074 (1988). https://ntrs.nasa.gov/citations/19880019495
+# Curado por: NASA Langley Turbulence Modeling Resource (TMR), caso 2DN00
+#   https://tmbwg.github.io/turbmodels/naca0012_val.html
+#
+# COLUMNA estado_dato:
+#   EXPERIMENTAL  = valor experimental de Ladson, verificado contra fuente publicada.
+#   DERIVADO      = valor obtenido por ajuste lineal anclado en los puntos EXPERIMENTAL.
+#                   NO es un dato medido. Uso permitido: pruebas de humo en regimen lineal.
+#                   NO usar como criterio de aceptacion formal.
+#   PENDIENTE     = requiere extraccion del archivo primario CLCD_Ladson_expdata.dat del TMR
+#                   antes de habilitarse como caso de validacion.
+#
+# NOTA Cm_c4: el perfil es simetrico, por lo que teoricamente Cm_c/4 = 0 en regimen lineal.
+#   Los valores medidos reales no se han verificado y se marcan PENDIENTE.
+#
+alpha_deg,Cl,Cd,Cm_c4,Re,Mach,estado_dato,fuente
+0.0,0.0000,0.00810,0.0,6.0e6,0.15,EXPERIMENTAL,Ladson NASA TM 4074 (1988) tripped
+2.5,0.2647,,,6.0e6,0.15,DERIVADO,Ajuste lineal Cl=0.10586*alpha
+5.0,0.5293,,,6.0e6,0.15,DERIVADO,Ajuste lineal Cl=0.10586*alpha
+7.5,0.7940,,,6.0e6,0.15,DERIVADO,Ajuste lineal Cl=0.10586*alpha
+10.0,1.0586,0.01190,,6.0e6,0.15,EXPERIMENTAL,Ladson NASA TM 4074 (1988) tripped
+12.0,,,,6.0e6,0.15,PENDIENTE,Extraer de CLCD_Ladson_expdata.dat
+14.0,,,,6.0e6,0.15,PENDIENTE,Extraer de CLCD_Ladson_expdata.dat
+15.0,,,,6.0e6,0.15,PENDIENTE,Extraer de CLCD_Ladson_expdata.dat
+16.0,,,,6.0e6,0.15,PENDIENTE,Post-perdida; flujo fuertemente 3D en el ensayo
+17.0,,,,6.0e6,0.15,PENDIENTE,Post-perdida; flujo fuertemente 3D en el ensayo
