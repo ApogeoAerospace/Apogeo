@@ -169,6 +169,13 @@ IPC runtime note:
   Geometry data format (for example `csv`).
 
 ### `vehicle_models.propulsion_model`
+
+This section remains metadata only. The propulsion skeleton reads its CSV from
+`plugins[].parameters.engine_curves_path`, defaulting to
+`data/propulsion/engine_curves.csv` when explicitly configured. Paths are relative
+to the process working directory or absolute. See the
+[module contract](../plugins/propulsion/README.md). The default plugin entry is
+disabled because physical thrust and propellant consumption are not implemented.
 - `source.uri` (`string`, path/URI`)  
   Propulsion performance dataset location.
 - `source.format` (`string`)  
