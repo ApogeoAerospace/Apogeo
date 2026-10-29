@@ -278,7 +278,7 @@ class ApogeoWebServer:
         
         try:
             # Create server
-            with _ThreadingServer(("", self.config.port), MoLabRequestHandler) as httpd:
+            with _ThreadingServer(("", self.config.port), ApogeoRequestHandler) as httpd:
                 self.httpd = httpd
                 self.logger.info(f"Server started on http://localhost:{self.config.port}")
 
