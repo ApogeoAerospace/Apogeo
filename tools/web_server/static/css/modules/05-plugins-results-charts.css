@@ -386,3 +386,149 @@
     color: #721c24;
     border-left-color: #dc3545;
 }
+
+
+/* === Plugin switches, availability and gravity notice === */
+.plugins-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.plugin-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.plugin-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.plugin-switch input {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+
+.plugin-card.unavailable {
+    opacity: 0.7;
+    border-style: dashed;
+}
+
+.plugin-card.unavailable .plugin-switch,
+.plugin-card.unavailable .plugin-switch input {
+    cursor: not-allowed;
+}
+
+.plugin-card.busy {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.plugin-badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #e9ecef;
+    color: #495057;
+}
+
+.plugin-badge.warn {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.plugin-badge.ok {
+    background: #d4edda;
+    color: #155724;
+}
+
+.environment-fieldset {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.environment-fieldset legend {
+    padding: 0 0.5rem;
+    font-weight: 600;
+}
+
+.field-hint {
+    margin: 0.25rem 0 1rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.gravity-notice {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.gravity-notice:empty {
+    display: none;
+}
+
+.gravity-notice.info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.gravity-notice.warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.progress-warnings:empty {
+    display: none;
+}
+
+.progress-warnings {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 6px;
+    background: #fff3cd;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.job-log {
+    margin-top: 1rem;
+}
+
+.job-log pre {
+    max-height: 240px;
+    overflow: auto;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background: #212529;
+    color: #f8f9fa;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+}
+
+.job-log .log-WARNING { color: #ffc107; }
+.job-log .log-ERROR,
+.job-log .log-CRITICAL { color: #ff6b6b; }
+.job-log .log-DEBUG { color: #9aa0a6; }
+
+.plugin-note {
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid #ffc107;
+    background: #fff8e1;
+    color: #6b5400;
+    font-size: 0.85rem;
+}

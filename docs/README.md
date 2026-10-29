@@ -19,6 +19,8 @@ This directory contains the project's technical and functional documentation.
 - [Current configuration](./CONFIG.md)
 - [Configuration reference](./CONFIG_REFERENCE.md)
 - [IPC protocol](./IPC_PROTOCOL.md)
+- [IPC protocol: proposed extensions](./IPC_PROTOCOL_PROPOSALS.md)
+- [Web control panel](./WEB_CONTROL_PANEL.md)
 - [Plugin API](./PLUGIN_API.md)
 - [Structures module](./STRUCTURES_MODULE.md)
 - [Propulsion module](../plugins/propulsion/README.md)

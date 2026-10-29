@@ -1,11 +1,12 @@
 """API Handlers - Business logic for API endpoints"""
 from http.server import SimpleHTTPRequestHandler
-from pathlib import Path
 from datetime import datetime
+import os
 import platform
-from typing import Optional, List
+from typing import Any, Dict, List
 
 from .base_handler import BaseHandler
+from ..plugin_registry import PluginRegistry, PluginRegistryError
 from ..utils import (
     get_simulator_path,
     find_file_in_directories,
@@ -14,7 +15,8 @@ from ..utils import (
     read_json_file,
     sanitize_filename,
     validate_config,
-    normalize_config_for_simulator
+    normalize_config_for_simulator,
+    resolve_gravity,
 )
 
 
@@ -30,12 +32,12 @@ class StatusHandler(BaseHandler):
         simulator_path = get_simulator_path(self.config.build_dir)
         simulator_exists = simulator_path.exists()
         
-        # Additional checks
+        # os.access works on every platform; the POSIX mode bits do not exist on Windows.
         is_executable = False
         if simulator_exists:
             try:
-                is_executable = simulator_path.stat().st_mode & 0o111 != 0
-            except:
+                is_executable = simulator_path.is_file() and os.access(simulator_path, os.X_OK)
+            except OSError:
                 pass
         
         status = {
@@ -53,184 +55,255 @@ class StatusHandler(BaseHandler):
 
 
 class PluginsHandler(BaseHandler):
-    """Handler for plugins listing endpoint"""
-    
-    # Platform-specific library extensions
-    LIBRARY_EXTENSIONS = {
-        'Windows': ['.dll', '.pyd'],
-        'Darwin': ['.dylib', '.so'],
-        'Linux': ['.so']
-    }
-    
-    # Plugin metadata (UI-oriented; runtime config comes from JSON files)
-    PLUGIN_DEFINITIONS = {
-        "example_plugin": {
-            "display_name": "Example Plugin",
-            "description": "Example plugin for testing and demonstration"
-        },
-        "aerodynamics": {
-            "display_name": "Aerodynamics",
-            "description": "Real aerodynamic forces: drag, lift, compressibility effects"
-        },
-        "propulsion": {
-            "display_name": "Propulsion",
-            "description": "Rocket/jet propulsion with fuel consumption and altitude compensation"
-        },
-        "structures": {
-            "display_name": "Structures",
-            "description": "Mass tracking, center of gravity, and structural analysis"
-        },
-        "environment": {
-            "display_name": "Environment",
-            "description": "Atmospheric model, wind effects, and gravity variation"
-        },
-        "programming": {
-            "display_name": "Programming",
-            "description": "Programmable logic and control sequences"
-        }
-    }
+    """Handler for the plugin registry (list, toggle, parameters, presets)."""
 
-    def _resolve_library_path(self, library_path: str, extensions: List[str]) -> Optional[Path]:
-        """Resolve plugin library path against project/build layouts."""
-        if not library_path:
-            return None
+    def __init__(self, config, registry: PluginRegistry):
+        super().__init__(config)
+        self.registry = registry
 
-        candidate = Path(library_path)
-        if not candidate.is_absolute():
-            candidate = self.config.project_root / candidate
+    def _fail(self, request_handler: SimpleHTTPRequestHandler, error: PluginRegistryError):
+        self.send_json_response(request_handler, {
+            'success': False,
+            'error': error.message,
+            'code': error.code
+        }, error.status_code)
 
-        if candidate.exists():
-            return candidate
-
-        bases = [
-            self.config.project_root,
-            self.config.build_dir,
-            self.config.build_dir / "bin",
-            self.config.build_dir / "lib",
-            self.config.build_dir / "plugins"
-        ]
-
-        raw_name = Path(library_path).name
-        name_variants = {raw_name}
-        if raw_name.startswith("lib"):
-            name_variants.add(raw_name[3:])
-        else:
-            name_variants.add(f"lib{raw_name}")
-
-        for base in bases:
-            for name_variant in name_variants:
-                for ext in ["", *extensions]:
-                    p = base / f"{name_variant}{ext}"
-                    if p.exists():
-                        return p
-
-        return None
-    
     def handle(self, request_handler: SimpleHTTPRequestHandler, params: dict):
         """
         Handle GET /api/plugins
-        
-        Returns list of available plugins
+
+        Returns the effective plugin list: configuration defaults merged with the
+        state toggled from the panel, plus whether each library is built.
         """
-        plugins = []
+        self.send_json_response(request_handler, self.registry.list_plugins())
 
-        # Get platform-specific extensions
-        system = platform.system()
-        extensions = self.LIBRARY_EXTENSIONS.get(system, ['.so'])
+    def handle_toggle(self, request_handler: SimpleHTTPRequestHandler, params: dict):
+        """
+        Handle POST /api/plugins/{plugin_id}/toggle
 
-        config_candidates = [
-            self.config.project_root / "data" / "config" / "web_last_config.json",
-            self.config.project_root / "data" / "defaults" / "default_config.json"
-        ]
+        Body (optional): ``{"enabled": true|false}``. Without a body the current
+        state is flipped. Enabling a plugin whose library is not built returns 409.
+        """
+        plugin_id = params.get('plugin_id', '')
+        body = self.read_json_body(request_handler) or {}
+        enabled = body.get('enabled') if isinstance(body, dict) else None
 
-        config_data = None
-        for config_file in config_candidates:
-            config_data = read_json_file(config_file)
-            if config_data:
-                break
+        if enabled is not None and not isinstance(enabled, bool):
+            self.send_error_response(request_handler, "'enabled' must be a boolean")
+            return
 
-        plugin_configs = config_data.get("plugins", []) if isinstance(config_data, dict) else []
+        try:
+            plugin = self.registry.set_enabled(plugin_id, enabled)
+        except PluginRegistryError as error:
+            self._fail(request_handler, error)
+            return
 
-        for plugin_cfg in plugin_configs:
-            if not isinstance(plugin_cfg, dict):
-                continue
+        self.send_success_response(request_handler, "Plugin state updated", {'plugin': plugin})
 
-            name = plugin_cfg.get("name", "")
-            if not name:
-                continue
+    def handle_parameters(self, request_handler: SimpleHTTPRequestHandler, params: dict):
+        """
+        Handle POST /api/plugins/{plugin_id}/parameters
 
-            metadata = self.PLUGIN_DEFINITIONS.get(name, {})
-            resolved_path = self._resolve_library_path(str(plugin_cfg.get("library_path", "")), extensions)
+        Body: ``{"parameters": {"key": value}}``. Only keys declared in the plugin's
+        default configuration are accepted, with the same JSON type.
+        """
+        plugin_id = params.get('plugin_id', '')
+        body = self.read_json_body(request_handler)
+        if not isinstance(body, dict) or 'parameters' not in body:
+            self.send_error_response(request_handler, "Body must be {\"parameters\": {...}}")
+            return
 
-            plugins.append({
-                "name": metadata.get("display_name", name),
-                "id": name,
-                "type": int(plugin_cfg.get("type", 0)),
-                "description": metadata.get("description", f"{name} plugin"),
-                "enabled": bool(plugin_cfg.get("enabled", False)),
-                "parameters": plugin_cfg.get("parameters", {}),
-                "library_path": str(resolved_path) if resolved_path else str(plugin_cfg.get("library_path", "")),
-                "library_found": bool(resolved_path)
-            })
+        try:
+            plugin = self.registry.set_parameters(plugin_id, body['parameters'])
+        except PluginRegistryError as error:
+            self._fail(request_handler, error)
+            return
 
-        # Fallback for environments where no config was available.
-        if not plugins:
-            for plugin_name, metadata in self.PLUGIN_DEFINITIONS.items():
-                plugins.append({
-                    "name": metadata.get("display_name", plugin_name),
-                    "id": plugin_name,
-                    "type": 0,
-                    "description": metadata.get("description", f"{plugin_name} plugin"),
-                    "enabled": False,
-                    "parameters": {},
-                    "library_path": "",
-                    "library_found": False
-                })
-        
-        self.send_json_response(request_handler, plugins)
+        self.send_success_response(request_handler, "Plugin parameters updated", {'plugin': plugin})
+
+    def handle_preset(self, request_handler: SimpleHTTPRequestHandler, params: dict):
+        """
+        Handle POST /api/plugins/preset
+
+        Body: ``{"enabled": ["id", ...], "overrides": {"id": {...}}}``. Used by mission
+        templates to apply a plugin set atomically. Plugins that are not built are
+        skipped and flagged with ``skipped: true`` rather than failing the preset.
+        """
+        body = self.read_json_body(request_handler)
+        if not isinstance(body, dict) or not isinstance(body.get('enabled'), list):
+            self.send_error_response(request_handler, "Body must contain an 'enabled' list")
+            return
+
+        overrides = body.get('overrides')
+        if overrides is not None and not isinstance(overrides, dict):
+            self.send_error_response(request_handler, "'overrides' must be an object")
+            return
+
+        try:
+            plugins = self.registry.apply_preset(body['enabled'], overrides)
+        except PluginRegistryError as error:
+            self._fail(request_handler, error)
+            return
+
+        self.send_success_response(request_handler, "Plugin preset applied", {'plugins': plugins})
+
+    def handle_reset(self, request_handler: SimpleHTTPRequestHandler, params: dict):
+        """Handle POST /api/plugins/reset - drop every override."""
+        try:
+            plugins = self.registry.reset()
+        except PluginRegistryError as error:
+            self._fail(request_handler, error)
+            return
+
+        self.send_success_response(request_handler, "Plugin state reset", {'plugins': plugins})
+
+
+class EnvironmentHandler(BaseHandler):
+    """Handler for the environment domain (gravity ownership and defaults)."""
+
+    def __init__(self, config, registry: PluginRegistry):
+        super().__init__(config)
+        self.registry = registry
+
+    def handle(self, request_handler: SimpleHTTPRequestHandler, params: dict):
+        """
+        Handle GET /api/environment
+
+        Gravity is applied by the Environment module (or any plugin that consumes
+        ``GeneralState.gravity``), not by the core. This endpoint reports the default
+        gravity settings and which enabled plugins will actually apply it, so the UI
+        can warn when gravity is requested but nothing applies it.
+        """
+        plugins = self.registry.list_plugins()
+        providers = self.registry.gravity_providers(plugins)
+        environment_plugin = next((p for p in plugins if p['id'] == 'environment'), None)
+
+        web_defaults = read_json_file(self.config.config_dir / "web_config.json") or {}
+        gravity = resolve_gravity(web_defaults)
+
+        self.send_json_response(request_handler, {
+            'gravity': {
+                'enabled': gravity['enabled'],
+                'magnitude': gravity['magnitude'],
+                'direction': gravity['direction'],
+            },
+            'gravity_providers': providers,
+            'gravity_consumers': [p['id'] for p in providers],
+            'applies_gravity': bool(providers),
+            'gravity_conflict': len(providers) > 1,
+            'environment_plugin': {
+                'available': bool(environment_plugin and environment_plugin['library_found']),
+                'enabled': bool(environment_plugin and environment_plugin['enabled']),
+            },
+        })
 
 
 class SimulationHandler(BaseHandler):
     """Handler for simulation execution"""
+
+    def __init__(self, config, simulation_manager, registry: PluginRegistry):
+        super().__init__(config, simulation_manager)
+        self.registry = registry
     
     def handle_run(self, request_handler: SimpleHTTPRequestHandler, params: dict):
         """
         Handle POST /api/run
-        
-        Start a new simulation job
+
+        Start a new simulation job. The plugin set comes from the registry (the state
+        toggled in the panel). A legacy client may still send ``plugins`` explicitly;
+        that list overrides the registry for this run only and is validated first.
         """
         # Read configuration from request body
         config = self.read_json_body(request_handler)
-        
+
         if not config:
             self.send_error_response(request_handler, "Invalid or missing configuration")
             return
-        
+
         # Validate configuration
         is_valid, error_message = validate_config(config)
         if not is_valid:
             self.send_error_response(request_handler, f"Configuration validation failed: {error_message}")
             return
 
+        try:
+            config['plugins'] = self.registry.resolve_run_plugins(config.get('plugins'))
+        except PluginRegistryError as error:
+            self.send_json_response(request_handler, {
+                'success': False,
+                'error': error.message,
+                'code': error.code
+            }, error.status_code)
+            return
+
+        # Resolve gravity before normalizing: normalization rewrites legacy fields
+        # into environment.gravity, which would hide where the values came from.
+        gravity = resolve_gravity(config)
+
         # Normalize payload to current simulator schema
         config = normalize_config_for_simulator(config)
-        
+        warnings = self._collect_warnings(config)
+
         # Create and start simulation job
         try:
-            job_id = self.simulation_manager.create_job(config)
+            job_id = self.simulation_manager.create_job(config, warnings, gravity)
             success = self.simulation_manager.start_job(job_id)
-            
+
             if success:
                 self.send_success_response(request_handler, "Simulation started", {
-                    'job_id': job_id
+                    'job_id': job_id,
+                    'warnings': warnings
                 })
             else:
                 self.send_error_response(request_handler, "Failed to start simulation")
-        
+
         except Exception as e:
             self.logger.exception("Error starting simulation")
             self.send_error_response(request_handler, str(e), 500)
-    
+
+    def _collect_warnings(self, config: Dict[str, Any]) -> List[str]:
+        """Non-blocking problems the user should know about before results arrive."""
+        warnings: List[str] = []
+        gravity = resolve_gravity(config)
+        wants_gravity = gravity['enabled'] and gravity['magnitude'] > 0
+        plugin_view = [
+            {
+                'id': p.get('name'),
+                'enabled': p.get('enabled', True),
+                'parameters': p.get('parameters', {}),
+            }
+            for p in config.get('plugins', []) if isinstance(p, dict)
+        ]
+        providers = self.registry.gravity_providers(plugin_view)
+        own_model = [p['id'] for p in providers if p['mode'] == 'own_model']
+
+        if len(providers) > 1:
+            warnings.append(
+                "Gravity is applied by more than one plugin (" +
+                ", ".join(p['id'] for p in providers) +
+                "): their forces add up and the vehicle will fall too fast. Keep only one."
+            )
+        elif wants_gravity and not providers:
+            warnings.append(
+                "Gravity is enabled but no enabled plugin applies it. The core only carries "
+                "the gravity vector; enable the Environment module (or the Example Plugin "
+                "with apply_gravity) for it to affect the trajectory."
+            )
+
+        if own_model and not wants_gravity:
+            warnings.append(
+                f"Gravity is off in the simulation state, but {', '.join(own_model)} applies its "
+                "own gravity model and cannot be switched off from here. Disable the module to remove gravity."
+            )
+        elif own_model and wants_gravity and len(providers) == 1 and (
+                abs(gravity['magnitude'] - 9.81) > 1e-9 or
+                [round(c, 9) for c in gravity['direction']] != [0.0, 0.0, -1.0]):
+            warnings.append(
+                f"The gravity magnitude/direction you set are written to the state, but {', '.join(own_model)} "
+                "uses its own gravity model and ignores them."
+            )
+        return warnings
+
     def handle_status(self, request_handler: SimpleHTTPRequestHandler, params: dict):
         """
         Handle GET /api/simulation/status/{job_id}
@@ -332,6 +405,10 @@ class ResultsHandler(BaseHandler):
 
 class ConfigHandler(BaseHandler):
     """Handler for configuration management"""
+
+    def __init__(self, config, registry: PluginRegistry):
+        super().__init__(config)
+        self.registry = registry
     
     def handle_save(self, request_handler: SimpleHTTPRequestHandler, params: dict):
         """
@@ -358,6 +435,11 @@ class ConfigHandler(BaseHandler):
             self.send_error_response(request_handler, f"Invalid configuration: {error_message}")
             return
         
+        # The panel no longer sends plugins (the registry owns them); store the effective
+        # set so the saved file is a complete, runnable configuration.
+        if 'plugins' not in config:
+            config['plugins'] = self.registry.simulator_plugin_configs()
+
         # Sanitize filename
         filename = sanitize_filename(filename)
         if not filename.endswith('.json'):
