@@ -1,7 +1,7 @@
 """
-Browser smoke tests for the MoLab web panel (real Chromium through Playwright).
+Browser smoke tests for the Apogeo web panel (real Chromium through Playwright).
 
-They load the actual front-end against a real ``MoLabWebServer`` (scratch project tree +
+They load the actual front-end against a real ``ApogeoWebServer`` (scratch project tree +
 fake IPC simulator, see ``test_web_api.ApiTestCase``) and verify what a developer would
 check by hand with DevTools open:
 
