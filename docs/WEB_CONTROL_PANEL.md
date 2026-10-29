@@ -2,7 +2,7 @@
 
 > Status: **Current** (matches `develop` + the changes of this PR)
 
-The web control panel is a local development tool to configure, run and inspect MoLab
+The web control panel is a local development tool to configure, run and inspect Apogeo
 simulations from a browser. It is a thin layer over the simulator: it never computes physics
 itself, it starts `simulator --ipc stdio` and talks to it through the
 [IPC protocol](./IPC_PROTOCOL.md).
@@ -33,7 +33,7 @@ python tools/web_gui.py --port 8090 --no-browser --verbose
 
 The server looks for the simulator in this order (first directory that contains it wins):
 
-1. `MOLAB_BUILD_DIR` (environment variable)
+1. `Apogeo_BUILD_DIR` (environment variable)
 2. `<repo>/build`
 3. `<repo>/out/build` (Visual Studio / CMake presets)
 
@@ -295,7 +295,7 @@ the Windows naming is exercised by simulating the platform).
 
 | Symptom | Cause / fix |
 |---|---|
-| Switch is disabled with "Not built" | The plugin library is not in the build directory. Build the project, or set `MOLAB_BUILD_DIR`. The legacy Environment module is only built if it is listed in `DEPRECATED_PLUGIN_NAMES` in `CMakeLists.txt` |
+| Switch is disabled with "Not built" | The plugin library is not in the build directory. Build the project, or set `Apogeo_BUILD_DIR`. The legacy Environment module is only built if it is listed in `DEPRECATED_PLUGIN_NAMES` in `CMakeLists.txt` |
 | Toggle shows an error with "library was not found" | The library disappeared after the page loaded; the UI re-synced to the real (disabled) state |
 | "Simulator not found" | Build first; check `GET /api/status` for the path searched |
 | Gravity notice says nothing applies it | Enable the Example Plugin and turn on **Apply Gravity** (or build/enable the Environment module) |
