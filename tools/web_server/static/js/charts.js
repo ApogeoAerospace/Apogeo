@@ -12,6 +12,25 @@ if (window.Chart) {
 const Charts = {
     charts: {},
 
+    /**
+     * Chart.js is loaded from a CDN. When it is unreachable (offline machine, blocked
+     * network) the rest of the panel must keep working, so charts degrade to a notice.
+     */
+    isAvailable() {
+        if (window.Chart) {
+            return true;
+        }
+
+        if (!this.warnedUnavailable) {
+            this.warnedUnavailable = true;
+            console.warn('Chart.js is not loaded; charts are disabled.');
+            if (window.UI) {
+                UI.updateStatus('Charts are unavailable: Chart.js could not be loaded (offline?). Data tables still work.', 'warning');
+            }
+        }
+        return false;
+    },
+
     getColumnIndex(headers, name, fallbackIndex = -1) {
         const idx = headers.indexOf(name);
         return idx >= 0 ? idx : fallbackIndex;
@@ -21,6 +40,10 @@ const Charts = {
      * Create all charts from data
      */
     createAllCharts(data) {
+        if (!this.isAvailable()) {
+            return;
+        }
+
         this.createTrajectoryChart(data);
         this.createVelocityChart(data);
         this.createAltitudeChart(data);
@@ -47,7 +70,7 @@ const Charts = {
     },
 
     renderChart(chartId, data) {
-        if (!data) return;
+        if (!data || !this.isAvailable()) return;
 
         switch (chartId) {
             case 'trajectory':
