@@ -11,24 +11,20 @@
     "enable_atmospheric_drag": false,
     "integration_tolerance": 1e-06,
     "integrator_type": "runge_kutta_4"
-  },
-  "environment": {
-    "gravity": {
-      "enabled": true,
-      "magnitude": 9.81,
-      "direction": [0, 0, -1]
     }
+  },
+ "physics": {
+    "enable_atmospheric_drag": false,
+    "integration_tolerance": 1e-06,
+    "integrator_type": "runge_kutta_4"
   },
   "plugins": [
     {
-      "name": "environment",
-      "type": 0,
-      "library_path": "plugins/environment",
-      "enabled": false,
-      "parameters": {
-        "enable_atmospheric_model": false,
-        "enable_wind_effects": false,
-        "enable_gravity_variation": true
+      "name": "example_plugin",
+      "enabled": true,
+      "config": {
+        "apply_gravity": true,
+        "gravity_accel": 9.81
       }
     }
   ],
