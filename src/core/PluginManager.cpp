@@ -752,6 +752,146 @@ void PluginManager::shutdown() {
     LOG_INFO("PluginManager shutdown complete", "PluginManager");
 }
 
+std::string PluginManager::save_plugins_state() const {
+    std::lock_guard<std::mutex> lock(plugins_mutex_);
+    nlohmann::json root = nlohmann::json::object();
+
+    for (const auto& plugin : loaded_plugins_) {
+        if (!plugin.handle) {
+            continue;
+        }
+
+        nlohmann::json pinfo = {
+            {"supports_persistence", false}
+        };
+
+        if (plugin.persistence_info_func) {
+            char* info_str = plugin.persistence_info_func(plugin.handle);
+            if (info_str) {
+                try {
+                    pinfo = nlohmann::json::parse(info_str);
+                } catch (...) {}
+                if (plugin.free_state_func) {
+                    plugin.free_state_func(plugin.handle, info_str);
+                } else {
+                    free(info_str);
+                }
+            }
+        }
+
+        bool supports = pinfo.value("supports_persistence", false);
+        if (supports && plugin.save_state_func) {
+            char* state_str = plugin.save_state_func(plugin.handle);
+            if (state_str) {
+                try {
+                    pinfo["state"] = nlohmann::json::parse(state_str);
+                } catch (...) {
+                    pinfo["state"] = state_str;
+                }
+                if (plugin.free_state_func) {
+                    plugin.free_state_func(plugin.handle, state_str);
+                } else {
+                    free(state_str);
+                }
+            }
+        }
+
+        root[plugin.name] = pinfo;
+    }
+
+    return root.dump();
+}
+
+bool PluginManager::restore_plugins_state(const std::string& plugins_json) {
+    if (plugins_json.empty()) {
+        return true;
+    }
+
+    nlohmann::json root;
+    try {
+        root = nlohmann::json::parse(plugins_json);
+        if (!root.is_object()) {
+            return false;
+        }
+    } catch (...) {
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(plugins_mutex_);
+
+    // Phase 1: Pre-validation. Check that all plugins requiring persistence exist and schema matches.
+    for (auto it = root.begin(); it != root.end(); ++it) {
+        const std::string& plugin_name = it.key();
+        const auto& pdata = it.value();
+
+        bool required_persistence = pdata.value("supports_persistence", false);
+        if (!required_persistence) {
+            continue; // Plugin is stateless, no restoration required
+        }
+
+        // Find loaded plugin
+        auto found = std::find_if(loaded_plugins_.begin(), loaded_plugins_.end(),
+            [&](const LoadedPlugin& p) { return p.name == plugin_name; });
+
+        if (found == loaded_plugins_.end() || !found->handle || !found->load_state_func) {
+            LOG_ERROR("Cannot restore state: required persistent plugin not loaded: " + plugin_name, "PluginManager");
+            return false;
+        }
+
+        // Check schema version if declared
+        if (found->persistence_info_func && pdata.contains("schema_version")) {
+            char* info_str = found->persistence_info_func(found->handle);
+            if (info_str) {
+                try {
+                    auto current_info = nlohmann::json::parse(info_str);
+                    if (current_info.value("schema_version", 0) != pdata.value("schema_version", 0)) {
+                        LOG_ERROR("Schema version mismatch for plugin: " + plugin_name, "PluginManager");
+                        if (found->free_state_func) {
+                            found->free_state_func(found->handle, info_str);
+                        } else {
+                            free(info_str);
+                        }
+                        return false;
+                    }
+                } catch (...) {}
+                if (found->free_state_func) {
+                    found->free_state_func(found->handle, info_str);
+                } else {
+                    free(info_str);
+                }
+            }
+        }
+    }
+
+    // Phase 2: Atomic execution of restore
+    for (auto it = root.begin(); it != root.end(); ++it) {
+        const std::string& plugin_name = it.key();
+        const auto& pdata = it.value();
+
+        if (!pdata.value("supports_persistence", false) || !pdata.contains("state")) {
+            continue;
+        }
+
+        auto found = std::find_if(loaded_plugins_.begin(), loaded_plugins_.end(),
+            [&](const LoadedPlugin& p) { return p.name == plugin_name; });
+
+        std::string state_str;
+        if (pdata["state"].is_string()) {
+            state_str = pdata["state"].get<std::string>();
+        } else {
+            state_str = pdata["state"].dump();
+        }
+
+        int32_t rc = found->load_state_func(found->handle, state_str.c_str());
+        if (rc != 0) {
+            LOG_ERROR("Plugin " + plugin_name + " failed to load state, code: " + std::to_string(rc), "PluginManager");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void PluginManager::cleanup_plugin(LoadedPlugin& plugin) {
     if (plugin.handle != nullptr && plugin.destroy_func != nullptr) {
         plugin.destroy_func(plugin.handle);

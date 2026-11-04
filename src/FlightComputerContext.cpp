@@ -1,6 +1,7 @@
 #include "FlightComputerContext.h"
 #include "Logger.h"
 #include <algorithm>
+#include <nlohmann/json.hpp>
 
 /**
  * @file FlightComputerContext.cpp
@@ -43,6 +44,73 @@ FlightComputerContext::FlightComputerContext(const std::string& script_path) {
 
 bool FlightComputerContext::is_valid() const {
     return valid_;
+}
+
+std::string FlightComputerContext::save_lua_globals() const {
+    nlohmann::json out = nlohmann::json::object();
+    if (!valid_) {
+        return out.dump();
+    }
+
+    // Exclude Lua built-in / sandbox variables and API bindings
+    static const std::vector<std::string> kExcludedKeys = {
+        "_G", "_VERSION", "math", "assert", "error", "pcall", "xpcall",
+        "print", "select", "tonumber", "tostring", "type", "ipairs", "pairs", "next",
+        "dofile", "loadfile", "load", "on_tick",
+        "get_altitude", "get_vertical_velocity", "set_throttle", "print_log"
+    };
+
+    for (const auto& pair : lua_.globals()) {
+        if (!pair.first.is<std::string>()) {
+            continue;
+        }
+        std::string key = pair.first.as<std::string>();
+        if (std::find(kExcludedKeys.begin(), kExcludedKeys.end(), key) != kExcludedKeys.end()) {
+            continue;
+        }
+
+        sol::type type = pair.second.get_type();
+        if (type == sol::type::number) {
+            out[key] = pair.second.as<double>();
+        } else if (type == sol::type::boolean) {
+            out[key] = pair.second.as<bool>();
+        } else if (type == sol::type::string) {
+            out[key] = pair.second.as<std::string>();
+        }
+        // Tables, functions, userdata, threads and nil are intentionally omitted by policy
+    }
+
+    return out.dump();
+}
+
+bool FlightComputerContext::restore_lua_globals(const std::string& json_str) {
+    if (json_str.empty()) {
+        return true;
+    }
+    try {
+        const auto j = nlohmann::json::parse(json_str);
+        if (!j.is_object()) {
+            return false;
+        }
+        for (auto it = j.begin(); it != j.end(); ++it) {
+            const std::string& key = it.key();
+            const auto& val = it.value();
+            if (val.is_number()) {
+                lua_[key] = val.get<double>();
+            } else if (val.is_boolean()) {
+                lua_[key] = val.get<bool>();
+            } else if (val.is_string()) {
+                lua_[key] = val.get<std::string>();
+            } else {
+                LOG_ERROR("Unsupported non-primitive value in Lua globals restore: " + key, "FlightComputer");
+                return false;
+            }
+        }
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Error restoring Lua globals: " + std::string(e.what()), "FlightComputer");
+        return false;
+    }
 }
 
 void FlightComputerContext::register_api() {
