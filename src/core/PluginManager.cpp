@@ -275,6 +275,10 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type, bool e
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(GetProcAddress(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(GetProcAddress(plugin.lib_handle, "plugin_destroy_instance"));
     plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(GetProcAddress(plugin.lib_handle, "plugin_set_host_services"));
+    plugin.save_state_func = reinterpret_cast<decltype(plugin.save_state_func)>(GetProcAddress(plugin.lib_handle, "plugin_save_state"));
+    plugin.free_state_func = reinterpret_cast<decltype(plugin.free_state_func)>(GetProcAddress(plugin.lib_handle, "plugin_free_state_string"));
+    plugin.load_state_func = reinterpret_cast<decltype(plugin.load_state_func)>(GetProcAddress(plugin.lib_handle, "plugin_load_state"));
+    plugin.persistence_info_func = reinterpret_cast<decltype(plugin.persistence_info_func)>(GetProcAddress(plugin.lib_handle, "plugin_get_persistence_info"));
 #else
     for (const auto& candidate : candidates) {
         LOG_DEBUG("Trying plugin path: " + candidate, "PluginManager");
@@ -294,6 +298,10 @@ bool PluginManager::load_plugin(const std::string& path, PluginType type, bool e
     plugin.tick_func = reinterpret_cast<decltype(plugin.tick_func)>(dlsym(plugin.lib_handle, "plugin_tick"));
     plugin.destroy_func = reinterpret_cast<decltype(plugin.destroy_func)>(dlsym(plugin.lib_handle, "plugin_destroy_instance"));
     plugin.set_host_services_func = reinterpret_cast<decltype(plugin.set_host_services_func)>(dlsym(plugin.lib_handle, "plugin_set_host_services"));
+    plugin.save_state_func = reinterpret_cast<decltype(plugin.save_state_func)>(dlsym(plugin.lib_handle, "plugin_save_state"));
+    plugin.free_state_func = reinterpret_cast<decltype(plugin.free_state_func)>(dlsym(plugin.lib_handle, "plugin_free_state_string"));
+    plugin.load_state_func = reinterpret_cast<decltype(plugin.load_state_func)>(dlsym(plugin.lib_handle, "plugin_load_state"));
+    plugin.persistence_info_func = reinterpret_cast<decltype(plugin.persistence_info_func)>(dlsym(plugin.lib_handle, "plugin_get_persistence_info"));
 #endif
 
     if (plugin.create_func == nullptr || plugin.tick_func == nullptr || plugin.destroy_func == nullptr) {
