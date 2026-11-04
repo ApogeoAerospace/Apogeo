@@ -75,8 +75,23 @@ public:
     PluginVector3 computeStructuralTorque(const state_vector::GeneralState* state) const;
 
     double initialMassKg() const;
+    double fuelMassKg() const { return fuel_mass_kg_; }
+    void setFuelMassKg(double mass) { fuel_mass_kg_ = mass; }
+    void setCenterOfMass(const Vec3d& cm) { center_of_mass_ = cm; }
+    void setInertiaTensor(const InertiaTensorData& it) { inertia_tensor_ = it; }
     double maxGLoad() const;
     double warningGLoad() const;
+
+    /**
+     * @brief Serializes runtime mutable state into a JSON string.
+     */
+    std::string saveState() const;
+
+    /**
+     * @brief Restores runtime mutable state from a JSON string.
+     * @return true on success, false if format/schema version is invalid.
+     */
+    bool loadState(const std::string& state_json);
 
 private:
     double initial_total_mass_kg_ = 1000.0;
