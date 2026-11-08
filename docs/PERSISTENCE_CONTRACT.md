@@ -10,7 +10,7 @@ Este documento define el contrato formal de persistencia del simulador aeroespac
 | :--- | :--- | :---: | :--- |
 | **`SimulationEngine`** | Central / Cinemático | **Sí** | Vector FlatBuffers completo codificado en Base64 (`GeneralState`), tiempo acumulado (`simulation_time_`), conteo de iteraciones (`iteration_count_`) y estado de ejecución (`is_running_`). |
 | **`TimeManager`** | Temporal | **Sí** | `simulation_time_` y tiempo base `utc_start_time_` (con precisión `double`). |
-| **`FlightComputerContext` (Lua)** | Lógica de Vuelo | **Sí** | Variables globales de tipos primitivos (`number`, `boolean`, `string`). |
+| **`FlightComputerContext` (Lua)** | Lógica de Vuelo | **Sí** | Variables globales de tipos primitivos (`number`, `boolean`, `string`) y tablas de datos anidadas/listas. |
 | **Plugin `structures`** | Físico / Estructural | **Sí** | Masa de combustible (`fuel_mass_kg`), vector centro de masa (`center_of_mass`: x, y, z) y tensor de inercia (`inertia_tensor`: ixx, iyy, izz, ixy, ixz, iyz). |
 | **Plugin `aerodynamics`** | Aerodinámica tabular | **No** | Es **stateless** en runtime; se recarga de la base de datos HDF5 definida en la configuración original. |
 | **Plugin `propulsion`** | Propulsión tabular | **No** | Es **stateless** en runtime; se re-inicializa desde las curvas CSV configuradas. |
@@ -51,16 +51,15 @@ PLUGIN_EXPORT void plugin_free_state_string(PluginHandle handle, char* state_str
 
 El intérprete de Lua integrado (`sol::state`) almacena el estado de los scripts de vuelo del usuario con las siguientes reglas:
 
-1. **Variables Persistidas:** Solo las variables globales de tipos **primitivos** son guardadas y restauradas automáticamente:
-   - `number` (enteros y números en punto flotante).
-   - `boolean` (`true` / `false`).
-   - `string` (cadenas de texto).
+1. **Variables Persistidas:**
+   - Tipos primitivos: `number` (enteros y números en punto flotante), `boolean` (`true` / `false`) y `string` (cadenas de texto).
+   - **Tablas de datos:** Se serializan recursivamente tablas asociativas (diccionarios), tablas indexadas secuencialmente (listas/vectores de 1..N) y estructuras anidadas.
 2. **Variables Excluidas:** Se ignoran deliberadamente:
-   - Funciones (incluyendo callbacks como `on_tick`).
+   - Funciones (incluyendo callbacks como `on_tick` y funciones anidadas dentro de tablas).
    - Bibliotecas del sistema y sandbox de Apogeo (`math`, `get_altitude`, `set_throttle`, `print_log`, etc.).
    - Metatablas, hilos (coroutines) y `userdata`.
-3. **Tablas Lua:** Actualmente las tablas de usuario **no se serializan de forma automática**. Scripts que mantengan estructuras complejas de tablas deben aplanar sus variables a tipos primitivos o implementar lógica ad-hoc.
-4. **Scripts Stateless:** Un script que solo implemente `on_tick(dt)` utilizando variables locales o lectura directa de telemetría es compatible con Save/Load de manera transparente (su estado guardado es un objeto vacío `{}`).
+   - Referencias circulares en tablas (detectadas automáticamente y omitidas para evitar recursión infinita).
+3. **Scripts Stateless:** Un script que solo implemente `on_tick(dt)` utilizando variables locales o lectura directa de telemetría es compatible con Save/Load de manera transparente (su estado guardado es un objeto vacío `{}`).
 
 ---
 
