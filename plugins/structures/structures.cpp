@@ -207,4 +207,63 @@ PLUGIN_EXPORT void plugin_destroy_instance(PluginHandle handle) {
     delete instance;
 }
 
+/**
+ * @brief Serializes Structures plugin state to a JSON string.
+ */
+PLUGIN_EXPORT char* plugin_save_state(PluginHandle handle) {
+    if (!handle) {
+        return nullptr;
+    }
+    auto* instance = reinterpret_cast<StructuresPluginInstance*>(handle);
+    try {
+        const std::string s = instance->module.saveState();
+        char* out = static_cast<char*>(malloc(s.size() + 1));
+        if (out) {
+            std::memcpy(out, s.c_str(), s.size() + 1);
+        }
+        return out;
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+/**
+ * @brief Frees a string returned by plugin_save_state or plugin_get_persistence_info.
+ */
+PLUGIN_EXPORT void plugin_free_state_string(PluginHandle /*handle*/, char* state_str) {
+    if (state_str) {
+        free(state_str);
+    }
+}
+
+/**
+ * @brief Restores Structures plugin state from a JSON string.
+ */
+PLUGIN_EXPORT int32_t plugin_load_state(PluginHandle handle, const char* state_json) {
+    if (!handle || !state_json) {
+        return -1;
+    }
+    auto* instance = reinterpret_cast<StructuresPluginInstance*>(handle);
+    if (!instance->initialized) {
+        return -2;
+    }
+    if (!instance->module.loadState(state_json)) {
+        return -3;
+    }
+    return 0;
+}
+
+/**
+ * @brief Declares persistence support and schema version.
+ */
+PLUGIN_EXPORT char* plugin_get_persistence_info(PluginHandle /*handle*/) {
+    static const char* kInfo = "{\"supports_persistence\":true,\"schema_version\":1}";
+    const size_t len = std::strlen(kInfo);
+    char* out = static_cast<char*>(malloc(len + 1));
+    if (out) {
+        std::memcpy(out, kInfo, len + 1);
+    }
+    return out;
+}
+
 } // extern "C"

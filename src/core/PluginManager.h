@@ -62,6 +62,12 @@ struct LoadedPlugin {
     void(*destroy_func)(PluginHandle) = nullptr;
     void(*set_host_services_func)(const PluginHostServices*) = nullptr;
 
+    // Optional Persistence API functions
+    char*(*save_state_func)(PluginHandle) = nullptr;
+    void(*free_state_func)(PluginHandle, char*) = nullptr;
+    int32_t(*load_state_func)(PluginHandle, const char*) = nullptr;
+    char*(*persistence_info_func)(PluginHandle) = nullptr;
+
 #if defined(_WIN32)
     HMODULE lib_handle = nullptr;
 #else
@@ -90,6 +96,10 @@ struct LoadedPlugin {
           tick_func(other.tick_func),
           destroy_func(other.destroy_func),
           set_host_services_func(other.set_host_services_func),
+          save_state_func(other.save_state_func),
+          free_state_func(other.free_state_func),
+          load_state_func(other.load_state_func),
+          persistence_info_func(other.persistence_info_func),
           lib_handle(other.lib_handle) {
 
         // Reset source object
@@ -99,6 +109,10 @@ struct LoadedPlugin {
         other.tick_func = nullptr;
         other.destroy_func = nullptr;
         other.set_host_services_func = nullptr;
+        other.save_state_func = nullptr;
+        other.free_state_func = nullptr;
+        other.load_state_func = nullptr;
+        other.persistence_info_func = nullptr;
         other.lib_handle = nullptr;
     }
 
@@ -117,6 +131,10 @@ struct LoadedPlugin {
             tick_func = other.tick_func;
             destroy_func = other.destroy_func;
             set_host_services_func = other.set_host_services_func;
+            save_state_func = other.save_state_func;
+            free_state_func = other.free_state_func;
+            load_state_func = other.load_state_func;
+            persistence_info_func = other.persistence_info_func;
             lib_handle = other.lib_handle;
 
             // Reset source object
@@ -126,6 +144,10 @@ struct LoadedPlugin {
             other.tick_func = nullptr;
             other.destroy_func = nullptr;
             other.set_host_services_func = nullptr;
+            other.save_state_func = nullptr;
+            other.free_state_func = nullptr;
+            other.load_state_func = nullptr;
+            other.persistence_info_func = nullptr;
             other.lib_handle = nullptr;
         }
         return *this;
@@ -207,6 +229,19 @@ public:
      * @return Vector of metrics per plugin.
      */
     std::vector<PluginMetrics> get_plugin_metrics() const;
+
+    /**
+     * @brief Serializes state of all loaded plugins that support persistence.
+     * @return Map of plugin name to JSON object containing metadata and state.
+     */
+    std::string save_plugins_state() const;
+
+    /**
+     * @brief Restores state of plugins from a JSON string.
+     * @param plugins_json JSON string containing map of plugin name to state data.
+     * @return true if all persisted plugins were successfully restored, false otherwise.
+     */
+    bool restore_plugins_state(const std::string& plugins_json);
 
 private:
     // Plugin containers with concurrency protection

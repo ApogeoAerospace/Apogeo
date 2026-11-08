@@ -132,6 +132,45 @@ extern "C" {
      */
     PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services);
 
+    // --- Persistence API Functions (Optional) ---
+
+    /**
+     * @brief Serializes the plugin's internal state into a JSON string.
+     *
+     * @param handle Plugin handle.
+     * @return Null-terminated JSON string allocated by the plugin, or NULL on error or if unsupported.
+     *         The host must release this memory using `plugin_free_state_string`.
+     */
+    PLUGIN_EXPORT char* plugin_save_state(PluginHandle handle);
+
+    /**
+     * @brief Releases a state string previously returned by `plugin_save_state` or `plugin_get_persistence_info`.
+     *
+     * @param handle Plugin handle.
+     * @param state_str String pointer to release.
+     */
+    PLUGIN_EXPORT void plugin_free_state_string(PluginHandle handle, char* state_str);
+
+    /**
+     * @brief Restores the plugin's internal state from a JSON string.
+     *
+     * @param handle Plugin handle.
+     * @param state_json Null-terminated JSON string containing previously saved state.
+     * @return `0` on success, non-zero negative code on error (e.g. incompatible schema or invalid data).
+     */
+    PLUGIN_EXPORT int32_t plugin_load_state(PluginHandle handle, const char* state_json);
+
+    /**
+     * @brief Retrieves metadata about the plugin's persistence capabilities.
+     *
+     * Format: `{"supports_persistence": bool, "schema_version": uint}`
+     *
+     * @param handle Plugin handle.
+     * @return Null-terminated JSON string allocated by the plugin, or NULL if unsupported.
+     *         The host must release this memory using `plugin_free_state_string`.
+     */
+    PLUGIN_EXPORT char* plugin_get_persistence_info(PluginHandle handle);
+
 
 #ifdef __cplusplus
 }

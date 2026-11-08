@@ -1,6 +1,8 @@
 #include "FlightComputerContext.h"
 #include "Logger.h"
 #include <algorithm>
+#include <unordered_set>
+#include <nlohmann/json.hpp>
 
 /**
  * @file FlightComputerContext.cpp
@@ -8,6 +10,151 @@
  */
 
 namespace Apogeo {
+
+namespace {
+
+nlohmann::json sol_table_to_json(const sol::table& tbl, std::unordered_set<const void*>& visited) {
+    const void* ptr = tbl.pointer();
+    if (visited.find(ptr) != visited.end()) {
+        return nullptr; // Cycle detected: omit to prevent infinite recursion
+    }
+    visited.insert(ptr);
+
+    // Determine if table is a contiguous 1-based sequential array
+    size_t count = 0;
+    for (const auto& pair : tbl) {
+        (void)pair;
+        ++count;
+    }
+
+    bool is_array = false;
+    if (count > 0) {
+        bool all_int_keys = true;
+        for (const auto& pair : tbl) {
+            if (!pair.first.is<int>()) {
+                all_int_keys = false;
+                break;
+            }
+            int idx = pair.first.as<int>();
+            if (idx < 1 || static_cast<size_t>(idx) > count) {
+                all_int_keys = false;
+                break;
+            }
+        }
+        if (all_int_keys) {
+            bool contiguous = true;
+            for (size_t i = 1; i <= count; ++i) {
+                sol::object item = tbl[i];
+                if (!item.valid() || item.get_type() == sol::type::lua_nil) {
+                    contiguous = false;
+                    break;
+                }
+            }
+            if (contiguous) {
+                is_array = true;
+            }
+        }
+    }
+
+    nlohmann::json result;
+    if (is_array) {
+        result = nlohmann::json::array();
+        for (size_t i = 1; i <= count; ++i) {
+            sol::object item = tbl[i];
+            sol::type t = item.get_type();
+            if (t == sol::type::number) {
+                result.push_back(item.as<double>());
+            } else if (t == sol::type::boolean) {
+                result.push_back(item.as<bool>());
+            } else if (t == sol::type::string) {
+                result.push_back(item.as<std::string>());
+            } else if (t == sol::type::table) {
+                auto child = sol_table_to_json(item.as<sol::table>(), visited);
+                if (!child.is_null()) {
+                    result.push_back(child);
+                }
+            }
+        }
+    } else {
+        result = nlohmann::json::object();
+        for (const auto& pair : tbl) {
+            std::string key;
+            if (pair.first.is<std::string>()) {
+                key = pair.first.as<std::string>();
+            } else if (pair.first.is<int>()) {
+                key = std::to_string(pair.first.as<int>());
+            } else {
+                continue; // Skip non-string / non-int keys
+            }
+
+            sol::type t = pair.second.get_type();
+            if (t == sol::type::number) {
+                result[key] = pair.second.as<double>();
+            } else if (t == sol::type::boolean) {
+                result[key] = pair.second.as<bool>();
+            } else if (t == sol::type::string) {
+                result[key] = pair.second.as<std::string>();
+            } else if (t == sol::type::table) {
+                auto child = sol_table_to_json(pair.second.as<sol::table>(), visited);
+                if (!child.is_null()) {
+                    result[key] = child;
+                }
+            }
+        }
+    }
+
+    visited.erase(ptr);
+    return result;
+}
+
+bool is_valid_json_lua_type(const nlohmann::json& v) {
+    if (v.is_number() || v.is_boolean() || v.is_string()) {
+        return true;
+    }
+    if (v.is_array()) {
+        for (const auto& item : v) {
+            if (!is_valid_json_lua_type(item)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    if (v.is_object()) {
+        for (auto it = v.begin(); it != v.end(); ++it) {
+            if (!is_valid_json_lua_type(it.value())) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+sol::object json_to_sol(sol::state_view lua, const nlohmann::json& val) {
+    if (val.is_number()) {
+        return sol::make_object(lua, val.get<double>());
+    } else if (val.is_boolean()) {
+        return sol::make_object(lua, val.get<bool>());
+    } else if (val.is_string()) {
+        return sol::make_object(lua, val.get<std::string>());
+    } else if (val.is_array()) {
+        sol::table tbl = lua.create_table();
+        int idx = 1;
+        for (const auto& item : val) {
+            tbl[idx++] = json_to_sol(lua, item);
+        }
+        return tbl;
+    } else if (val.is_object()) {
+        sol::table tbl = lua.create_table();
+        for (auto it = val.begin(); it != val.end(); ++it) {
+            tbl[it.key()] = json_to_sol(lua, it.value());
+        }
+        return tbl;
+    }
+    return sol::make_object(lua, sol::lua_nil);
+}
+
+} // namespace
 
 FlightComputerContext::FlightComputerContext(const std::string& script_path) {
     // ==========================================
@@ -43,6 +190,79 @@ FlightComputerContext::FlightComputerContext(const std::string& script_path) {
 
 bool FlightComputerContext::is_valid() const {
     return valid_;
+}
+
+std::string FlightComputerContext::save_lua_globals() const {
+    nlohmann::json out = nlohmann::json::object();
+    if (!valid_) {
+        return out.dump();
+    }
+
+    // Exclude Lua built-in / sandbox variables and API bindings
+    static const std::vector<std::string> kExcludedKeys = {
+        "_G", "_VERSION", "base", "math", "table", "string", "package", "coroutine", "os", "io", "debug", "utf8",
+        "assert", "error", "pcall", "xpcall",
+        "print", "select", "tonumber", "tostring", "type", "ipairs", "pairs", "next", "warn",
+        "dofile", "loadfile", "load", "collectgarbage", "rawequal", "rawget", "rawlen", "rawset", "setmetatable", "getmetatable",
+        "on_tick",
+        "get_altitude", "get_vertical_velocity", "set_throttle", "print_log"
+    };
+
+    std::unordered_set<const void*> visited;
+    for (const auto& pair : lua_.globals()) {
+        if (!pair.first.is<std::string>()) {
+            continue;
+        }
+        std::string key = pair.first.as<std::string>();
+        if (std::find(kExcludedKeys.begin(), kExcludedKeys.end(), key) != kExcludedKeys.end()) {
+            continue;
+        }
+
+        sol::type type = pair.second.get_type();
+        if (type == sol::type::number) {
+            out[key] = pair.second.as<double>();
+        } else if (type == sol::type::boolean) {
+            out[key] = pair.second.as<bool>();
+        } else if (type == sol::type::string) {
+            out[key] = pair.second.as<std::string>();
+        } else if (type == sol::type::table) {
+            auto table_json = sol_table_to_json(pair.second.as<sol::table>(), visited);
+            if (!table_json.is_null()) {
+                out[key] = table_json;
+            }
+        }
+        // Functions, userdata, threads and nil are intentionally omitted by policy
+    }
+
+    return out.dump();
+}
+
+bool FlightComputerContext::restore_lua_globals(const std::string& json_str) {
+    if (json_str.empty()) {
+        return true;
+    }
+    try {
+        const auto j = nlohmann::json::parse(json_str);
+        if (!j.is_object()) {
+            return false;
+        }
+
+        // Validate all types before modifying any state
+        for (auto it = j.begin(); it != j.end(); ++it) {
+            if (!is_valid_json_lua_type(it.value())) {
+                LOG_ERROR("Unsupported data type in Lua globals restore for key: " + it.key(), "FlightComputer");
+                return false;
+            }
+        }
+
+        for (auto it = j.begin(); it != j.end(); ++it) {
+            lua_[it.key()] = json_to_sol(lua_, it.value());
+        }
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Error restoring Lua globals: " + std::string(e.what()), "FlightComputer");
+        return false;
+    }
 }
 
 void FlightComputerContext::register_api() {
