@@ -46,14 +46,14 @@ public:
     bool is_valid() const;
 
     /**
-     * @brief Serializes user-defined global primitives (number, boolean, string) to a JSON string.
+     * @brief Serializes user-defined global primitives and tables to a JSON string.
      * @return JSON string representing persistent Lua globals.
      */
     std::string save_lua_globals() const;
 
     /**
      * @brief Restores global variables into the Lua environment from a JSON string.
-     * @param json_str JSON string containing key/value primitive pairs.
+     * @param json_str JSON string containing key/value pairs (primitives and tables).
      * @return true on success, false if JSON parsing fails or unsupported types are encountered.
      */
     bool restore_lua_globals(const std::string& json_str);
