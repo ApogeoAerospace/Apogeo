@@ -163,7 +163,7 @@ IPC runtime note:
   Independent variables used by aero lookup/interpolation (for example `alpha_deg`, `beta_deg`, `mach`).
 
 ### `vehicle_models.reference_geometry`
-- `source.uri` (`string`, path/URI`)  
+- `source.uri` (`string`, path/URI)  
   Geometry dataset location.
 - `source.format` (`string`)  
   Geometry data format (for example `csv`).
@@ -176,13 +176,13 @@ This section remains metadata only. The propulsion skeleton reads its CSV from
 to the process working directory or absolute. See the
 [module contract](../plugins/propulsion/README.md). The default plugin entry is
 disabled because physical thrust and propellant consumption are not implemented.
-- `source.uri` (`string`, path/URI`)  
+- `source.uri` (`string`, path/URI)  
   Propulsion performance dataset location.
 - `source.format` (`string`)  
   Propulsion data format (for example `csv`).
 
 ### `vehicle_models.mass_properties`
-- `source.uri` (`string`, path/URI`)  
+- `source.uri` (`string`, path/URI)  
   Mass/inertia dataset location.
 - `source.format` (`string`)  
   Mass properties format (for example `json`).
@@ -196,7 +196,7 @@ disabled because physical thrust and propellant consumption are not implemented.
     Maximum deflection rate.
   - `actuators[].range_deg` (`number`, deg)  
     Maximum absolute deflection range.
-- `structural.source.uri` (`string`, path/URI`)  
+- `structural.source.uri` (`string`, path/URI)  
   Structural constraints dataset location.
 - `structural.source.format` (`string`)  
   Structural limits format (for example `csv`).
@@ -210,7 +210,7 @@ disabled because physical thrust and propellant consumption are not implemented.
   Planet/geodesy model selection (for example `WGS84`).
 
 ### `mission_environment.flight_sequence`
-- `source.uri` (`string`, path/URI`)  
+- `source.uri` (`string`, path/URI)  
   Mission/phase sequence definition file.
 - `source.format` (`string`)  
   Sequence format (for example `yaml`).
@@ -218,7 +218,7 @@ disabled because physical thrust and propellant consumption are not implemented.
 ### `mission_environment.atmosphere_wind`
 - `model` (`string`)  
   Atmosphere model selection (for example `US_Standard_1976`).
-- `wind_profile_source.uri` (`string`, path/URI`)  
+- `wind_profile_source.uri` (`string`, path/URI)  
   Wind profile dataset location.
 - `wind_profile_source.format` (`string`)  
   Wind profile format (for example `csv`).
@@ -237,7 +237,6 @@ disabled because physical thrust and propellant consumption are not implemented.
 
 - File paths may be relative to the process working directory or repository root, depending on launcher/runtime.
 - Units should be treated as mandatory contract where specified (seconds, deg/s, MB, etc.).
-- `plugins[].parameters` keys are plugin-owned and may vary by plugin implementation.
-- Gravity is carried in the serialized initial state (`GeneralState.gravity`) and is consumed by the physics integration path as part of the force model.
-  It is not configured or owned by `PluginManager`.
-- The web UI legacy `physics.enable_gravity` / `physics.gravity_magnitude` fields are normalized into the initial state by the web server before simulation starts.
+- `plugins[].parameters` keys are plugin-owned and defined per plugin implementation.
+- Gravity is carried directly in the initial state (`GeneralState.gravity`) and preserved in simulation output. `PluginManager` does not own or modify it.
+- The simulator core does **not** automatically apply gravity to dynamics; physics integration consumes forces provided by plugins (e.g., `example_plugin` when `apply_gravity` is set to `true`).
