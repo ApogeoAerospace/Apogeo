@@ -22,7 +22,7 @@ from pathlib import Path
 # Add web_server package to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from web_server import ServerConfig, MoLabWebServer
+from web_server import ServerConfig, ApogeoWebServer
 from web_server.server import PortInUseError
 from web_server.logger import setup_logger
 
