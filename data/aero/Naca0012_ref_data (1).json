@@ -1,0 +1,783 @@
+{
+  "$schema_version": "2.0",
+  "documento": {
+    "titulo": "Datos de referencia aerodinamica - Caso NACA 0012",
+    "proyecto": "MOLAB - Mission Operation Laboratory",
+    "modulo_objetivo": "Modulo de aerodinamica del simulador",
+    "version": "2.0",
+    "estado": "COMPLETO para CV-01 a CV-04. Ver nota_procedencia antes de certificar."
+  },
+  "nota_procedencia": "Los valores fueron transcritos de una copia en PDF/OCR del reporte NASA TM 4074 (no del PDF oficial de NTRS, cuyo texto no fue accesible). Cada fila se valido internamente: Cl/Cd coincide con la columna L/d impresa en el reporte (error maximo 0.08%). Se recomienda contrastar los puntos de alpha~10 y alpha~15 con el PDF oficial de NTRS antes de la certificacion formal.",
+  "caso_de_referencia": {
+    "designacion": "NACA 0012",
+    "tipo": "perfil_alar_2D",
+    "definicion_geometrica": "Variante TMR, borde de salida afilado, espesor maximo 11.894% de la cuerda (caso 2DN00)",
+    "justificacion": [
+      "Geometria analitica cerrada",
+      "Caso canonico del NASA TMR (2DN00)",
+      "Base experimental publica y trazable",
+      "Simetrico: admite prueba analitica exacta de Cl y Cm",
+      "Abundantes resultados CFD de terceros para contraste"
+    ]
+  },
+  "condiciones_de_flujo": {
+    "Reynolds_cuerda": 6000000.0,
+    "Mach": 0.15,
+    "capa_limite": "disparada (tripped)",
+    "tamanos_de_grano": [
+      "#80",
+      "#120",
+      "#180"
+    ],
+    "opcion_A_presurizado_adoptada": {
+      "cuerda_m": 1.0,
+      "velocidad_m_s": 51.045,
+      "densidad_kg_m3": 2.1029,
+      "presion_dinamica_Pa": 2739.6
+    },
+    "opcion_B_aire_estandar": {
+      "cuerda_m": 1.717,
+      "velocidad_m_s": 51.045,
+      "densidad_kg_m3": 1.225,
+      "presion_dinamica_Pa": 1596.0
+    },
+    "viscosidad_Pa_s": 1.789e-05,
+    "velocidad_sonido_m_s": 340.3
+  },
+  "tabla_referencia_nominal": {
+    "metodo": "Interpolacion lineal de datos medidos por grano; ref = media de los tres granos",
+    "datos": [
+      {
+        "alpha_deg": 0.0,
+        "Cl": {
+          "ref": -0.0088,
+          "min": -0.0121,
+          "max": -0.0071
+        },
+        "Cd": {
+          "ref": 0.00808,
+          "min": 0.00806,
+          "max": 0.00809
+        },
+        "Cm_c4": {
+          "ref": 0.0002
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 2.5,
+        "Cl": {
+          "ref": 0.2634,
+          "min": 0.262,
+          "max": 0.266
+        },
+        "Cd": {
+          "ref": 0.00822,
+          "min": 0.00814,
+          "max": 0.00833
+        },
+        "Cm_c4": {
+          "ref": 0.0003
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 5.0,
+        "Cl": {
+          "ref": 0.5372,
+          "min": 0.536,
+          "max": 0.538
+        },
+        "Cd": {
+          "ref": 0.00848,
+          "min": 0.00831,
+          "max": 0.00862
+        },
+        "Cm_c4": {
+          "ref": 0.0007
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 7.5,
+        "Cl": {
+          "ref": 0.8057,
+          "min": 0.803,
+          "max": 0.8081
+        },
+        "Cd": {
+          "ref": 0.00963,
+          "min": 0.00945,
+          "max": 0.0099
+        },
+        "Cm_c4": {
+          "ref": 0.0023
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 10.0,
+        "Cl": {
+          "ref": 1.0628,
+          "min": 1.0586,
+          "max": 1.0672
+        },
+        "Cd": {
+          "ref": 0.01169,
+          "min": 0.01149,
+          "max": 0.01191
+        },
+        "Cm_c4": {
+          "ref": 0.0049
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 12.0,
+        "Cl": {
+          "ref": 1.2546,
+          "min": 1.2493,
+          "max": 1.2594
+        },
+        "Cd": {
+          "ref": 0.01297,
+          "min": 0.01277,
+          "max": 0.01321
+        },
+        "Cm_c4": {
+          "ref": 0.0082
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 14.0,
+        "Cl": {
+          "ref": 1.4253,
+          "min": 1.4189,
+          "max": 1.4319
+        },
+        "Cd": {
+          "ref": 0.01562,
+          "min": 0.0152,
+          "max": 0.01601
+        },
+        "Cm_c4": {
+          "ref": 0.0134
+        },
+        "estado_dato": "INTERPOLADO"
+      },
+      {
+        "alpha_deg": 15.0,
+        "Cl": {
+          "ref": 1.5004,
+          "min": 1.4938,
+          "max": 1.5083
+        },
+        "Cd": {
+          "ref": 0.01792,
+          "min": 0.01745,
+          "max": 0.01831
+        },
+        "Cm_c4": {
+          "ref": 0.0167
+        },
+        "estado_dato": "INTERPOLADO"
+      }
+    ]
+  },
+  "parametros_derivados": {
+    "pendiente_sustentacion_por_grado": {
+      "media": 0.10864,
+      "por_grano": {
+        "n80": 0.10809,
+        "n120": 0.10937,
+        "n180": 0.10847
+      },
+      "R2_por_grano": {
+        "n80": 0.99997,
+        "n120": 0.99998,
+        "n180": 0.99998
+      },
+      "rango_ajuste_alpha_deg": [
+        -2.5,
+        8.5
+      ],
+      "teoria_perfil_delgado_por_grado": 0.10966,
+      "relacion_medido_sobre_teorico": 0.9907
+    },
+    "Cl_max_medido": {
+      "n80": 1.6116,
+      "n120": 1.6347,
+      "n180": 1.6219,
+      "alpha_aprox_deg": 17.2
+    },
+    "Cd_en_alpha_0": {
+      "ref": 0.00808
+    },
+    "Cl_en_alpha_0_experimental": {
+      "ref": -0.0088,
+      "nota": "Distinto de cero por desalineacion del tunel/modelo; no es un defecto del perfil. Repetibilidad reportada por Ladson: 0.004."
+    }
+  },
+  "casos_de_validacion": {
+    "CV-01a_simetria_analitica": {
+      "alpha_deg": 0.0,
+      "esperado": {
+        "Cl": 0.0,
+        "Cm_c4": 0.0
+      },
+      "criterio": {
+        "|Cl|": 0.0001,
+        "|Cm|": 0.0001
+      },
+      "origen": "Simetria geometrica (sin incertidumbre experimental)"
+    },
+    "CV-01b_alpha_0_experimental": {
+      "alpha_deg": 0.0,
+      "esperado": {
+        "Cl": -0.0088,
+        "Cd": 0.00808
+      },
+      "criterio": {
+        "|Cl| absoluto": 0.015,
+        "Cd error relativo": 0.1
+      }
+    },
+    "CV-02_regimen_lineal": {
+      "alpha_deg": 10.0,
+      "esperado": {
+        "Cl": 1.0628,
+        "Cd": 0.01169
+      },
+      "criterio": {
+        "Cl error relativo": 0.03,
+        "Cd error relativo": 0.1
+      }
+    },
+    "CV-03_pre_perdida": {
+      "alpha_deg": 15.0,
+      "esperado": {
+        "Cl": 1.5004,
+        "Cd": 0.01792,
+        "Cm_c4": 0.0167
+      },
+      "rango_experimental": {
+        "Cl": [
+          1.4938,
+          1.5083
+        ],
+        "Cd": [
+          0.01745,
+          0.01831
+        ]
+      },
+      "criterio": {
+        "Cl error relativo": 0.05,
+        "Cd error relativo": 0.15
+      },
+      "criterio_cualitativo": {
+        "descripcion": "Cl(15 deg) debe quedar al menos 3% por debajo de la extrapolacion lineal",
+        "extrapolacion_lineal_Cl": 1.6215,
+        "cota_superior_Cl": 1.5729,
+        "desviacion_medida_pct": 7.47
+      },
+      "fuente": "Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+    },
+    "CV-04_pendiente": {
+      "alpha_barrido_deg": [
+        0,
+        2.5,
+        5,
+        7.5,
+        10
+      ],
+      "esperado": {
+        "Cl_alpha_por_grado": 0.1074,
+        "R2_referencia": 0.99985
+      },
+      "criterio": {
+        "error relativo": 0.05,
+        "R2_min": 0.999,
+        "maximo_sobre_teoria_perfil_delgado": 0.02
+      },
+      "nota": "Pendiente por regresion de Cl_ref sobre el barrido 0-10 deg. La pendiente del rango lineal puro (-2.5 a 8.5 deg) es 0.1086 /grado (ver parametros_derivados)."
+    }
+  },
+  "datos_experimentales_crudos": {
+    "nota": "Puntos medidos tal como aparecen en el reporte (alpha exacto, no nominal).",
+    "n80": {
+      "tabla_fuente": "Tabla IX",
+      "Re": 5950000.0,
+      "puntos": [
+        {
+          "alpha_deg": -4.04,
+          "Cl": -0.4417,
+          "Cd": 0.00871,
+          "Cm_c4": -0.0003,
+          "L_sobre_D_impreso": -50.74,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -2.14,
+          "Cl": -0.2385,
+          "Cd": 0.008,
+          "Cm_c4": 0.0001,
+          "L_sobre_D_impreso": -29.79,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -0.05,
+          "Cl": -0.0126,
+          "Cd": 0.00809,
+          "Cm_c4": 0.0001,
+          "L_sobre_D_impreso": -1.55,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 2.05,
+          "Cl": 0.2125,
+          "Cd": 0.00816,
+          "Cm_c4": 0.0003,
+          "L_sobre_D_impreso": 26.05,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 4.04,
+          "Cl": 0.4316,
+          "Cd": 0.00823,
+          "Cm_c4": 0.0005,
+          "L_sobre_D_impreso": 52.46,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 6.09,
+          "Cl": 0.6546,
+          "Cd": 0.00885,
+          "Cm_c4": 0.0012,
+          "L_sobre_D_impreso": 74.0,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 8.3,
+          "Cl": 0.8872,
+          "Cd": 0.0105,
+          "Cm_c4": 0.0031,
+          "L_sobre_D_impreso": 84.47,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 10.12,
+          "Cl": 1.0707,
+          "Cd": 0.01201,
+          "Cm_c4": 0.0052,
+          "L_sobre_D_impreso": 89.19,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 11.13,
+          "Cl": 1.1685,
+          "Cd": 0.01239,
+          "Cm_c4": 0.0069,
+          "L_sobre_D_impreso": 94.33,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 12.12,
+          "Cl": 1.2605,
+          "Cd": 0.01332,
+          "Cm_c4": 0.0089,
+          "L_sobre_D_impreso": 94.64,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 13.08,
+          "Cl": 1.3455,
+          "Cd": 0.01503,
+          "Cm_c4": 0.0111,
+          "L_sobre_D_impreso": 89.51,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 14.22,
+          "Cl": 1.4365,
+          "Cd": 0.01625,
+          "Cm_c4": 0.0145,
+          "L_sobre_D_impreso": 88.4,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 15.26,
+          "Cl": 1.5129,
+          "Cd": 0.019,
+          "Cm_c4": 0.0178,
+          "L_sobre_D_impreso": 79.64,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 16.3,
+          "Cl": 1.5739,
+          "Cd": 0.02218,
+          "Cm_c4": 0.0216,
+          "L_sobre_D_impreso": 70.95,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 17.13,
+          "Cl": 1.6116,
+          "Cd": 0.0256,
+          "Cm_c4": 0.0253,
+          "L_sobre_D_impreso": 62.95,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 18.02,
+          "Cl": 0.9967,
+          "Cd": 0.18785,
+          "Cm_c4": -0.0681,
+          "L_sobre_D_impreso": 5.31,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 19.08,
+          "Cl": 1.1358,
+          "Cd": 0.27292,
+          "Cm_c4": -0.0989,
+          "L_sobre_D_impreso": 4.16,
+          "estado_dato": "EXPERIMENTAL"
+        }
+      ]
+    },
+    "n120": {
+      "tabla_fuente": "Tabla XI",
+      "Re": 6000000.0,
+      "puntos": [
+        {
+          "alpha_deg": -4.01,
+          "Cl": -0.4466,
+          "Cd": 0.00843,
+          "Cm_c4": -0.0001,
+          "L_sobre_D_impreso": -52.98,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -2.12,
+          "Cl": -0.2425,
+          "Cd": 0.00789,
+          "Cm_c4": 0.0002,
+          "L_sobre_D_impreso": -30.72,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -0.01,
+          "Cl": -0.012,
+          "Cd": 0.00811,
+          "Cm_c4": 0.0001,
+          "L_sobre_D_impreso": -1.48,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 0.01,
+          "Cl": -0.0122,
+          "Cd": 0.00804,
+          "Cm_c4": 0.0008,
+          "L_sobre_D_impreso": -1.52,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 2.15,
+          "Cl": 0.2236,
+          "Cd": 0.00823,
+          "Cm_c4": 0.0004,
+          "L_sobre_D_impreso": 27.18,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 4.11,
+          "Cl": 0.4397,
+          "Cd": 0.00879,
+          "Cm_c4": 0.0004,
+          "L_sobre_D_impreso": 50.03,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 6.01,
+          "Cl": 0.6487,
+          "Cd": 0.00842,
+          "Cm_c4": 0.0011,
+          "L_sobre_D_impreso": 77.0,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 8.08,
+          "Cl": 0.8701,
+          "Cd": 0.00995,
+          "Cm_c4": 0.0026,
+          "L_sobre_D_impreso": 87.47,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 10.1,
+          "Cl": 1.0775,
+          "Cd": 0.01175,
+          "Cm_c4": 0.0049,
+          "L_sobre_D_impreso": 91.73,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 11.23,
+          "Cl": 1.1849,
+          "Cd": 0.01248,
+          "Cm_c4": 0.0069,
+          "L_sobre_D_impreso": 94.97,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 12.13,
+          "Cl": 1.272,
+          "Cd": 0.01282,
+          "Cm_c4": 0.0082,
+          "L_sobre_D_impreso": 99.21,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 13.26,
+          "Cl": 1.3699,
+          "Cd": 0.01408,
+          "Cm_c4": 0.0109,
+          "L_sobre_D_impreso": 97.29,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 14.3,
+          "Cl": 1.4571,
+          "Cd": 0.01628,
+          "Cm_c4": 0.0143,
+          "L_sobre_D_impreso": 89.51,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 15.27,
+          "Cl": 1.528,
+          "Cd": 0.0179,
+          "Cm_c4": 0.0175,
+          "L_sobre_D_impreso": 85.39,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 16.16,
+          "Cl": 1.5838,
+          "Cd": 0.02093,
+          "Cm_c4": 0.0208,
+          "L_sobre_D_impreso": 75.68,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 17.24,
+          "Cl": 1.6347,
+          "Cd": 0.02519,
+          "Cm_c4": 0.0251,
+          "L_sobre_D_impreso": 64.9,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 18.18,
+          "Cl": 1.1886,
+          "Cd": 0.25194,
+          "Cm_c4": -0.091,
+          "L_sobre_D_impreso": 4.72,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 19.25,
+          "Cl": 1.1888,
+          "Cd": 0.28015,
+          "Cm_c4": -0.0931,
+          "L_sobre_D_impreso": 4.24,
+          "estado_dato": "EXPERIMENTAL"
+        }
+      ]
+    },
+    "n180": {
+      "tabla_fuente": "Tabla XIII",
+      "Re": 5950000.0,
+      "puntos": [
+        {
+          "alpha_deg": -3.99,
+          "Cl": -0.4363,
+          "Cd": 0.00871,
+          "Cm_c4": -0.0004,
+          "L_sobre_D_impreso": -50.11,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -1.98,
+          "Cl": -0.2213,
+          "Cd": 0.00792,
+          "Cm_c4": 0.0,
+          "L_sobre_D_impreso": -27.93,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": -0.03,
+          "Cl": -0.0115,
+          "Cd": 0.00803,
+          "Cm_c4": 0.0,
+          "L_sobre_D_impreso": -1.44,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 0.04,
+          "Cl": -0.0013,
+          "Cd": 0.00811,
+          "Cm_c4": 0.0002,
+          "L_sobre_D_impreso": -0.15,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 2.0,
+          "Cl": 0.2113,
+          "Cd": 0.00814,
+          "Cm_c4": 0.0001,
+          "L_sobre_D_impreso": 25.97,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 4.06,
+          "Cl": 0.4365,
+          "Cd": 0.00814,
+          "Cm_c4": 0.0003,
+          "L_sobre_D_impreso": 53.59,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 6.09,
+          "Cl": 0.6558,
+          "Cd": 0.00851,
+          "Cm_c4": 0.0011,
+          "L_sobre_D_impreso": 77.1,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 8.09,
+          "Cl": 0.8689,
+          "Cd": 0.00985,
+          "Cm_c4": 0.0027,
+          "L_sobre_D_impreso": 88.24,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 10.18,
+          "Cl": 1.0809,
+          "Cd": 0.01165,
+          "Cm_c4": 0.005,
+          "L_sobre_D_impreso": 92.8,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 11.13,
+          "Cl": 1.1731,
+          "Cd": 0.01247,
+          "Cm_c4": 0.0064,
+          "L_sobre_D_impreso": 94.07,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 12.1,
+          "Cl": 1.2644,
+          "Cd": 0.01299,
+          "Cm_c4": 0.0082,
+          "L_sobre_D_impreso": 97.35,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 13.31,
+          "Cl": 1.3676,
+          "Cd": 0.01408,
+          "Cm_c4": 0.0111,
+          "L_sobre_D_impreso": 97.16,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 14.08,
+          "Cl": 1.4316,
+          "Cd": 0.01533,
+          "Cm_c4": 0.0133,
+          "L_sobre_D_impreso": 93.38,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 15.24,
+          "Cl": 1.5169,
+          "Cd": 0.0187,
+          "Cm_c4": 0.0173,
+          "L_sobre_D_impreso": 81.14,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 16.33,
+          "Cl": 1.5855,
+          "Cd": 0.02186,
+          "Cm_c4": 0.0213,
+          "L_sobre_D_impreso": 72.53,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 17.13,
+          "Cl": 1.6219,
+          "Cd": 0.02513,
+          "Cm_c4": 0.0247,
+          "L_sobre_D_impreso": 64.54,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 18.21,
+          "Cl": 1.0104,
+          "Cd": 0.25899,
+          "Cm_c4": -0.107,
+          "L_sobre_D_impreso": 3.9,
+          "estado_dato": "EXPERIMENTAL"
+        },
+        {
+          "alpha_deg": 19.27,
+          "Cl": 1.0664,
+          "Cd": 0.43446,
+          "Cm_c4": -0.0693,
+          "L_sobre_D_impreso": 2.45,
+          "estado_dato": "EXPERIMENTAL"
+        }
+      ]
+    }
+  },
+  "fuentes": [
+    {
+      "id": "ladson1988",
+      "cita": "Ladson, C. L., NASA TM 4074, Octubre 1988",
+      "url": "https://ntrs.nasa.gov/citations/19880019495",
+      "rol": "Fuente primaria de Cl, Cd, Cm"
+    },
+    {
+      "id": "tmr_2dn00",
+      "cita": "NASA Langley TMR, caso 2DN00 NACA 0012",
+      "url": "https://tmbwg.github.io/turbmodels/naca0012_val.html",
+      "rol": "Curaduria, geometria, condiciones y datos de comparacion"
+    },
+    {
+      "id": "gregory1970",
+      "cita": "Gregory y O'Reilly, R&M 3726 (1970)",
+      "rol": "Distribuciones de presion (trabajo futuro)"
+    },
+    {
+      "id": "mccroskey1987",
+      "cita": "McCroskey, NASA TM 100019 (1987)",
+      "url": "https://ntrs.nasa.gov/citations/19880002254",
+      "rol": "Analisis critico de la dispersion entre ensayos"
+    }
+  ],
+  "limitaciones_conocidas": [
+    "Cerca de la perdida (alpha>=16) el flujo de ensayo deja de ser 2D y la dispersion crece.",
+    "El Cd depende del estado de transicion: comparar solo datos tripped con modelos turbulentos.",
+    "El Cl experimental a alpha=0 no es cero (desalineacion); la prueba de simetria debe ser analitica.",
+    "La referencia es la media de tres tamanos de grano; la dispersion entre granos (min/max) se reporta explicitamente.",
+    "No existen datos de friccion superficial Cf para este caso."
+  ]
+}

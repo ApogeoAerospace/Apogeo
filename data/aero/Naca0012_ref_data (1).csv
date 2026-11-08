@@ -1,0 +1,18 @@
+# Naca0012_ref_data.csv - Datos de referencia aerodinamica, perfil NACA 0012 (MOLAB)
+# Condiciones: Re~6.0e6, M=0.15, capa limite disparada (tripped). Coeficientes 2D; Cm referido a c/4.
+# Fuente: Ladson, NASA TM 4074 (1988), Tablas IX (#80), XI (#120), XIII (#180).
+# Metodo: interpolacion lineal de los puntos medidos a cada angulo nominal, para cada tamano de grano;
+#         *_ref = media de los tres granos; *_min/*_max = extremos entre granos (dispersion experimental).
+# estado_dato = INTERPOLADO en todas las filas. Los puntos medidos originales (alpha exacto) estan en
+#         Naca0012_ref_data.json, seccion datos_experimentales_crudos.
+# OJO alpha=0: el Cl experimental NO es cero (desalineacion del tunel). Para la prueba de simetria
+#         analitica usar Cl=0 exacto (ver CV-01a en el documento de casos de validacion).
+alpha_deg,Cl_ref,Cl_min,Cl_max,Cd_ref,Cd_min,Cd_max,Cm_c4_ref,Re,Mach,estado_dato,fuente
+0.0,-0.0088,-0.0121,-0.0071,0.00808,0.00806,0.00809,0.0002,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+2.5,0.2634,0.2620,0.2660,0.00822,0.00814,0.00833,0.0003,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+5.0,0.5372,0.5360,0.5380,0.00848,0.00831,0.00862,0.0007,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+7.5,0.8057,0.8030,0.8081,0.00963,0.00945,0.00990,0.0023,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+10.0,1.0628,1.0586,1.0672,0.01169,0.01149,0.01191,0.0049,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+12.0,1.2546,1.2493,1.2594,0.01297,0.01277,0.01321,0.0082,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+14.0,1.4253,1.4189,1.4319,0.01562,0.01520,0.01601,0.0134,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
+15.0,1.5004,1.4938,1.5083,0.01792,0.01745,0.01831,0.0167,6.0e6,0.15,INTERPOLADO,"Ladson NASA TM 4074 (1988), Tablas IX/XI/XIII, M=0.15, R~6e6, transicion fijada (#80/#120/#180)"
