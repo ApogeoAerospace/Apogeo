@@ -151,7 +151,7 @@ sol::object json_to_sol(sol::state_view lua, const nlohmann::json& val) {
         }
         return tbl;
     }
-    return sol::make_object(lua, sol::nil);
+    return sol::make_object(lua, sol::lua_nil);
 }
 
 } // namespace
