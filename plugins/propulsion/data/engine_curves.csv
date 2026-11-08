@@ -1,0 +1,4 @@
+ambient_pressure_pa,chamber_pressure_pa,mixture_ratio,thrust_n,isp_s,interpolation
+0,7000000,2.5,110000,300,linear
+50000,7000000,2.5,105000,290,linear
+100000,7000000,2.5,100000,280,linear
