@@ -30,7 +30,7 @@ TOOLS_DIR = HERE.parent.parent
 REAL_ROOT = TOOLS_DIR.parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from web_server import ServerConfig, MoLabWebServer  # noqa: E402
+from web_server import ServerConfig, ApogeoWebServer  # noqa: E402
 from web_server.utils import (  # noqa: E402
     normalize_config_for_simulator,
     resolve_gravity,
@@ -88,7 +88,7 @@ class ApiTestCase(unittest.TestCase):
             port=self.port, auto_open_browser=False, project_root=root,
             simulator_command=[sys.executable, str(HERE / "fake_simulator.py")],
         )
-        self.server = MoLabWebServer(self.config)
+        self.server = ApogeoWebServer(self.config)
         self.thread = threading.Thread(target=self.server.start, daemon=True)
         self.thread.start()
         self._wait_for_port()
