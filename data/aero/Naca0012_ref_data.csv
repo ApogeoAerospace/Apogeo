@@ -1,4 +1,4 @@
-# Naca0012_ref_data.csv - Datos de referencia aerodinamica, perfil NACA 0012 (MOLAB)
+# Naca0012_ref_data.csv - Datos de referencia aerodinamica, perfil NACA 0012 (APOGEO)
 # Condiciones: Re~6.0e6, M=0.15, capa limite disparada (tripped). Coeficientes 2D; Cm referido a c/4.
 # Fuente: Ladson, NASA TM 4074 (1988), Tablas IX (#80), XI (#120), XIII (#180).
 # Metodo: interpolacion lineal de los puntos medidos a cada angulo nominal, para cada tamano de grano;
