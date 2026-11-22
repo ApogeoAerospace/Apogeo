@@ -1,6 +1,11 @@
 name: CodeQL Advanced
 
 on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main, develop]
+  merge_group:
   workflow_call:
   workflow_dispatch:
   schedule:
@@ -9,11 +14,19 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
       actions: read
@@ -40,49 +53,81 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake ninja-build pkg-config
+      - name: Restore C++ dependency binary cache
+        if: matrix.build-mode == 'manual'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/vcpkg
+          key: codeql-vcpkg-ubuntu24-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v1
       - name: Set up pinned vcpkg
         if: matrix.build-mode == 'manual'
         shell: bash
         run: |
-          BASELINE=$(python3 -c "import json; print(json.load(open('vcpkg.json'))['builtin-baseline'])")
-          git clone https://github.com/microsoft/vcpkg.git vcpkg
-          git -C vcpkg checkout "$BASELINE"
-          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          bash tools/ci/setup_vcpkg.sh
+          # Build dependencies before CodeQL tracing to keep extraction focused on project code.
+          ./vcpkg/vcpkg install --triplet x64-linux
+      - name: Record scanned revision
+        run: |
+          echo 'CodeQL is scanning this checkout:'
+          git rev-parse HEAD
+          python3 -m unittest discover -s tests -p test_ci_sarif.py -v
       - name: Initialize CodeQL
         uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          queries: security-extended
+          config-file: ./.github/codeql/config.yml
+          db-location: ${{ runner.temp }}/codeql-database
       - name: Build project for C++ extraction
         if: matrix.build-mode == 'manual'
         shell: bash
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF \
+          cmake -S . -B build-codeql -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTING=ON \
             -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_INSTALLED_DIR="$GITHUB_WORKSPACE/vcpkg_installed" \
             -DVCPKG_TARGET_TRIPLET=x64-linux
-          cmake --build build --parallel 2
+          cmake --build build-codeql --clean-first --parallel 2
       - name: Analyze security
         id: analyze
         uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
           category: /language:${{ matrix.language }}
-          output: codeql-results
+          output: ${{ runner.temp }}/codeql-results
+          upload-database: false
           # Enforce locally before uploading; fork PRs do not need upload permissions to run the gate.
           upload: never
       - name: Enforce security findings gate
-        run: python3 tools/ci/check_sarif.py codeql-results
+        env:
+          SARIF_DIRECTORY: ${{ runner.temp }}/codeql-results
+        run: python3 tools/ci/check_sarif.py "$SARIF_DIRECTORY"
       - name: Upload security findings to code scanning
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:
-          sarif_file: codeql-results
+          sarif_file: ${{ runner.temp }}/codeql-results
           category: /language:${{ matrix.language }}
       - name: Retain security reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: codeql-${{ matrix.language }}
-          path: codeql-results/
+          path: ${{ runner.temp }}/codeql-results/
           retention-days: 14
+
+  security-gate:
+    name: CodeQL Security Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: analyze
+    if: always()
+    steps:
+      - name: Require every language analysis to pass
+        env:
+          ANALYSIS_RESULT: ${{ needs.analyze.result }}
+        run: |
+          echo "CodeQL language matrix result: $ANALYSIS_RESULT" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$ANALYSIS_RESULT" != success ]]; then
+            echo '::error::CodeQL analysis or findings gate failed, was cancelled, or was skipped'
+            exit 1
+          fi

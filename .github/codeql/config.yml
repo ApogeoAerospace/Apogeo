@@ -1,0 +1,6 @@
+name: Apogeo security and correctness
+
+# Include security-extended plus correctness and maintainability queries.
+# No project source paths, rule IDs, or existing findings are excluded.
+queries:
+  - uses: security-and-quality

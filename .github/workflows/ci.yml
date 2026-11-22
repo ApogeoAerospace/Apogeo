@@ -2,7 +2,7 @@ name: Apogeo CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: ['**']
 
   workflow_dispatch:
 
