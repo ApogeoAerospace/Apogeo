@@ -131,6 +131,7 @@ add_custom_command(
 # --- Plugins ---
 
 set(PLUGIN_NAMES
+    environment
     structures
 )
 
@@ -159,6 +160,15 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         )
     endif()
 
+    if(_plugin_name STREQUAL "environment")
+        list(APPEND _plugin_sources
+            "plugins/environment/environment_module.cpp"
+        )
+        list(APPEND _plugin_private_libs
+            nlohmann_json::nlohmann_json
+        )
+    endif()
+
     add_library(${_plugin_name} SHARED ${_plugin_sources})
     add_dependencies(${_plugin_name} generate_flatbuffers)
 
@@ -177,6 +187,12 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     if(_plugin_name STREQUAL "structures")
         target_include_directories(${_plugin_name} PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures"
+        )
+    endif()
+
+    if(_plugin_name STREQUAL "environment")
+        target_include_directories(${_plugin_name} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/environment"
         )
     endif()
 
@@ -220,6 +236,8 @@ if(ENABLE_TESTING)
         tests/test_initial_state_loader.cpp
         tests/test_command_event_protocol.cpp
         tests/test_ipc_session.cpp
+        tests/test_environment_module.cpp
+        plugins/environment/environment_module.cpp
         src/ipc/IpcSession.cpp
     )
 
@@ -234,6 +252,7 @@ if(ENABLE_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/environment
         ${GENERATED_DIR}
     )
 

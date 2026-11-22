@@ -27,6 +27,15 @@
                 "use_host_logger": true,
                 "debug_output": true
             }
+        },
+        {
+            "name": "environment",
+            "type": 1,
+            "library_path": "plugins/environment",
+            "enabled": true,
+            "parameters": {
+                "config_path": "data/default_config.json"
+            }
         }
     ],
     "initial_state_file": "data/default_state.json",
