@@ -2,7 +2,7 @@
   "$schema_version": "2.0",
   "documento": {
     "titulo": "Datos de referencia aerodinamica - Caso NACA 0012",
-    "proyecto": "MOLAB - Mission Operation Laboratory",
+    "proyecto": "Apogeo Aerospace",
     "modulo_objetivo": "Modulo de aerodinamica del simulador",
     "version": "2.0",
     "estado": "COMPLETO para CV-01 a CV-04. Ver nota_procedencia antes de certificar."
