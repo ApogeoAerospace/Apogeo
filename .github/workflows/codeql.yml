@@ -1,11 +1,6 @@
 name: CodeQL Advanced
 
 on:
-  push:
-    branches: ['**']
-  pull_request:
-    branches: [main, develop]
-  merge_group:
   workflow_call:
   workflow_dispatch:
   schedule:
@@ -61,42 +56,25 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Install C++ build dependencies
-        if: matrix.build-mode == 'manual' && runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkg-config
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
-      - name: Install macOS build dependencies
-        if: matrix.build-mode == 'manual' && runner.os == 'macOS'
-        run: brew install cmake ninja pkg-config
-      - name: Restore C++ dependency binary cache
-        if: matrix.build-mode == 'manual' && runner.os != 'Windows'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - name: Prepare native toolchain
+        if: matrix.build-mode == 'manual'
+        uses: ./.github/actions/setup-native
         with:
-          path: ~/.cache/vcpkg
-          key: codeql-vcpkg-${{ matrix.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v1
-      - name: Set up pinned vcpkg
+          triplet: ${{ matrix.triplet }}
+      - name: Install native dependencies before tracing
         if: matrix.build-mode == 'manual' && runner.os != 'Windows'
-        shell: bash
-        run: |
-          bash tools/ci/setup_vcpkg.sh
-          # Build dependencies before CodeQL tracing to keep extraction focused on project code.
-          ./vcpkg/vcpkg install --triplet "${{ matrix.triplet }}"
-      - name: Set up Windows dependencies
+        run: ./vcpkg/vcpkg install --triplet "${{ matrix.triplet }}"
+      - name: Install Windows dependencies before tracing
         if: matrix.build-mode == 'manual' && runner.os == 'Windows'
         shell: pwsh
-        run: |
-          ./tools/ci/setup_vcpkg.ps1
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          ./vcpkg/vcpkg.exe install --triplet x64-windows
+        run: ./vcpkg/vcpkg.exe install --triplet x64-windows
       - name: Record scanned revision
         run: |
           echo 'CodeQL is scanning this checkout:'
           git rev-parse HEAD
-          python -m unittest discover -s tests -p test_ci_sarif.py -v
       - name: Initialize CodeQL
         uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4
         with:

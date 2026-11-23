@@ -318,6 +318,9 @@ if(ENABLE_TESTING)
     # Core tests
     add_executable(core_tests
         tests/test_config_manager.cpp
+        tests/test_structures_module.cpp
+        tests/test_plugin_lifecycle.cpp
+        plugins/structures/structures_module.cpp
         tests/test_physics_integrator.cpp
         tests/test_time_manager.cpp
         tests/test_logger.cpp
@@ -346,12 +349,17 @@ if(ENABLE_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin
         ${HDF5_INCLUDE_DIRS}
         ${GENERATED_DIR}
     )
 
     # Register tests with CTest
+    add_dependencies(core_tests propulsion)
+    target_compile_definitions(core_tests PRIVATE
+        APOGEO_PROPULSION_PLUGIN="$<TARGET_FILE:propulsion>"
+        APOGEO_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     include(GoogleTest)
     gtest_discover_tests(core_tests)
 

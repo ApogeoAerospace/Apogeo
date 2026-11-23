@@ -112,6 +112,23 @@ class SarifGateTests(unittest.TestCase):
                 result = subprocess.run([sys.executable, str(SCRIPT), directory], capture_output=True, env=environment)
             self.assertEqual(result.returncode, expected)
 
+    def test_reviewed_exception_requires_exact_rule_path_and_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'main.cpp').write_text('open_selected_config();\nother_access();\n')
+            report = self.report('9.8')
+            result = report['runs'][0]['results'][0]
+            result['locations'] = [{'physicalLocation': {
+                'artifactLocation': {'uri': 'main.cpp'}, 'region': {'startLine': 1}}}]
+            policy = [{'rule_id': 'security/test', 'path': 'main.cpp',
+                       'statement': 'open_selected_config();', 'reason': 'Explicit local file selection'}]
+            self.assertEqual(GATE.blocking_findings(report, policy, root), [])
+            result['locations'][0]['physicalLocation']['region']['startLine'] = 2
+            self.assertEqual(GATE.blocking_findings(report, policy, root), ['security/test'])
+            result['locations'][0]['physicalLocation']['region']['startLine'] = 1
+            policy[0]['rule_id'] = 'another-rule'
+            self.assertEqual(GATE.blocking_findings(report, policy, root), ['security/test'])
+
 
 if __name__ == '__main__':
     unittest.main()

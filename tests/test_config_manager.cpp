@@ -11,6 +11,51 @@
 using json = nlohmann::json;
 using namespace Apogeo;
 
+TEST(ConfigManagerRoundTrip, SavesPluginsLoggingAndStatePaths) {
+    const std::string input = "config-roundtrip-input.json";
+    const std::string saved = "config-roundtrip-saved.json";
+    const json configuration = {
+        {"simulation", {{"duration", 2}, {"max_iterations", 10}}},
+        {"logging", {{"console_output", false}, {"file_output", false}}},
+        {"vehicle_models", {{"flight_computer", {{"script_path", "flight.lua"}}}}},
+        {"plugins", {{{"name", "test"}, {"library_path", "plugins/test"}, {"type", 1},
+                      {"enabled", false}, {"parameters", {{"debug_output", true}}}}}},
+        {"initial_state_file", "state.json"}, {"output_directory", "roundtrip-output"}
+    };
+    { std::ofstream file(input); file << configuration; }
+    auto& manager = ConfigManager::getInstance();
+    ASSERT_TRUE(manager.loadConfig(input));
+    EXPECT_EQ(manager.flight_script_path, "flight.lua");
+    ASSERT_TRUE(manager.saveConfig(saved));
+    ASSERT_TRUE(manager.loadConfig(saved));
+    EXPECT_EQ(manager.getInitialStateFile(), "state.json");
+    EXPECT_EQ(manager.getOutputDirectory(), "roundtrip-output");
+    ASSERT_EQ(manager.getPluginConfigs().size(), 1U);
+    EXPECT_FALSE(manager.getPluginConfigs()[0].enabled);
+    EXPECT_TRUE(manager.getPluginConfigs()[0].parameters["debug_output"].get<bool>());
+    EXPECT_FALSE(manager.getSimulationConfig().file_output);
+    EXPECT_FALSE(manager.saveConfig("missing-directory/config.json"));
+    std::remove(input.c_str());
+    std::remove(saved.c_str());
+}
+
+TEST(ConfigManagerValidation, RejectsMalformedSectionsAndInvalidPluginType) {
+    auto& manager = ConfigManager::getInstance();
+    const std::string input = "invalid-sections.json";
+    for (const auto& configuration : std::vector<json>{
+             {{"simulation", {{"duration", "bad"}}}},
+             {{"plugins", {{{"name", "test"}, {"library_path", "test"}, {"type", "bad"}}}}},
+             {{"simulation", {{"duration", 0}}}},
+             {{"simulation", {{"max_iterations", 0}}}},
+             {{"plugins", {{{"name", "test"}, {"library_path", "test"}, {"type", 9}}}}}}) {
+        { std::ofstream file(input); file << configuration; }
+        EXPECT_FALSE(manager.loadConfig(input)) << configuration.dump();
+    }
+    { std::ofstream file(input); file << "not json"; }
+    EXPECT_FALSE(manager.loadConfig(input));
+    std::remove(input.c_str());
+}
+
 class ConfigManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {

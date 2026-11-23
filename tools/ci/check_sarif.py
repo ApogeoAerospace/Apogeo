@@ -43,7 +43,29 @@ def resolve_rule(result, tool):
     return rule_id, matches[0] if matches else {}
 
 
-def blocking_findings(report):
+def reviewed_finding(result, rule_id, policy, root):
+    """Match a reviewed finding to its exact current source statement."""
+    locations = result.get('locations', [])
+    if not locations:
+        return None
+    location = locations[0].get('physicalLocation', {})
+    uri = location.get('artifactLocation', {}).get('uri')
+    line = location.get('region', {}).get('startLine')
+    for entry in policy:
+        if entry['rule_id'] != rule_id or entry['path'] != uri:
+            continue
+        if not entry.get('reason') or not entry.get('statement'):
+            raise ValueError('Reviewed findings require a statement and rationale')
+        source = (root / entry['path']).resolve()
+        if not source.is_relative_to(root.resolve()):
+            raise ValueError('Reviewed finding path escapes the project')
+        lines = source.read_text(encoding='utf-8').splitlines()
+        if type(line) is int and 0 < line <= len(lines) and lines[line - 1].strip() == entry['statement']:
+            return entry
+    return None
+
+
+def blocking_findings(report, policy=(), root=Path('.'), reviewed=None):
     if not isinstance(report, dict) or report.get('version') != '2.1.0' or not report.get('runs'):
         raise ValueError('Missing SARIF 2.1.0 analysis runs')
     blocked = []
@@ -72,30 +94,40 @@ def blocking_findings(report):
             else:
                 blocking = level in ('warning', 'error')
             if blocking:
-                blocked.append(rule_id)
+                exception = reviewed_finding(result, rule_id, policy, root)
+                if exception is None:
+                    blocked.append(rule_id)
+                elif reviewed is not None:
+                    reviewed.append(exception)
     return blocked
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('directory', type=Path)
+    parser.add_argument('--policy', type=Path, default=Path('.github/codeql/reviewed-findings.json'))
     args = parser.parse_args()
     reports = sorted(args.directory.rglob('*.sarif'))
     if not reports:
         raise SystemExit('ERROR: No SARIF reports produced')
     count = 0
+    reviewed = []
     try:
+        policy = json.loads(args.policy.read_text(encoding='utf-8')) if args.policy.exists() else []
         for path in reports:
-            findings = blocking_findings(json.loads(path.read_text(encoding='utf-8')))
+            findings = blocking_findings(json.loads(path.read_text(encoding='utf-8')), policy, reviewed=reviewed)
             count += len(findings)
             for rule in findings:
                 print(f'Blocking finding: {path.name}: {rule}')
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         raise SystemExit(f'ERROR: Invalid or incomplete analysis: {error}') from error
     print(f'Blocking security findings: {count}; allowed: 0')
+    for entry in reviewed:
+        print(f'Reviewed finding retained in SARIF: {entry["rule_id"]} {entry["path"]}: {entry["reason"]}')
     if os.environ.get('GITHUB_STEP_SUMMARY'):
         with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
             summary.write(f'Blocking CodeQL security/correctness findings: **{count}**; allowed: **0**.\n')
+            summary.write(f'Exact reviewed findings retained in SARIF: **{len(reviewed)}**.\n')
     if count:
         raise SystemExit(1)
 

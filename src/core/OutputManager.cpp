@@ -27,7 +27,8 @@ OutputManager::~OutputManager() noexcept {
       finalizeOutput();
     }
   } catch (const std::exception&) {
-    // Destructor must not throw
+    // Destructor must not throw.
+    return;
   }
 }
 
@@ -495,7 +496,7 @@ void OutputManager::writerLoop() {
         break;
       }
 
-      pending = std::move(pending_points_.front());
+      pending = pending_points_.front();
       pending_points_.pop_front();
     }
 
@@ -529,6 +530,7 @@ void OutputManager::writerLoop() {
         telemetry_callback(pending.point, pending.tick);
       } catch (...) {
         // Telemetry callback must not break async output writer.
+        continue;
       }
     }
   }

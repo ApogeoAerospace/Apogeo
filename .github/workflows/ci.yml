@@ -27,74 +27,10 @@ env:
   MAX_TIDY_WARNINGS: '10'
 
 jobs:
-  # Initial job: configure vcpkg once and cache it
-  setup-vcpkg:
-    name: Configure vcpkg (shared)
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-15]
-        include:
-          - os: ubuntu-24.04
-            triplet: x64-linux
-          - os: macos-15
-            triplet: arm64-osx
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-
-      - name: Clean vcpkg if it exists
-        run: |
-          if [ -d "vcpkg" ]; then
-            echo "Removing existing vcpkg directory..."
-            rm -rf vcpkg
-          fi
-
-      - name: Cache vcpkg
-        id: cache-vcpkg
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
-
-      - name: Install system dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkg-config
-
-      - name: Install system dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake ninja pkg-config
-
-      - name: Configure vcpkg
-        run: |
-          bash tools/ci/setup_vcpkg.sh
-          ./vcpkg/vcpkg install --triplet "${{ matrix.triplet }}"
-
-      - name: Verify vcpkg installation
-        run: |
-          if [ -d "vcpkg" ]; then
-            echo "vcpkg configured correctly"
-            ls -la vcpkg/
-          else
-            echo "ERROR: vcpkg not found"
-            exit 1
-          fi
-
   build-and-test:
-    name: Build C++ Core & Plugins
+    name: Test / Native (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
-    needs: setup-vcpkg
     strategy:
       fail-fast: false
       matrix:
@@ -112,48 +48,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Clean vcpkg if it exists
-        run: |
-          if [ -d "vcpkg" ]; then
-            echo "Removing existing vcpkg directory..."
-            rm -rf vcpkg
-          fi
-
-      - name: Configure Python 3.x
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - name: Prepare native toolchain
+        uses: ./.github/actions/setup-native
         with:
-          python-version: '3.11'
-
-      - name: Install system dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            python3-tk \
-            pkg-config
-
-      - name: Install system dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install cmake ninja pkg-config
-
-      - name: Restore vcpkg cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
-
-      - name: Ensure pinned vcpkg toolchain
-        run: bash tools/ci/setup_vcpkg.sh
+          triplet: ${{ matrix.triplet }}
 
       - name: Configure CMake
         run: |
-          cmake -B build -S . \
+          flags=()
+          if [[ "${{ matrix.os }}" == ubuntu-24.04 && "${{ matrix.build_type }}" == Debug ]]; then
+            flags+=(-DENABLE_COVERAGE=ON -DCMAKE_CXX_FLAGS=-fprofile-update=atomic)
+          fi
+          cmake -B build -S . "${flags[@]}" \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
             -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
@@ -162,24 +68,69 @@ jobs:
       - name: Build project
         run: cmake --build build --config ${{ matrix.build_type }} --parallel
 
+      - name: Install coverage tools
+        if: matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug'
+        run: sudo apt-get install -y lcov
+
       - name: Run native tests
         run: ctest --test-dir build --output-on-failure --no-tests=error --timeout 120
 
-      - name: Install Python test dependencies
-        run: python -m pip install -r tools/ci/requirements.txt
-
-      - name: Run Python API tests
-        run: python -m pytest tools/web_server/tests -q
-
-      - name: Verify generated binaries
+      - name: Generate coverage report
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
         run: |
-          echo "Verifying generated binaries..."
-          ls -lh build/bin/
-          ls -lh build/lib/
-          file build/bin/simulator
+          cd build
+          # GCC can emit negative counters; lcov treats ignored negative counts as zero.
+          lcov --capture --initial --directory . --output-file coverage_base.info --ignore-errors mismatch,inconsistent,negative
+          lcov --capture --directory . --output-file coverage_run.info --ignore-errors mismatch,inconsistent,negative
+          lcov --add-tracefile coverage_base.info --add-tracefile coverage_run.info --output-file coverage.info --ignore-errors inconsistent
+          lcov --extract coverage.info "$GITHUB_WORKSPACE/src/*" "$GITHUB_WORKSPACE/plugins/*" --output-file coverage_project.info --ignore-errors unused,inconsistent
+          lcov --remove coverage_project.info '*/tests/*' \
+            --output-file coverage_filtered.info \
+            --ignore-errors unused,inconsistent
+          lcov --list coverage_filtered.info
 
-      - name: Validate Python script syntax
-        run: python3 -m compileall -q tools
+      - name: Validate minimum coverage
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+          found = hit = 0
+          for line in pathlib.Path('build/coverage_filtered.info').read_text().splitlines():
+              if line.startswith('LF:'):
+                  found += int(line[3:])
+              elif line.startswith('LH:'):
+                  hit += int(line[3:])
+          if found == 0:
+              raise SystemExit('ERROR: Coverage report contains no executable lines')
+          coverage = 100 * hit / found
+          minimum = float(os.environ['MIN_COVERAGE'])
+          print(f'Line coverage: {coverage:.2f}% ({hit}/{found}); required: {minimum}%')
+          if coverage < minimum:
+              raise SystemExit('ERROR: Insufficient line coverage; add unit tests')
+          PY
+
+      - name: Generate HTML report
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/coverage_filtered.info') != '' }}
+        run: |
+          cd build
+          genhtml coverage_filtered.info --output-directory coverage_html
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/coverage_filtered.info') != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-report
+          path: |
+            build/coverage_html/
+            build/coverage_filtered.info
+          retention-days: 30
+
+      - name: Show coverage summary
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
+        run: |
+          cd build
+          lcov --summary coverage_filtered.info
 
       - name: Upload build artifacts
         if: always()
@@ -189,9 +140,10 @@ jobs:
           path: |
             build/bin/
             build/lib/
+            build/Testing/
           retention-days: 7
   code-quality:
-    name: Quality Validation
+    name: Validate / Files
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -221,186 +173,13 @@ jobs:
                   json.load(source)
           PY
 
-      - name: Install FlatBuffers
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y flatbuffers-compiler
-          flatc --version
-
-      - name: Validate FlatBuffers schemas
-        run: |
-          test -d src/schemas
-          mkdir -p /tmp/flatbuffers_validation
-          while IFS= read -r -d '' schema_file; do
-            echo "Validating: $schema_file"
-            flatc --cpp -I src/schemas -o /tmp/flatbuffers_validation "$schema_file"
-          done < <(find src/schemas -name '*.fbs' -type f -print0)
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    needs: setup-vcpkg
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build
-
-      - name: Restore vcpkg cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
-
-      - name: Ensure pinned vcpkg toolchain
-        run: bash tools/ci/setup_vcpkg.sh
-
-      - name: Configure CMake with tests
-        run: |
-          cmake -B build -S . \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_TARGET_TRIPLET=x64-linux \
-            -DENABLE_TESTING=ON \
-            -G Ninja
-
-      - name: Build project and tests
-        run: cmake --build build --config Debug --parallel
-
-      - name: Run unit tests
-        run: ctest --test-dir build --output-on-failure --verbose --no-tests=error --timeout 120
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: test-results
-          path: build/Testing/
-          retention-days: 7
-  code-coverage:
-    name: Code Coverage
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    needs: setup-vcpkg
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            lcov
-
-      - name: Restore vcpkg cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
-
-      - name: Ensure pinned vcpkg toolchain
-        run: bash tools/ci/setup_vcpkg.sh
-
-      - name: Configure CMake with coverage
-        env:
-          CXX: g++
-        run: |
-          cmake -B build -S . \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_TARGET_TRIPLET=x64-linux \
-            -DENABLE_TESTING=ON \
-            -DENABLE_COVERAGE=ON \
-            -DCMAKE_CXX_FLAGS=-fprofile-update=atomic \
-            -G Ninja
-
-      - name: Build with coverage
-        run: cmake --build build --config Debug --parallel
-
-      - name: Run tests for coverage
-        run: |
-          cd build
-          ctest --output-on-failure --no-tests=error --timeout 120
-
-      - name: Generate coverage report
-        run: |
-          cd build
-          # GCC can emit negative counters; lcov treats ignored negative counts as zero.
-          lcov --capture --initial --directory . --output-file coverage_base.info --ignore-errors mismatch,inconsistent,negative
-          lcov --capture --directory . --output-file coverage_run.info --ignore-errors mismatch,inconsistent,negative
-          lcov --add-tracefile coverage_base.info --add-tracefile coverage_run.info --output-file coverage.info --ignore-errors inconsistent
-          lcov --extract coverage.info "$GITHUB_WORKSPACE/src/*" "$GITHUB_WORKSPACE/plugins/*" --output-file coverage_project.info --ignore-errors unused,inconsistent
-          lcov --remove coverage_project.info '*/tests/*' \
-            --output-file coverage_filtered.info \
-            --ignore-errors unused,inconsistent
-          lcov --list coverage_filtered.info
-
-      - name: Validate minimum coverage
-        run: |
-          python3 - <<'PY'
-          import os
-          import pathlib
-          found = hit = 0
-          for line in pathlib.Path('build/coverage_filtered.info').read_text().splitlines():
-              if line.startswith('LF:'):
-                  found += int(line[3:])
-              elif line.startswith('LH:'):
-                  hit += int(line[3:])
-          if found == 0:
-              raise SystemExit('ERROR: Coverage report contains no executable lines')
-          coverage = 100 * hit / found
-          minimum = float(os.environ['MIN_COVERAGE'])
-          print(f'Line coverage: {coverage:.2f}% ({hit}/{found}); required: {minimum}%')
-          if coverage < minimum:
-              raise SystemExit('ERROR: Insufficient line coverage; add unit tests')
-          PY
-
-      - name: Generate HTML report
-        if: ${{ !cancelled() && hashFiles('build/coverage_filtered.info') != '' }}
-        run: |
-          cd build
-          genhtml coverage_filtered.info --output-directory coverage_html
-
-      - name: Upload coverage report
-        if: ${{ !cancelled() && hashFiles('build/coverage_filtered.info') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: coverage-report
-          path: |
-            build/coverage_html/
-            build/coverage_filtered.info
-          retention-days: 30
-
-      - name: Show coverage summary
-        run: |
-          cd build
-          lcov --summary coverage_filtered.info
+      - name: Validate Python syntax
+        run: python -m compileall -q tools tests
 
   static-analysis:
-    name: Static Analysis
+    name: Analyze / C++ diagnostics
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: setup-vcpkg
 
     steps:
       - name: Checkout code
@@ -408,26 +187,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install clang-tidy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            clang-tidy \
-            clang-tools \
-            build-essential \
-            cmake \
-            ninja-build
-
-      - name: Restore vcpkg cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - name: Prepare native toolchain
+        uses: ./.github/actions/setup-native
         with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
-
-      - name: Ensure pinned vcpkg toolchain
-        run: bash tools/ci/setup_vcpkg.sh
+          triplet: x64-linux
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy
 
       - name: Configure CMake
         run: |
@@ -492,10 +257,9 @@ jobs:
           retention-days: 30
 
   sanitizer-tests:
-    name: Address and Undefined Behavior Sanitizers
+    name: Analyze / Address and undefined behavior
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: setup-vcpkg
     env:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
@@ -503,19 +267,11 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build pkg-config
-      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: ./.github/actions/setup-native
         with:
-          path: |
-            vcpkg
-            ~/.cache/vcpkg
-          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v3
+          triplet: x64-linux
       - name: Configure sanitizer build
         run: |
-          bash tools/ci/setup_vcpkg.sh
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
@@ -532,7 +288,7 @@ jobs:
           path: build/Testing/
 
   security-checks:
-    name: Secret and Workflow Checks
+    name: Security / Secrets and workflows
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -556,7 +312,7 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_ci_sarif.py -v
 
   dependency-review:
-    name: Dependency Review
+    name: Security / Dependencies
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -574,7 +330,7 @@ jobs:
           warn-only: false
 
   codeql:
-    name: Security Analysis
+    name: Security / CodeQL
     permissions:
       contents: read
       security-events: write
@@ -582,7 +338,7 @@ jobs:
     uses: ./.github/workflows/codeql.yml
 
   windows-tests:
-    name: Windows MSVC (${{ matrix.build_type }})
+    name: Test / Native (windows-2022, ${{ matrix.build_type }})
     runs-on: windows-2022
     timeout-minutes: 60
     strategy:
@@ -592,30 +348,13 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    env:
-      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/out/vcpkg-archives
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: ./.github/actions/setup-native
         with:
-          python-version: '3.11'
-      - name: Prepare binary cache directory
-        run: New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: vcpkg-windows2022-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v1
-      - name: Bootstrap pinned Windows vcpkg
-        run: |
-          $baseline = (Get-Content -Raw vcpkg.json | ConvertFrom-Json).'builtin-baseline'
-          if ($baseline -notmatch '^[0-9a-f]{40}$') { throw 'Invalid vcpkg baseline' }
-          git clone https://github.com/microsoft/vcpkg.git vcpkg
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          git -C vcpkg checkout --detach $baseline
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
+          triplet: x64-windows
       - name: Configure Windows with matching MSVC compiler and headers
         run: >-
           cmake -S . -B build-windows -G "Visual Studio 17 2022" -A x64
@@ -625,13 +364,6 @@ jobs:
         run: cmake --build build-windows --config ${{ matrix.build_type }} --parallel 2
       - name: Run Windows unit tests
         run: ctest --test-dir build-windows -C ${{ matrix.build_type }} --output-on-failure --no-tests=error --timeout 120
-      - name: Install Python test dependencies
-        run: python -m pip install -r tools/ci/requirements.txt
-      - name: Run Windows web API and security gate tests
-        run: |
-          python -m unittest discover -s tests -p test_ci_sarif.py -v
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pytest tools/web_server/tests -q
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -639,11 +371,37 @@ jobs:
           path: build-windows/Testing/
           retention-days: 14
 
+  api-tests:
+    name: Test / Python API (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: python -m pip install -r tools/ci/requirements.txt
+      - name: Test API
+        run: python -m pytest tools/web_server/tests -q --junitxml=api-tests.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: api-tests-${{ matrix.os }}
+          path: api-tests.xml
+          retention-days: 14
+
   quality-summary:
     name: Quality Summary
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: [setup-vcpkg, windows-tests, build-and-test, unit-tests, code-coverage, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
+    needs: [windows-tests, build-and-test, api-tests, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
     if: always()
     steps:
       - name: Enforce all quality and security gates

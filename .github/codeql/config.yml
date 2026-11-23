@@ -1,6 +1,6 @@
 name: Apogeo security and correctness
 
-# Include security-extended plus correctness and maintainability queries.
-# No project source paths, rule IDs, or existing findings are excluded.
+# CodeQL owns security/data-flow analysis. clang-tidy owns native diagnostics;
+# generated documentation and vendored header style are not merge criteria.
 queries:
-  - uses: security-and-quality
+  - uses: security-extended

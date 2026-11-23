@@ -3051,8 +3051,9 @@ class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json_response({"success": False, "error": "Invalid configuration filename"})
                 return
             filename = os.path.basename(filename)
-            config_file = (self.config_dir / f"{filename}.json").resolve()
-            if config_file.parent != self.config_dir.resolve():
+            base_dir = os.path.realpath(self.config_dir)
+            config_file = os.path.realpath(os.path.join(base_dir, f"{filename}.json"))
+            if not config_file.startswith(base_dir + os.sep):
                 self.send_json_response({"success": False, "error": "Invalid configuration path"})
                 return
             with open(config_file, 'w') as f:

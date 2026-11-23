@@ -62,12 +62,12 @@ TEST_F(PropulsionTest, InterpolatesNodesAndInteriorWithoutExtrapolation) {
     module.load_from_csv(MOCK_PATH);
     for (const auto& row : module.curve().samples) {
         const auto actual = module.interpolate_performance(row.ambient_pressure_pa);
-        ASSERT_TRUE(actual);
+        if (!actual.has_value()) { FAIL() << "Expected interpolation at a table node"; return; }
         EXPECT_DOUBLE_EQ(actual->thrust_n, row.thrust_n);
         EXPECT_DOUBLE_EQ(actual->isp_s, row.isp_s);
     }
     const auto middle = module.interpolate_performance(25000);
-    ASSERT_TRUE(middle);
+    if (!middle.has_value()) { FAIL() << "Expected interpolation inside the table"; return; }
     EXPECT_DOUBLE_EQ(middle->thrust_n, 107500);
     EXPECT_DOUBLE_EQ(middle->isp_s, 295);
     EXPECT_FALSE(module.interpolate_performance(-1));

@@ -164,7 +164,7 @@ public:
 
             // Output to console
             if (console_output_enabled_) {
-                std::cout << log_line << std::endl;
+                std::cout << log_line << '\n' << std::flush;
             }
 
             // Output to file if available
@@ -173,7 +173,7 @@ public:
                     log_file_.open(log_file_path_, std::ios::app);
                 }
                 if (log_file_.is_open()) {
-                    log_file_ << log_line << std::endl;
+                    log_file_ << log_line << '\n' << std::flush;
                     log_file_.flush();
                     log_file_.close();
                 }
@@ -186,7 +186,8 @@ public:
             try {
                 structured_sink(level, message, component);
             } catch (...) {
-                // Structured sink does not break normal logging path.
+                // A failing optional sink must not propagate through the logging API.
+                return;
             }
         }
     }

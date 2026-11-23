@@ -280,7 +280,8 @@ def sanitize_filename(filename: str) -> str:
     """
     # Remove path separators and special characters
     import re
-    filename = Path(filename).name  # Get just the filename
+    # Accept either path syntax regardless of the server's host OS.
+    filename = filename.replace('\\', '/').rsplit('/', 1)[-1]
     filename = re.sub(r'[^\w\s\-\.]', '', filename)
     return filename
 

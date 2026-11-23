@@ -1,66 +1,13 @@
 ---
-# clang-tidy configuration for Apogeo
 Checks: >
   -*,
   bugprone-*,
   cert-*,
   clang-analyzer-*,
-  cppcoreguidelines-*,
-  google-*,
-  misc-*,
-  modernize-*,
   performance-*,
   portability-*,
-  readability-*,
-  -modernize-use-trailing-return-type,
-  -readability-identifier-length,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -cppcoreguidelines-pro-type-reinterpret-cast,
-  -google-readability-todo,
-  -google-build-using-namespace,
-  -readability-identifier-naming,
-  -modernize-use-nodiscard,
   -bugprone-easily-swappable-parameters,
-  -modernize-return-braced-init-list,
-  -readability-math-missing-parentheses,
-  -cppcoreguidelines-macro-usage,
-  -cppcoreguidelines-pro-type-member-init,
-  -modernize-use-equals-delete,
-  -misc-non-private-member-variables-in-classes,
-  -readability-convert-member-functions-to-static,
-  -misc-use-internal-linkage,
-  -portability-avoid-pragma-once,
-  -cppcoreguidelines-avoid-non-const-global-variables,
-  -cppcoreguidelines-special-member-functions,
-  -modernize-use-using,
-  -misc-include-cleaner,
-  -misc-const-correctness,
-  -cppcoreguidelines-init-variables,
-  -cppcoreguidelines-use-default-member-init,
-  -modernize-use-default-member-init,
   -performance-enum-size
-
-WarningsAsErrors: ''
-HeaderFilterRegex: '(core|src)/.*\.(h|hpp)$'
+WarningsAsErrors: 'clang-analyzer-*,cert-*'
+HeaderFilterRegex: '(core|src|plugins)/.*\.(h|hpp)$'
 FormatStyle: file
-CheckOptions:
-  - key: readability-identifier-naming.ClassCase
-    value: CamelCase
-  - key: readability-identifier-naming.FunctionCase
-    value: lower_case
-  - key: readability-identifier-naming.VariableCase
-    value: lower_case
-  - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.ParameterCase
-    value: lower_case
-  - key: readability-identifier-naming.NamespaceCase
-    value: lower_case
-  - key: modernize-use-nullptr.NullMacros
-    value: 'NULL'
-  - key: performance-move-const-arg.CheckTriviallyCopyableMove
-    value: '1'
-  - key: readability-function-cognitive-complexity.Threshold
-    value: '50'

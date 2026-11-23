@@ -408,7 +408,7 @@ void PluginManager::run_simulation_cycle(std::vector<uint8_t>& state_buffer, dou
     total_cycles_++;
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    total_cycle_time_.store(total_cycle_time_.load() + duration.count() / 1000.0);
+    total_cycle_time_.store(total_cycle_time_.load() + static_cast<double>(duration.count()) / 1000.0);
 }
 
 void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffer, double delta_time) {
@@ -438,7 +438,7 @@ void PluginManager::execute_sequential_plugins(std::vector<uint8_t>& state_buffe
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        double exec_time = duration.count() / 1000.0;
+        double exec_time = static_cast<double>(duration.count()) / 1000.0;
 
         plugin->execution_count++;
         plugin->last_execution_time.store(exec_time);
@@ -486,7 +486,7 @@ void PluginManager::execute_parallel_plugins(std::vector<uint8_t>& state_buffer,
 
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-            double exec_time = duration.count() / 1000.0;
+            double exec_time = static_cast<double>(duration.count()) / 1000.0;
 
             plugin->execution_count++;
             plugin->last_execution_time.store(exec_time);
@@ -568,14 +568,14 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
     flatbuffers::FlatBufferBuilder builder;
 
     // Updated kinematics
-    auto position = state_vector::Vec3(new_state.position.x(), new_state.position.y(), new_state.position.z());
-    auto velocity = state_vector::Vec3(new_state.velocity.x(), new_state.velocity.y(), new_state.velocity.z());
+    auto position = state_vector::Vec3(static_cast<float>(new_state.position.x()), static_cast<float>(new_state.position.y()), static_cast<float>(new_state.position.z()));
+    auto velocity = state_vector::Vec3(static_cast<float>(new_state.velocity.x()), static_cast<float>(new_state.velocity.y()), static_cast<float>(new_state.velocity.z()));
     auto orientation = state_vector::Quaternion(
         static_cast<float>(new_state.orientation.x()),
         static_cast<float>(new_state.orientation.y()),
         static_cast<float>(new_state.orientation.z()),
         static_cast<float>(new_state.orientation.w()));
-    auto angular_velocity = state_vector::Vec3(new_state.angular_velocity.x(), new_state.angular_velocity.y(), new_state.angular_velocity.z());
+    auto angular_velocity = state_vector::Vec3(static_cast<float>(new_state.angular_velocity.x()), static_cast<float>(new_state.angular_velocity.y()), static_cast<float>(new_state.angular_velocity.z()));
 
     // Mass and CG properties
     float total_mass = current_state->total_mass();
@@ -678,8 +678,8 @@ void PluginManager::apply_physics_integration(std::vector<uint8_t>& state_buffer
 
     LOG_DEBUG(
         "Physics integrated; sim_time=" + std::to_string(new_state.time) +
-        " pos=(" + std::to_string(new_state.position.x()) + ", " +
-        std::to_string(new_state.position.y()) + ", " + std::to_string(new_state.position.z()) + ")",
+        " pos=(" + std::to_string(static_cast<float>(new_state.position.x())) + ", " +
+        std::to_string(static_cast<float>(new_state.position.y())) + ", " + std::to_string(static_cast<float>(new_state.position.z())) + ")",
         "PluginManager"
     );
 }
@@ -703,6 +703,7 @@ size_t PluginManager::get_plugin_count() const {
 std::vector<std::string> PluginManager::get_loaded_plugin_names() const {
     std::lock_guard<std::mutex> lock(plugins_mutex_);
     std::vector<std::string> names;
+    names.reserve(loaded_plugins_.size());
     for (const auto& plugin : loaded_plugins_) {
         names.push_back(plugin.name.empty() ? plugin.path : plugin.name);
     }
@@ -712,6 +713,7 @@ std::vector<std::string> PluginManager::get_loaded_plugin_names() const {
 std::vector<PluginManager::PluginMetrics> PluginManager::get_plugin_metrics() const {
     std::lock_guard<std::mutex> lock(plugins_mutex_);
     std::vector<PluginMetrics> metrics;
+    metrics.reserve(loaded_plugins_.size());
 
     for (const auto& plugin : loaded_plugins_) {
         PluginMetrics metric;
@@ -720,7 +722,7 @@ std::vector<PluginManager::PluginMetrics> PluginManager::get_plugin_metrics() co
         metric.total_execution_time = plugin.total_execution_time.load();
         metric.last_execution_time = plugin.last_execution_time.load();
         metric.average_execution_time = metric.execution_count > 0 ?
-            metric.total_execution_time / metric.execution_count : 0.0;
+            metric.total_execution_time / static_cast<double>(metric.execution_count) : 0.0;
 
         metrics.push_back(metric);
     }
