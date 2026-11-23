@@ -326,6 +326,8 @@ if(ENABLE_TESTING)
             set(test_working_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
         endif()
         gtest_discover_tests(${target} TEST_PREFIX "${label}/"
+            # Runtime DLL copies must finish before discovery executes the binary.
+            DISCOVERY_MODE PRE_TEST
             WORKING_DIRECTORY "${test_working_directory}"
             PROPERTIES LABELS "${label}")
     endfunction()

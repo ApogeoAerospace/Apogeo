@@ -38,6 +38,8 @@ CI requires every discovered native test to belong to exactly one suite and ever
 suite to be nonempty. All suites run even if another suite fails, provided the
 build succeeded. Coverage combines the same native runs without duplicate builds.
 Deprecated modules remain outside the supported test scope.
+GoogleTest discovery runs at CTest time, after all build-time runtime DLL copies
+have completed. This also applies to CI's test-inventory validation step.
 
 To run a single suite, replace `core` with any label above:
 
