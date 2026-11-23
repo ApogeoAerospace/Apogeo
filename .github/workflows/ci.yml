@@ -571,11 +571,67 @@ jobs:
       actions: read
     uses: ./.github/workflows/codeql.yml
 
+  windows-tests:
+    name: Windows MSVC (${{ matrix.build_type }})
+    runs-on: windows-2022
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/out/vcpkg-archives
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Prepare binary cache directory
+        run: New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-windows2022-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v1
+      - name: Bootstrap pinned Windows vcpkg
+        run: |
+          $baseline = (Get-Content -Raw vcpkg.json | ConvertFrom-Json).'builtin-baseline'
+          if ($baseline -notmatch '^[0-9a-f]{40}$') { throw 'Invalid vcpkg baseline' }
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C vcpkg checkout --detach $baseline
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
+      - name: Configure Windows with matching MSVC compiler and headers
+        run: >-
+          cmake -S . -B build-windows -G "Visual Studio 17 2022" -A x64
+          -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows -DENABLE_TESTING=ON
+      - name: Build Windows project and tests
+        run: cmake --build build-windows --config ${{ matrix.build_type }} --parallel 2
+      - name: Run Windows unit tests
+        run: ctest --test-dir build-windows -C ${{ matrix.build_type }} --output-on-failure --no-tests=error --timeout 120
+      - name: Run Windows web API and security gate tests
+        run: |
+          python -m unittest discover -s tests -p test_ci_sarif.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tools/web_server/tests -v
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-tests-${{ matrix.build_type }}
+          path: build-windows/Testing/
+          retention-days: 14
+
   quality-summary:
     name: Quality Summary
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: [setup-vcpkg, build-and-test, unit-tests, code-coverage, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
+    needs: [setup-vcpkg, windows-tests, build-and-test, unit-tests, code-coverage, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
     if: always()
     steps:
       - name: Enforce all quality and security gates

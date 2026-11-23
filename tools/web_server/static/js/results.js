@@ -263,14 +263,6 @@ const Results = {
             return true;
         }
         
-        // Rule 2: If near Earth radius (±500km), definitely geocentric
-        const distanceFromEarthSurface = Math.abs(initialMag - EARTH_RADIUS);
-        if (distanceFromEarthSurface < 500000 && initialMag > 5500000) {
-            // Between 5.9M - 6.9M meters => geocentric
-            console.log('[GEOCENTRIC DETECTED] near Earth surface, initial mag =', initialMag.toFixed(1), 'meters, distance from surface =', distanceFromEarthSurface.toFixed(1), 'm');
-            return true;
-        }
-        
         // Rule 3: Additional validation with final position (only if initial is ambiguous)
         const finalMag = Math.sqrt((finalPos.x||0)**2 + (finalPos.y||0)**2 + (finalPos.z||0)**2);
         if (initialMag < 100000 && finalMag > GEOCENTRIC_THRESHOLD) {

@@ -10,6 +10,7 @@ import json
 import subprocess
 import threading
 import os
+import re
 import sys
 import webbrowser
 from pathlib import Path
@@ -3048,7 +3049,13 @@ class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
             filename = data.get('filename', 'web_config')
             config = data.get('config', {})
             
-            config_file = self.config_dir / f"{filename}.json"
+            if not isinstance(filename, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', filename):
+                self.send_json_response({"success": False, "error": "Invalid configuration filename"})
+                return
+            config_file = (self.config_dir / f"{filename}.json").resolve()
+            if config_file.parent != self.config_dir.resolve():
+                self.send_json_response({"success": False, "error": "Invalid configuration path"})
+                return
             with open(config_file, 'w') as f:
                 json.dump(config, f, indent=2)
             
@@ -3090,7 +3097,7 @@ def main():
     print(f"[WEB] Project root: {Path(__file__).parent.parent}")
     
     try:
-        with socketserver.TCPServer(("", port), ApogeoWebHandler) as httpd:
+        with socketserver.TCPServer(("127.0.0.1", port), ApogeoWebHandler) as httpd:
             print(f"[OK] Server started on port {port}")
             print(f"[WEB] Opening browser...")
             

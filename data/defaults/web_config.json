@@ -11,12 +11,6 @@
     "enable_atmospheric_drag": false,
     "integration_tolerance": 1e-06,
     "integrator_type": "runge_kutta_4"
-    }
-  },
- "physics": {
-    "enable_atmospheric_drag": false,
-    "integration_tolerance": 1e-06,
-    "integrator_type": "runge_kutta_4"
   },
   "plugins": [
     {

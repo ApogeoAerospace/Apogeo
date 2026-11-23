@@ -92,7 +92,13 @@ std::string TimeManager::formatTime(double utc_time) const {
     int milliseconds = static_cast<int>(fractional_seconds * 1000.0);
 
     std::stringstream ss;
-    ss << std::put_time(std::gmtime(&time_t_val), "%Y-%m-%d %H:%M:%S");
+    std::tm utc_time_parts{};
+#ifdef _WIN32
+    if (gmtime_s(&utc_time_parts, &time_t_val) != 0) return {};
+#else
+    if (gmtime_r(&time_t_val, &utc_time_parts) == nullptr) return {};
+#endif
+    ss << std::put_time(&utc_time_parts, "%Y-%m-%d %H:%M:%S");
     ss << "." << std::setfill('0') << std::setw(3) << milliseconds << " UTC";
 
     return ss.str();

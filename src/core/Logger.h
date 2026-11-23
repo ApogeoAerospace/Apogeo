@@ -139,7 +139,13 @@ public:
                 now.time_since_epoch()) % 1000;
 
             std::stringstream ss;
-            ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
+            std::tm local_time_parts{};
+#ifdef _WIN32
+            if (localtime_s(&local_time_parts, &time_t) != 0) return;
+#else
+            if (localtime_r(&time_t, &local_time_parts) == nullptr) return;
+#endif
+            ss << std::put_time(&local_time_parts, "%Y-%m-%d %H:%M:%S");
             ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
             ss << " [" << levelToString(level) << "]";
 

@@ -11,6 +11,12 @@ runs are expected; the standalone check protects branches independently of CI ed
 
 ## Limits
 
+Windows Server 2022 builds and runs C++ unit tests in both Debug and Release,
+plus the Python web API and security gate tests. The Visual Studio generator
+selects a matching MSVC compiler, headers, and libraries. Both configurations
+are required by Quality Summary. Browser smoke tests require Playwright and
+are skipped when it is unavailable.
+
 - At least 80% line coverage across project `src` and `plugins` code, including
   unexecuted translation units. Generated files and tests are excluded.
 - All discovered unit tests pass; each test has a 120 second timeout.

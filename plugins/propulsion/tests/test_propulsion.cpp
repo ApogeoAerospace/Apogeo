@@ -17,10 +17,10 @@
 #include <vector>
 
 namespace {
-const std::string MOCK_PATH = std::string(PROPULSION_TEST_DATA_DIR) + "/engine_curves.csv";
-const std::string HEADER = "ambient_pressure_pa,chamber_pressure_pa,mixture_ratio,thrust_n,isp_s,interpolation\n";
-const std::string FIRST_ROW = "0,7000000,2.5,110000,300,linear\n";
-const std::string LAST_ROW = "100000,7000000,2.5,100000,280,linear\n";
+constexpr char MOCK_PATH[] = PROPULSION_TEST_DATA_DIR "/engine_curves.csv";
+constexpr char HEADER[] = "ambient_pressure_pa,chamber_pressure_pa,mixture_ratio,thrust_n,isp_s,interpolation\n";
+constexpr char FIRST_ROW[] = "0,7000000,2.5,110000,300,linear\n";
+constexpr char LAST_ROW[] = "100000,7000000,2.5,100000,280,linear\n";
 
 class PropulsionTest : public ::testing::Test {
 protected:
@@ -89,26 +89,26 @@ TEST_F(PropulsionTest, SupportsBomCrLfWhitespaceAndScientificNotation) {
 TEST_F(PropulsionTest, RejectsMalformedTablesAndPreservesPreviousCurve) {
     module.load_from_csv(MOCK_PATH);
     const std::vector<std::string> invalid = {
-        "", HEADER, HEADER + FIRST_ROW, "wrong,header\n" + FIRST_ROW + LAST_ROW,
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,280\n",
-        HEADER + FIRST_ROW + LAST_ROW + "200000,7000000,2.5,1,2,linear,\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,280,\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,280,cubic\n",
-        HEADER + FIRST_ROW + FIRST_ROW,
-        HEADER + LAST_ROW + FIRST_ROW,
-        HEADER + FIRST_ROW + "1,8000000,2.5,100000,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,3,100000,280,linear\n",
-        HEADER + FIRST_ROW + "-1,7000000,2.5,100000,280,linear\n",
-        HEADER + FIRST_ROW + "1,0,2.5,100000,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,0,100000,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,-1,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,0,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,nan,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,inf,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,1e999,280,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,280s,linear\n",
-        HEADER + FIRST_ROW + "1,7000000,2.5,100000,\"280\",linear\n"
+        "", HEADER, std::string(HEADER) + FIRST_ROW, std::string("wrong,header\n") + FIRST_ROW + LAST_ROW,
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,280\n",
+        std::string(HEADER) + FIRST_ROW + LAST_ROW + "200000,7000000,2.5,1,2,linear,\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,280,\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,280,cubic\n",
+        std::string(HEADER) + FIRST_ROW + FIRST_ROW,
+        std::string(HEADER) + LAST_ROW + FIRST_ROW,
+        std::string(HEADER) + FIRST_ROW + "1,8000000,2.5,100000,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,3,100000,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "-1,7000000,2.5,100000,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,0,2.5,100000,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,0,100000,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,-1,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,0,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,nan,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,inf,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,1e999,280,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,280s,linear\n",
+        std::string(HEADER) + FIRST_ROW + "1,7000000,2.5,100000,\"280\",linear\n"
     };
     for (const auto& text : invalid) {
         SCOPED_TRACE(text);
@@ -119,7 +119,7 @@ TEST_F(PropulsionTest, RejectsMalformedTablesAndPreservesPreviousCurve) {
 }
 
 TEST_F(PropulsionTest, DiagnosticsIncludePathAndPhysicalLineAndSuccessfulReloadReplacesData) {
-    const auto path = write(HEADER + FIRST_ROW + "\ninvalid\n");
+    const auto path = write(std::string(HEADER) + FIRST_ROW + "\ninvalid\n");
     try {
         module.load_from_csv(path);
         FAIL() << "Expected CSV failure";
@@ -129,7 +129,7 @@ TEST_F(PropulsionTest, DiagnosticsIncludePathAndPhysicalLineAndSuccessfulReloadR
     EXPECT_FALSE(module.initialized());
     EXPECT_THROW(module.load_from_csv((directory / "missing.csv").string()), std::runtime_error);
     module.load_from_csv(MOCK_PATH);
-    module.load_from_csv(write(HEADER + FIRST_ROW + LAST_ROW));
+    module.load_from_csv(write(std::string(HEADER) + FIRST_ROW + LAST_ROW));
     EXPECT_EQ(module.curve().samples.size(), 2u);
 }
 
@@ -164,7 +164,7 @@ TEST(PropulsionPlugin, LifecycleKeepsStateImmutableAndOutputsNeutral) {
     EXPECT_FLOAT_EQ(torque.x, 0); EXPECT_FLOAT_EQ(torque.y, 0); EXPECT_FLOAT_EQ(torque.z, 0);
     EXPECT_EQ(buffer, original);
     EXPECT_EQ(plugin_configure(handle.get(), "{"), -3);
-    EXPECT_EQ(plugin_configure(handle.get(), config(MOCK_PATH + ".missing").c_str()), -4);
+    EXPECT_EQ(plugin_configure(handle.get(), config(std::string(MOCK_PATH) + ".missing").c_str()), -4);
     EXPECT_EQ(plugin_tick(handle.get(), &tick), 0);
     auto other = create();
     EXPECT_EQ(plugin_tick(other.get(), &tick), -2);

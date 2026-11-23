@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import os
 import platform
 import threading
@@ -308,7 +309,7 @@ class PluginRegistry:
                 elif isinstance(reference, (int, float)):
                     if isinstance(value, bool) or not isinstance(value, (int, float)):
                         raise PluginRegistryError(f"Parameter '{key}' must be a number", 400, "invalid_parameters")
-                    if value != value or value in (float("inf"), float("-inf")):
+                    if not math.isfinite(value):
                         raise PluginRegistryError(f"Parameter '{key}' must be finite", 400, "invalid_parameters")
                 elif isinstance(reference, str):
                     if not isinstance(value, str):

@@ -5,7 +5,6 @@ Clean, modular HTTP server using router pattern
 import http.server
 import socketserver
 import sys
-from pathlib import Path
 
 from .config import ServerConfig
 from .handlers.base_handler import MAX_BODY_BYTES, allowed_cors_origin
@@ -85,7 +84,8 @@ class ApogeoRequestHandler(http.server.SimpleHTTPRequestHandler):
     
     def log_message(self, format, *args):
         """Override to use our logger"""
-        logger.info(f"{self.address_string()} - {format % args}")
+        message = (format % args).replace('\r', '\\r').replace('\n', '\\n')
+        logger.info('%s - %s', self.address_string(), message)
     
     def do_GET(self):
         """Handle GET requests"""
@@ -102,10 +102,10 @@ class ApogeoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handler_func(self, params)
             except _CLIENT_DISCONNECTS as e:
                 # Nobody is left to answer; sending a 500 would only raise again.
-                logger.debug(f"Client closed the connection during GET {clean_path}: {e}")
+                logger.debug('Client closed the connection during GET')
             except Exception as e:
-                logger.exception(f"Error handling GET {clean_path}")
-                self.send_error(500, f"Internal server error: {str(e)}")
+                logger.exception('Error handling GET request')
+                self.send_error(500, 'Internal server error')
         else:
             # Try to serve as static file
             self.handlers['static'].handle_static_file(self, clean_path)
@@ -150,10 +150,10 @@ class ApogeoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 handler_func(self, params)
             except _CLIENT_DISCONNECTS as e:
                 # Nobody is left to answer; sending a 500 would only raise again.
-                logger.debug(f"Client closed the connection during POST {clean_path}: {e}")
+                logger.debug('Client closed the connection during POST')
             except Exception as e:
-                logger.exception(f"Error handling POST {clean_path}")
-                self.send_error(500, f"Internal server error: {str(e)}")
+                logger.exception('Error handling POST request')
+                self.send_error(500, 'Internal server error')
         else:
             self.send_error(404, "Endpoint not found")
     

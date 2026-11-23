@@ -273,7 +273,6 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
             }
 
             bool run_ticks_failed = false;
-            simulation_active = true;
             emit_event("simulation_started", {
                 {"mode", "run_ticks"},
                 {"count", count},
@@ -333,7 +332,6 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
             telemetry_interval_ticks.store(throttle_settings.telemetry_interval_ticks);
             output_manager.setOutputInterval(static_cast<int>(throttle_settings.telemetry_interval_ticks));
 
-            simulation_active = true;
             emit_event("simulation_started", {
                 {"mode", "run_full"},
                 {"tick_event_interval", throttle_settings.tick_event_interval},

@@ -27,8 +27,9 @@ def allowed_cors_origin(config, origin: Optional[str]) -> Optional[str]:
     if '\r' in origin or '\n' in origin:
         return None
 
-    if origin in getattr(config, 'allowed_origins', []):
-        return origin
+    for configured_origin in getattr(config, 'allowed_origins', []):
+        if origin == configured_origin:
+            return configured_origin
     return None
 
 

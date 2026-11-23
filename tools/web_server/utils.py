@@ -72,7 +72,7 @@ def is_port_available(port: int) -> bool:
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('', port))
+            s.bind(('127.0.0.1', port))
             return True
         except OSError:
             return False
