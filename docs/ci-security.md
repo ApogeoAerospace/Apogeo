@@ -11,8 +11,8 @@ merge commit for pull requests to main/develop or merge-queue entries.
 | Validate | JSON, Python syntax, native source whitespace |
 | Security | Secret history scan, workflow lint, PR dependency review, CodeQL |
 | Test / Native | Linux, macOS, Windows; Debug and Release; C++ and simulator process tests |
-| Test / Python API | One independent run per OS, not one per build configuration |
-| Test / Browser Chromium | Required real headless Chromium smoke tests on Linux, macOS, and Windows |
+| Test / Web API | One independent run per OS, not one per build configuration |
+| Test / Web browser Chromium | Required real headless Chromium smoke tests on Linux, macOS, and Windows |
 | Analyze | Focused clang-tidy diagnostics and address/undefined-behavior sanitizers |
 | Quality Summary | Requires every applicable group to pass |
 
@@ -20,6 +20,34 @@ All six native OS/configuration combinations belong to the single
 `build-and-test` matrix. Windows uses the Visual Studio generator; Linux and
 macOS use Ninja. Build, CTest, artifacts, and the required aggregate result are
 shared across that matrix.
+
+Native tests have separate executables, CTest labels, CI steps and JUnit reports:
+
+| Suite label | Location | Scope |
+| --- | --- | --- |
+| `core` | `tests/core` | Engine, configuration, state loading, integration algorithms, logging, output, timing, flight computer and IPC helpers |
+| `module_structures` | `plugins/structures/tests` | Structures module |
+| `module_aerodynamics` | `plugins/aerodynamics/tests` | Aerodynamics module |
+| `module_propulsion` | `plugins/propulsion/tests` | Propulsion module |
+| `module_example_plugin` | `plugins/example_plugin/tests` | Example plugin physics |
+| `integration` | `tests/integration` | Dynamic plugin lifecycle and actual simulator-process protocol |
+
+Web API and browser tests remain under `tools/web_server/tests` and run in their
+own jobs. CI policy regression tests remain under `tests/test_ci_*.py`.
+CI requires every discovered native test to belong to exactly one suite and every
+suite to be nonempty. All suites run even if another suite fails, provided the
+build succeeded. Coverage combines the same native runs without duplicate builds.
+Deprecated modules remain outside the supported test scope.
+
+To run a single suite, replace `core` with any label above:
+
+```sh
+ctest --test-dir <build-directory> -C Release -L '^core$' --output-on-failure --no-tests=error
+cmake --build <build-directory> --config Release --target core_tests
+```
+
+Other executable targets are `structures_tests`, `aerodynamics_tests`,
+`propulsion_tests`, `example_plugin_tests`, and `plugin_integration_tests`.
 
 Linux Debug is instrumented for coverage and uses its native test run to produce
 coverage reports. There is no duplicate Linux unit-test or coverage build.

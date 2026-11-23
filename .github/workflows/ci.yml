@@ -77,14 +77,57 @@ jobs:
           -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DENABLE_TESTING=ON
 
       - name: Build project
+        id: native-build
         run: cmake --build build --config ${{ matrix.build_type }} --parallel 2
 
       - name: Install coverage tools
         if: matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug'
         run: sudo apt-get install -y lcov
 
-      - name: Run native tests
-        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure --no-tests=error --timeout 120
+      - name: Validate native suite membership
+        run: |
+          ctest --test-dir build -C ${{ matrix.build_type }} --show-only=json-v1 > build/native-tests.json
+          python - <<'PY'
+          import collections
+          import json
+          import pathlib
+          suites = {'core', 'integration', 'module_structures', 'module_aerodynamics',
+                    'module_propulsion', 'module_example_plugin'}
+          counts = collections.Counter()
+          for test in json.loads(pathlib.Path('build/native-tests.json').read_text())['tests']:
+              properties = {p['name']: p['value'] for p in test.get('properties', [])}
+              membership = suites.intersection(properties.get('LABELS', []))
+              if len(membership) != 1:
+                  raise SystemExit(f"Test must belong to exactly one suite: {test['name']}")
+              counts.update(membership)
+          if suites.difference(counts):
+              raise SystemExit(f'Missing test suites: {sorted(suites.difference(counts))}')
+          print(dict(sorted(counts.items())))
+          PY
+
+      - name: Test / Core
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^core$' --output-on-failure --no-tests=error --timeout 120 --output-junit core-tests.xml
+
+      - name: Test / Module - Structures
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^module_structures$' --output-on-failure --no-tests=error --timeout 120 --output-junit module_structures-tests.xml
+
+      - name: Test / Module - Aerodynamics
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^module_aerodynamics$' --output-on-failure --no-tests=error --timeout 120 --output-junit module_aerodynamics-tests.xml
+
+      - name: Test / Module - Propulsion
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^module_propulsion$' --output-on-failure --no-tests=error --timeout 120 --output-junit module_propulsion-tests.xml
+
+      - name: Test / Module - Example plugin
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^module_example_plugin$' --output-on-failure --no-tests=error --timeout 120 --output-junit module_example_plugin-tests.xml
+
+      - name: Test / Integration
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^integration$' --output-on-failure --no-tests=error --timeout 120 --output-junit integration-tests.xml
 
       - name: Generate coverage report
         if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
@@ -152,6 +195,7 @@ jobs:
             build/bin/
             build/lib/
             build/Testing/
+            build/*-tests.xml
           retention-days: 7
   code-quality:
     name: Validate / Files
@@ -358,7 +402,7 @@ jobs:
     uses: ./.github/workflows/codeql.yml
 
   api-tests:
-    name: Test / Python API (${{ matrix.os }})
+    name: Test / Web API (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -384,7 +428,7 @@ jobs:
           retention-days: 14
 
   browser-tests:
-    name: Test / Browser Chromium (${{ matrix.os }})
+    name: Test / Web browser Chromium (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:

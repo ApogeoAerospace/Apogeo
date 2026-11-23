@@ -308,90 +308,82 @@ if(ENABLE_COVERAGE)
     endif()
 endif()
 
-# --- Unit tests ---
+# --- Tests: core, independent modules, and cross-component integration ---
 if(ENABLE_TESTING)
     enable_testing()
-
-    # Find Google Test
     find_package(GTest CONFIG REQUIRED)
-
-    # Core tests
-    add_executable(core_tests
-        tests/test_config_manager.cpp
-        tests/test_structures_module.cpp
-        tests/test_plugin_lifecycle.cpp
-        plugins/structures/structures_module.cpp
-        tests/test_physics_integrator.cpp
-        tests/test_time_manager.cpp
-        tests/test_logger.cpp
-        tests/test_output_manager.cpp
-        tests/test_simulation_engine.cpp
-        tests/test_initial_state_loader.cpp
-        tests/test_command_event_protocol.cpp
-        tests/test_ipc_session.cpp
-        tests/test_aerodynamics_module.cpp
-        plugins/aerodynamics/aerodynamics_module.cpp
-        tests/test_flight_computer.cpp
-        tests/test_example_plugin_physics.cpp
-        src/ipc/IpcSession.cpp
-    )
-
-    target_link_libraries(core_tests PRIVATE
-        core
-        GTest::gtest
-        GTest::gtest_main
-        ${HDF5_C_LIBRARIES}
-    )
-
-    target_include_directories(core_tests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/core
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
-        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics
-        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures
-        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin
-        ${HDF5_INCLUDE_DIRS}
-        ${GENERATED_DIR}
-    )
-
-    # Register tests with CTest
-    add_dependencies(core_tests propulsion)
-    target_compile_definitions(core_tests PRIVATE
-        APOGEO_PROPULSION_PLUGIN="$<TARGET_FILE:propulsion>"
-        APOGEO_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     include(GoogleTest)
-    gtest_discover_tests(core_tests)
 
-    add_custom_command(
-        TARGET core_tests POST_BUILD
+    function(apogeo_test_suite target label)
+        add_executable(${target} ${ARGN})
+        target_link_libraries(${target} PRIVATE
+            GTest::gtest_main flatbuffers::flatbuffers nlohmann_json::nlohmann_json)
+        target_include_directories(${target} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/src/api" "${GENERATED_DIR}")
+        add_dependencies(${target} generate_flatbuffers)
+        set(test_working_directory "${CMAKE_CURRENT_BINARY_DIR}")
+        if(target STREQUAL "propulsion_tests")
+            set(test_working_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+        endif()
+        gtest_discover_tests(${target} TEST_PREFIX "${label}/"
+            WORKING_DIRECTORY "${test_working_directory}"
+            PROPERTIES LABELS "${label}")
+    endfunction()
+
+    apogeo_test_suite(core_tests core
+        tests/core/test_config_manager.cpp
+        tests/core/test_physics_integrator.cpp
+        tests/core/test_time_manager.cpp
+        tests/core/test_logger.cpp
+        tests/core/test_output_manager.cpp
+        tests/core/test_simulation_engine.cpp
+        tests/core/test_initial_state_loader.cpp
+        tests/core/test_command_event_protocol.cpp
+        tests/core/test_ipc_session.cpp
+        tests/core/test_flight_computer.cpp
+        src/ipc/IpcSession.cpp)
+    target_link_libraries(core_tests PRIVATE core)
+    add_custom_command(TARGET core_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/scripts"
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_CURRENT_SOURCE_DIR}/scripts/vuelo_test.lua
-                "${CMAKE_BINARY_DIR}/scripts"
-        COMMENT "Copying test scripts to binary dir..."
-    )
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/vuelo_test.lua" "${CMAKE_BINARY_DIR}/scripts")
 
-    add_executable(propulsion_tests plugins/propulsion/tests/test_propulsion.cpp)
-    target_link_libraries(propulsion_tests PRIVATE
-        propulsion_domain propulsion flatbuffers::flatbuffers
-        nlohmann_json::nlohmann_json GTest::gtest_main)
-    target_include_directories(propulsion_tests PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/api" "${GENERATED_DIR}")
+    apogeo_test_suite(structures_tests module_structures
+        plugins/structures/tests/test_structures_module.cpp
+        plugins/structures/structures_module.cpp)
+    target_include_directories(structures_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures")
+
+    apogeo_test_suite(aerodynamics_tests module_aerodynamics
+        plugins/aerodynamics/tests/test_aerodynamics_module.cpp
+        plugins/aerodynamics/aerodynamics_module.cpp)
+    target_include_directories(aerodynamics_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics" ${HDF5_INCLUDE_DIRS})
+    target_link_libraries(aerodynamics_tests PRIVATE ${HDF5_C_LIBRARIES})
+
+    apogeo_test_suite(example_plugin_tests module_example_plugin
+        plugins/example_plugin/tests/test_example_plugin_physics.cpp)
+    target_include_directories(example_plugin_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin")
+
+    apogeo_test_suite(propulsion_tests module_propulsion plugins/propulsion/tests/test_propulsion.cpp)
+    target_link_libraries(propulsion_tests PRIVATE propulsion_domain propulsion)
     target_compile_definitions(propulsion_tests PRIVATE
         PROPULSION_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/plugins/propulsion/data")
-    add_dependencies(propulsion_tests generate_flatbuffers)
     if(WIN32)
         add_custom_command(TARGET propulsion_tests POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "$<TARGET_FILE:propulsion>" "$<TARGET_FILE_DIR:propulsion_tests>")
     endif()
-    gtest_discover_tests(propulsion_tests WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-    message(STATUS "Unit tests enabled")
+    apogeo_test_suite(plugin_integration_tests integration tests/integration/test_plugin_lifecycle.cpp)
+    target_link_libraries(plugin_integration_tests PRIVATE core)
+    add_dependencies(plugin_integration_tests propulsion)
+    target_compile_definitions(plugin_integration_tests PRIVATE
+        APOGEO_PROPULSION_PLUGIN="$<TARGET_FILE:propulsion>"
+        APOGEO_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    add_test(NAME simulator_process
-        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_simulator_process.py"
+    add_test(NAME integration/simulator_process
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/integration/test_simulator_process.py"
                 --binary "$<TARGET_FILE:simulator>")
-    set_tests_properties(simulator_process PROPERTIES TIMEOUT 120)
+    set_tests_properties(integration/simulator_process PROPERTIES TIMEOUT 120 LABELS integration)
 endif()
