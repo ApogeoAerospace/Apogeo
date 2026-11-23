@@ -14,10 +14,13 @@ check by hand with DevTools open:
 Chart.js is loaded from a CDN by app.html. These tests run offline, so external hosts are
 answered with a tiny stub; chart *rendering* is therefore not covered here.
 
-The module is skipped when Playwright or Chromium is not installed:
+Local runs can skip when Playwright or Chromium is not installed:
     pip install playwright && playwright install chromium
+CI sets REQUIRE_BROWSER_TESTS=1, making missing dependencies a failure.
 """
 import json
+import os
+from pathlib import Path
 import unittest
 
 try:  # pragma: no cover - environment dependent
@@ -25,6 +28,10 @@ try:  # pragma: no cover - environment dependent
     HAVE_PLAYWRIGHT = True
 except ImportError:  # pragma: no cover
     HAVE_PLAYWRIGHT = False
+
+REQUIRE_BROWSER_TESTS = os.environ.get('REQUIRE_BROWSER_TESTS') == '1'
+if REQUIRE_BROWSER_TESTS and not HAVE_PLAYWRIGHT:
+    raise RuntimeError('Browser tests are required; install tools/ci/requirements-browser.txt')
 
 try:  # run as part of the package (python -m unittest web_server.tests...)
     from .test_web_api import ApiTestCase, lib_filename
@@ -47,6 +54,8 @@ class BrowserSmokeTests(ApiTestCase):
             cls._browser = cls._pw.chromium.launch()
         except Exception as exc:  # pragma: no cover - no browser binary
             cls._pw.stop()
+            if REQUIRE_BROWSER_TESTS:
+                raise RuntimeError('Required Chromium browser could not launch') from exc
             raise unittest.SkipTest(f"Chromium is not available: {exc}")
 
     @classmethod
@@ -61,6 +70,10 @@ class BrowserSmokeTests(ApiTestCase):
         self.external = []
         page = self._browser.new_page()
         self.addCleanup(page.close)
+        artifacts = Path(os.environ.get('BROWSER_ARTIFACT_DIR', 'out/browser-tests'))
+        artifacts.mkdir(parents=True, exist_ok=True)
+        page.context.tracing.start(screenshots=True, snapshots=True, sources=True)
+        self.addCleanup(lambda: page.context.tracing.stop(path=str(artifacts / f'{self.id()}.zip')))
 
         page.on("console", lambda m: self.problems.append(f"console.{m.type}: {m.text}")
                 if m.type in ("error", "warning") else None)

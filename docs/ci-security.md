@@ -12,6 +12,7 @@ merge commit for pull requests to main/develop or merge-queue entries.
 | Security | Secret history scan, workflow lint, PR dependency review, CodeQL |
 | Test / Native | Linux, macOS, Windows; Debug and Release; C++ and simulator process tests |
 | Test / Python API | One independent run per OS, not one per build configuration |
+| Test / Browser Chromium | Required real headless Chromium smoke tests on Linux, macOS, and Windows |
 | Analyze | Focused clang-tidy diagnostics and address/undefined-behavior sanitizers |
 | Quality Summary | Requires every applicable group to pass |
 
@@ -33,8 +34,14 @@ Python, and workflow analysis run on Linux. Report categories include the OS.
 
 ## Gates
 
-- All native and Python API tests pass on all three platforms. Native tests time
-  out after 120 seconds. Optional browser smoke tests skip without Playwright.
+- All native, Python API, and Chromium smoke tests pass on all three platforms.
+  Native tests time out after 120 seconds. CI installs pinned Playwright and its
+  Chromium build (including Linux system libraries). Missing dependencies, launch
+  failures, missing/empty browser reports, and skipped browser cases fail the gate.
+  API jobs exclude the browser module because the browser matrix owns that suite.
+  Each browser job retains its JUnit report and per-test Playwright trace archives.
+  These smoke tests use a fake IPC simulator and stub external CDN resources;
+  they verify panel/backend behavior, not chart rendering or physical simulation.
 - Project src/plugins line coverage is at least **80%**, including unexecuted
   translation units and excluding tests and generated/vendor files.
 - clang-tidy runs bugprone, CERT, analyzer, portability, and performance checks.
@@ -81,6 +88,8 @@ review and the proposed merge commit.
 
 Local checks:
 
+- python -m pip install -r tools/ci/requirements-browser.txt
+- python -m playwright install chromium
 - python -m pytest tools/web_server/tests -q
 - python -m unittest discover -s tests -p test_ci_sarif.py -v
 - ctest --test-dir <build-directory> -C <configuration> --output-on-failure
