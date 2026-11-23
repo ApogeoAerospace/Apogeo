@@ -32,6 +32,13 @@ scans on the default branch and manual dispatch; it has no duplicate push/PR sca
 C++ is extracted on Linux, Intel macOS 15, and Windows Server 2022. JavaScript,
 Python, and workflow analysis run on Linux. Report categories include the OS.
 
+Archived directories (`tools/deprecated`, `plugins/deprecated`, `docs/deprecated`,
+and `data/deprecated`) are excluded from CodeQL source discovery and routine file
+validation. clang-tidy excludes deprecated plugin sources. Manual C++ CodeQL
+extraction follows the build; deprecated plugin targets are disabled by default.
+The active `tools/web_gui.py` entry point and `tools/web_server` remain covered.
+Secret scanning still covers all reachable Git history, including archived files.
+
 ## Gates
 
 - All native, Python API, and Chromium smoke tests pass on all three platforms.

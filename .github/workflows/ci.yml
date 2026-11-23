@@ -168,7 +168,7 @@ jobs:
         run: |
           echo "Verifying file formatting"
           # Ensure there are no files with trailing whitespace
-          ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
+          ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' ':(exclude)plugins/deprecated/**' || (
             echo "Trailing whitespace was found"
             exit 1
           )
@@ -179,13 +179,15 @@ jobs:
           import json
           import pathlib
           for path in sorted(pathlib.Path('data').rglob('*.json')):
+              if path.relative_to('data').parts[0] == 'deprecated':
+                  continue
               print(f'Validating: {path}')
               with path.open(encoding='utf-8') as source:
                   json.load(source)
           PY
 
       - name: Validate Python syntax
-        run: python -m compileall -q tools tests
+        run: python -m compileall -q -x '(^|[/\\])deprecated([/\\]|$)' tools tests
 
   static-analysis:
     name: Analyze / C++ diagnostics
@@ -232,6 +234,8 @@ jobs:
               if not path.is_absolute():
                   path = pathlib.Path(entry['directory']) / path
               path = path.resolve()
+              if path.is_relative_to(root / 'plugins' / 'deprecated'):
+                  continue
               if any(path.is_relative_to(root / folder) for folder in ('core', 'src', 'plugins')):
                   sources.add(str(path))
           if not sources:

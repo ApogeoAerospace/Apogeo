@@ -4,3 +4,11 @@ name: Apogeo security and correctness
 # generated documentation and vendored header style are not merge criteria.
 queries:
   - uses: security-extended
+
+# Archived implementations are outside the supported analysis scope.
+# Manual C++ extraction follows the build; deprecated plugin targets are disabled.
+paths-ignore:
+  - tools/deprecated/**
+  - plugins/deprecated/**
+  - docs/deprecated/**
+  - data/deprecated/**
