@@ -128,6 +128,30 @@ class SimulatorProcessTests(unittest.TestCase):
             self.assertEqual(replies[str(index)]['ok'], success, (name, replies[str(index)]))
         self.assertTrue(any(item.get('event') == 'simulation_finished' for item in responses))
 
+    def test_ipc_repeated_restart_drains_output_and_exits(self):
+        # Alternate idle and busy writers to exercise shutdown while a worker
+        # is entering its wait, as well as shutdown with queued telemetry.
+        commands = []
+        expected_samples = 0
+        for cycle in range(64):
+            commands.append(('initialize', {}))
+            if cycle % 2:
+                commands.append(('run_ticks', {'count': 5, 'telemetry_interval_ticks': 1}))
+                expected_samples += 5
+            commands.append(('shutdown', {}))
+        lines = [json.dumps({'command': name, 'request_id': str(index), 'payload': payload})
+                 for index, (name, payload) in enumerate(commands)]
+        result = self.run_simulator(['--ipc', 'stdio'], '\n'.join(lines) + '\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        responses = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+        self.assertEqual([item for item in responses if item.get('type') == 'error'], [])
+        replies = [item for item in responses if item.get('type') == 'ack']
+        self.assertEqual([item['request_id'] for item in replies],
+                         [str(index) for index in range(len(commands))])
+        self.assertTrue(all(item['ok'] for item in replies))
+        samples = [item for item in responses if item.get('event') == 'state_sample']
+        self.assertEqual(len(samples), expected_samples)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

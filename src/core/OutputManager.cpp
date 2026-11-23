@@ -145,9 +145,9 @@ void OutputManager::initializeOutput(const std::string& run_name) {
   {
     std::lock_guard<std::mutex> queue_lock(queue_mutex_);
     pending_points_.clear();
+    writer_running_ = true;
   }
 
-  writer_running_.store(true);
   writer_thread_ = std::thread(&OutputManager::writerLoop, this);
 
   LOG_INFO("OutputManager initialized for run: " + run_name_, "OutputManager");
@@ -197,7 +197,11 @@ void OutputManager::finalizeOutput() {
     return;
   }
 
-  writer_running_.store(false);
+  {
+    // Change the wait predicate under the same lock to prevent a lost stop wakeup.
+    std::lock_guard<std::mutex> queue_lock(queue_mutex_);
+    writer_running_ = false;
+  }
   queue_cv_.notify_all();
   if (writer_thread_.joinable()) {
     writer_thread_.join();
@@ -490,9 +494,9 @@ void OutputManager::writerLoop() {
     std::function<void(const SimulationDataPoint&, int)> telemetry_callback;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
-      queue_cv_.wait(lock, [this]() { return !writer_running_.load() || !pending_points_.empty(); });
+      queue_cv_.wait(lock, [this]() { return !writer_running_ || !pending_points_.empty(); });
 
-      if (!writer_running_.load() && pending_points_.empty()) {
+      if (!writer_running_ && pending_points_.empty()) {
         break;
       }
 
