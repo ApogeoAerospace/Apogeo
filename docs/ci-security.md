@@ -87,6 +87,9 @@ Secret scanning still covers all reachable Git history, including archived files
   they verify panel/backend behavior, not chart rendering or physical simulation.
 - Project src/plugins line coverage is at least **80%**, including unexecuted
   translation units and excluding tests and generated/vendor files.
+  After a successful Linux Debug build, coverage generation and enforcement are
+  mandatory. Missing, empty, incomplete or invalid LCOV reports fail the job;
+  the binary's output path cannot silently disable the gate.
 - clang-tidy runs bugprone, CERT, analyzer, portability, and performance checks.
   CERT/analyzer findings and tool/compiler errors are blocking. At most **10**
   other diagnostics are allowed. Cosmetic naming, capitalization, braces and
@@ -132,6 +135,13 @@ Fork PRs enforce CodeQL locally without attempting privileged SARIF upload.
 All reports remain available as artifacts after a findings-gate failure.
 
 ## Testing and maintenance
+
+`tools/ci/check_quality.py` enforces coverage, clang-tidy and the aggregate result.
+The aggregate requires every known job result, rejects failed/cancelled/skipped
+required jobs, and permits a dependency-review skip only on push, manual and
+merge-queue events. `tests/test_ci_quality.py` exercises thresholds, malformed or
+missing reports, tool errors and job failures. All `test_ci_*.py` gate regressions
+run once in the security/workflow validation job, including browser and SARIF gates.
 
 Push a feature branch and open its CI run in GitHub Actions. Verify the run's SHA
 matches the commit being tested; GitHub cannot read uncommitted workspace edits.

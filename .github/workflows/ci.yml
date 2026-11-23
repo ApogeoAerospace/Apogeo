@@ -130,7 +130,7 @@ jobs:
         run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^integration$' --output-on-failure --no-tests=error --timeout 120 --output-junit integration-tests.xml
 
       - name: Generate coverage report
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && steps.native-build.outcome == 'success' }}
         run: |
           cd build
           # GCC can emit negative counters; lcov treats ignored negative counts as zero.
@@ -144,25 +144,8 @@ jobs:
           lcov --list coverage_filtered.info
 
       - name: Validate minimum coverage
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
-        run: |
-          python3 - <<'PY'
-          import os
-          import pathlib
-          found = hit = 0
-          for line in pathlib.Path('build/coverage_filtered.info').read_text().splitlines():
-              if line.startswith('LF:'):
-                  found += int(line[3:])
-              elif line.startswith('LH:'):
-                  hit += int(line[3:])
-          if found == 0:
-              raise SystemExit('ERROR: Coverage report contains no executable lines')
-          coverage = 100 * hit / found
-          minimum = float(os.environ['MIN_COVERAGE'])
-          print(f'Line coverage: {coverage:.2f}% ({hit}/{found}); required: {minimum}%')
-          if coverage < minimum:
-              raise SystemExit('ERROR: Insufficient line coverage; add unit tests')
-          PY
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && steps.native-build.outcome == 'success' }}
+        run: python tools/ci/check_quality.py coverage build/coverage_filtered.info --minimum "$MIN_COVERAGE"
 
       - name: Generate HTML report
         if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/coverage_filtered.info') != '' }}
@@ -181,7 +164,7 @@ jobs:
           retention-days: 30
 
       - name: Show coverage summary
-        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && steps.native-build.outcome == 'success' }}
         run: |
           cd build
           lcov --summary coverage_filtered.info
@@ -296,16 +279,7 @@ jobs:
           echo "CLANG_TIDY_EXIT_CODE=$TIDY_EXIT" >> "$GITHUB_ENV"
 
       - name: Validate clang-tidy results
-        run: |
-          WARNING_COUNT=$(awk '/^[^:]+:[0-9]+:[0-9]+: warning:/ {n++} END {print n+0}' clang-tidy-report.txt)
-          SECURITY_COUNT=$(awk '/^[^:]+:[0-9]+:[0-9]+: warning:.*\[(clang-analyzer-|cert-)/ {n++} END {print n+0}' clang-tidy-report.txt)
-          ERROR_COUNT=$(awk '/^[^:]+:[0-9]+:[0-9]+: (fatal )?error:/ {n++} END {print n+0}' clang-tidy-report.txt)
-          echo "Warnings: $WARNING_COUNT; maximum: $MAX_TIDY_WARNINGS"
-          echo "Errors: $ERROR_COUNT; security diagnostics: $SECURITY_COUNT (allowed: 0)"
-          if (( CLANG_TIDY_EXIT_CODE != 0 || SECURITY_COUNT > 0 || ERROR_COUNT > 0 || WARNING_COUNT > MAX_TIDY_WARNINGS )); then
-            echo "::error::Static analysis failed; review the uploaded report"
-            exit 1
-          fi
+        run: python tools/ci/check_quality.py tidy clang-tidy-report.txt --exit-code "$CLANG_TIDY_EXIT_CODE" --maximum "$MAX_TIDY_WARNINGS"
 
       - name: Upload analysis report
         if: always()
@@ -367,8 +341,8 @@ jobs:
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           actionlint -shellcheck=
-      - name: Test security gate
-        run: python3 -m unittest discover -s tests -p test_ci_sarif.py -v
+      - name: Test CI quality and security gates
+        run: python -m unittest discover -s tests -p 'test_ci_*.py' -v
 
   dependency-review:
     name: Security / Dependencies
@@ -453,8 +427,6 @@ jobs:
       - name: Install Chromium
         if: runner.os != 'Linux'
         run: python -m playwright install chromium
-      - name: Test browser report gate
-        run: python -m unittest discover -s tests -p test_ci_browser_results.py -v
       - name: Run required browser tests
         run: python -m pytest tools/web_server/tests/test_browser_smoke.py -q --junitxml=browser-tests.xml
       - name: Reject skipped or empty browser runs
@@ -476,28 +448,12 @@ jobs:
     needs: [build-and-test, api-tests, browser-tests, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
     if: always()
     steps:
+      - name: Checkout gate implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Enforce all quality and security gates
         env:
           JOB_RESULTS: ${{ toJSON(needs) }}
           EVENT_NAME: ${{ github.event_name }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          results = json.loads(os.environ['JOB_RESULTS'])
-          failed = []
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-              summary.write('# CI Quality and Security\n\n| Job | Result |\n|---|---|\n')
-              for job, value in results.items():
-                  status = value['result']
-                  summary.write(f'| {job} | {status} |\n')
-                  expected_skip = job == 'dependency-review' and os.environ['EVENT_NAME'] != 'pull_request'
-                  if status != 'success' and not (expected_skip and status == 'skipped'):
-                      failed.append(job)
-              summary.write(f'\nRequired: {os.environ["MIN_COVERAGE"]}% line coverage; all tests pass; '
-                            f'at most {os.environ["MAX_TIDY_WARNINGS"]} general tidy warnings; '
-                            'Chromium smoke tests pass on all three OSes with no skipped cases; '
-                            'zero analyzer/CERT diagnostics, secrets, sanitizer failures, or blocking CodeQL findings.\n')
-          if failed:
-              raise SystemExit('Failed or incomplete gates: ' + ', '.join(failed))
-          PY
+        run: python tools/ci/check_quality.py summary
