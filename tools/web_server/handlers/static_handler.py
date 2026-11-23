@@ -1,7 +1,6 @@
 """
 Static file handler
 """
-from pathlib import Path
 from http.server import SimpleHTTPRequestHandler
 
 from .base_handler import BaseHandler

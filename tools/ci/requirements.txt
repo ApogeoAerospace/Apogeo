@@ -1,0 +1,2 @@
+# Shared by the Linux, macOS, and Windows API and browser test jobs.
+pytest==9.2.0

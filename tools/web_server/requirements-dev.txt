@@ -1,7 +1,7 @@
 # Development and Testing Requirements for Apogeo Web Server
 
 # Testing
-pytest>=7.0.0
+pytest>=9.0.3
 pytest-cov>=4.0.0
 pytest-asyncio>=0.21.0
 

@@ -8,7 +8,6 @@
 #include <condition_variable>
 #include <deque>
 #include <thread>
-#include <atomic>
 #include <functional>
 #include "state_vector_generated.h"
 #include "nlohmann/json.hpp"
@@ -202,7 +201,7 @@ private:
     std::condition_variable queue_cv_;
     std::deque<PendingPoint> pending_points_;
     std::thread writer_thread_;
-    std::atomic<bool> writer_running_{false};
+    bool writer_running_ = false; // Protected by queue_mutex_.
     std::function<void(const SimulationDataPoint&, int)> realtime_telemetry_callback_;
 
     // Internal state

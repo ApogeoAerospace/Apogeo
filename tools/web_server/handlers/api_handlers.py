@@ -38,6 +38,7 @@ class StatusHandler(BaseHandler):
             try:
                 is_executable = simulator_path.is_file() and os.access(simulator_path, os.X_OK)
             except OSError:
+                # A failed executable check leaves is_executable false.
                 pass
         
         status = {

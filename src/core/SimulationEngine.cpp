@@ -34,7 +34,8 @@ SimulationEngine::~SimulationEngine() noexcept {
         shutdown();
         LOG_INFO("SimulationEngine destroyed", "SimulationEngine");
     } catch (const std::exception&) {
-        // Cannot throw from destructor
+        // Cannot throw from destructor.
+        return;
     }
 }
 
@@ -198,13 +199,13 @@ void SimulationEngine::run_tick() {
 
   auto& output_manager = OutputManager::getInstance();
   auto io_start_time = compute_end_time;
-  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), iteration_count_);
+  output_manager.recordState(state, time_manager.getSimulationTime(), time_manager.getCurrentUTC(), static_cast<int>(iteration_count_.load()));
   auto io_end_time = std::chrono::high_resolution_clock::now();
 
   auto compute_duration = std::chrono::duration_cast<std::chrono::microseconds>(compute_end_time - compute_start_time);
   auto io_duration = std::chrono::duration_cast<std::chrono::microseconds>(io_end_time - io_start_time);
-  compute_tick_duration_ms_ = compute_duration.count() / 1000.0;
-  io_tick_duration_ms_ = io_duration.count() / 1000.0;
+  compute_tick_duration_ms_ = static_cast<double>(compute_duration.count()) / 1000.0;
+  io_tick_duration_ms_ = static_cast<double>(io_duration.count()) / 1000.0;
   last_tick_duration_ = compute_tick_duration_ms_.load() + io_tick_duration_ms_.load();
 
   if (iteration_count_ % 5000 == 0) {

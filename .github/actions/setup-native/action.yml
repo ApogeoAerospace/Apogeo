@@ -1,0 +1,39 @@
+name: Prepare native toolchain
+description: Install build tools and bootstrap the manifest-pinned vcpkg checkout.
+inputs:
+  triplet:
+    description: Target architecture and platform
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.11'
+    - if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build pkg-config
+    - if: runner.os == 'macOS'
+      shell: bash
+      run: brew install cmake ninja pkg-config
+    - name: Prepare binary cache
+      shell: python
+      run: |
+        import os
+        from pathlib import Path
+        cache = Path(os.environ['GITHUB_WORKSPACE']) / 'out/vcpkg-archives'
+        cache.mkdir(parents=True, exist_ok=True)
+        with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env:
+            env.write(f'VCPKG_DEFAULT_BINARY_CACHE={cache}\n')
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ github.workspace }}/out/vcpkg-archives
+        key: native-${{ runner.os }}-${{ runner.arch }}-${{ inputs.triplet }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-v1
+    - if: runner.os != 'Windows'
+      shell: bash
+      run: bash tools/ci/setup_vcpkg.sh
+    - if: runner.os == 'Windows'
+      shell: pwsh
+      run: ./tools/ci/setup_vcpkg.ps1

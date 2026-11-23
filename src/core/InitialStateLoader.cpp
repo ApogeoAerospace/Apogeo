@@ -65,7 +65,7 @@ static state_vector::Vec3 parse_vec3_any(const json& parent, const std::string& 
         } else if (v.is_object()) {
             return to_vec3_from_obj(v);
         }
-    } catch (...) {}
+    } catch (const json::exception&) { return state_vector::Vec3(0, 0, 0); }
     return state_vector::Vec3(0.0f, 0.0f, 0.0f);
 }
 
@@ -89,7 +89,7 @@ static state_vector::Quaternion parse_quat_any(const json& parent, const std::st
                 static_cast<float>(q.value("w", 1.0))
             );
         }
-    } catch (...) {}
+    } catch (const json::exception&) { return state_vector::Quaternion(0, 0, 0, 1); }
     return state_vector::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
@@ -157,7 +157,7 @@ bool Apogeo::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferB
     std::vector<float> propellant_masses_vec;
     if (data.contains("propellant_masses") && data["propellant_masses"].is_array()) {
         for (const auto& pm : data["propellant_masses"]) {
-            try { propellant_masses_vec.push_back(static_cast<float>(pm.get<double>())); } catch (...) {}
+            try { propellant_masses_vec.push_back(static_cast<float>(pm.get<double>())); } catch (const json::exception&) { continue; }
         }
     }
     auto propellant_masses_fb = propellant_masses_vec.empty()
@@ -168,7 +168,7 @@ bool Apogeo::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferB
     std::vector<float> surface_deflections_vec;
     if (data.contains("surface_deflections") && data["surface_deflections"].is_array()) {
         for (const auto& sd : data["surface_deflections"]) {
-            try { surface_deflections_vec.push_back(static_cast<float>(sd.get<double>())); } catch (...) {}
+            try { surface_deflections_vec.push_back(static_cast<float>(sd.get<double>())); } catch (const json::exception&) { continue; }
         }
     }
     auto surface_deflections_fb = surface_deflections_vec.empty()
@@ -197,7 +197,7 @@ bool Apogeo::InitialStateLoader::create_state_from_json(flatbuffers::FlatBufferB
                         tvc = to_vec3_from_obj(ta);
                     }
                 }
-            } catch (...) {}
+            } catch (const json::exception&) { continue; }
             engines_vec.emplace_back(throttle, tvc);
         }
         engines_fb = builder.CreateVectorOfStructs(engines_vec);

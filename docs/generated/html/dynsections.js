@@ -182,7 +182,9 @@ let codefold = {
       // replace minus with plus symbol
       $(line).find('span[class=fold]').addClass('plus').removeClass('minus');
       // append ellipsis
-      $(line).append(' '+start+'<a href="javascript:codefold.toggle(\''+id+'\')">&#8230;</a>'+end);
+      const toggle = $('<a>').text('...').attr('href', '#');
+      toggle.on('click', function(event) { event.preventDefault(); codefold.toggle(id); });
+      $(line).append(document.createTextNode(' '+start), toggle, document.createTextNode(end));
       // insert constructed line into closed div
       $('#foldclosed'+id).html(line);
     });

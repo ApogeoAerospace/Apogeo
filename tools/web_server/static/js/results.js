@@ -244,7 +244,6 @@ const Results = {
      * FIXED: Use proper threshold and prefer INITIAL position for detection
      */
     isGeocentricCoordinates(initialPos, finalPos) {
-        const EARTH_RADIUS = 6378137.0; // meters (WGS84)
         // FIX: Threshold based on Earth radius
         // In geocentric coordinates, magnitude is ~6.4M meters
         // In local coordinates, magnitude is typically < 500,000 meters
@@ -260,14 +259,6 @@ const Results = {
         // Rule 1: If initial magnitude > 1M meters, likely geocentric
         if (initialMag > GEOCENTRIC_THRESHOLD) {
             console.log('[GEOCENTRIC DETECTED] initial magnitude =', initialMag.toFixed(1), 'meters (threshold:', GEOCENTRIC_THRESHOLD.toFixed(1), ')');
-            return true;
-        }
-        
-        // Rule 2: If near Earth radius (±500km), definitely geocentric
-        const distanceFromEarthSurface = Math.abs(initialMag - EARTH_RADIUS);
-        if (distanceFromEarthSurface < 500000 && initialMag > 5500000) {
-            // Between 5.9M - 6.9M meters => geocentric
-            console.log('[GEOCENTRIC DETECTED] near Earth surface, initial mag =', initialMag.toFixed(1), 'meters, distance from surface =', distanceFromEarthSurface.toFixed(1), 'm');
             return true;
         }
         

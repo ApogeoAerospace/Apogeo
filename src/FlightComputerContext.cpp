@@ -66,7 +66,7 @@ void FlightComputerContext::register_api() {
     });
 
     // UTILITY FUNCTIONS -> Allow Lua to print to the simulation console
-    lua_.set_function("print_log", [](std::string msg) {
+    lua_.set_function("print_log", [](const std::string& msg) {
         LOG_INFO(msg, "FlightComputer");
     });
 }

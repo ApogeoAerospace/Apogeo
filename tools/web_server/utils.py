@@ -52,6 +52,7 @@ def get_simulator_path(build_dir: Path) -> Path:
             if candidate.is_file():
                 return candidate
     except OSError:
+        # Continue with remaining available paths or valid data rows.
         pass
 
     # Keep previous behavior as deterministic fallback when not found.
@@ -72,7 +73,7 @@ def is_port_available(port: int) -> bool:
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('', port))
+            s.bind(('127.0.0.1', port))
             return True
         except OSError:
             return False
@@ -204,6 +205,7 @@ def _calculate_summary_statistics(rows: List[List[Any]]) -> Dict[str, Any]:
                     dz = rows[i][5] - rows[i-1][5]  # position_z
                     total_distance += (dx**2 + dy**2 + dz**2)**0.5
                 except (IndexError, TypeError):
+                    # Continue with remaining available paths or valid data rows.
                     pass
     
     # Build summary
@@ -278,7 +280,8 @@ def sanitize_filename(filename: str) -> str:
     """
     # Remove path separators and special characters
     import re
-    filename = Path(filename).name  # Get just the filename
+    # Accept either path syntax regardless of the server's host OS.
+    filename = filename.replace('\\', '/').rsplit('/', 1)[-1]
     filename = re.sub(r'[^\w\s\-\.]', '', filename)
     return filename
 

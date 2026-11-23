@@ -1,0 +1,8 @@
+[
+  {
+    "rule_id": "cpp/path-injection",
+    "path": "src/main.cpp",
+    "statement": "const bool config_loaded = config_manager.loadConfig(config_file);",
+    "reason": "The local CLI intentionally opens the configuration file explicitly selected by the invoking user. It has no service or elevated-privilege boundary. Remote web configuration filenames are validated separately. This exception matches only this exact call, not other path operations."
+  }
+]

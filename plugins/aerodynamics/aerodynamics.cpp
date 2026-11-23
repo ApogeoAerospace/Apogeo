@@ -41,7 +41,7 @@ void plugin_log(int32_t level, const char* component, const std::string& message
         return;
     }
 
-    std::cout << "[" << (component ? component : "Plugin") << "] " << message << std::endl;
+    std::cout << "[" << (component ? component : "Plugin") << "] " << message << '\n' << std::flush;
 }
 
 bool loadDefaultConfig(aerodynamics::AerodynamicsModule& module) {
@@ -65,7 +65,7 @@ PLUGIN_EXPORT void plugin_set_host_services(const PluginHostServices* services) 
                           << services->api_version
                           << ", plugin-supported="
                           << kSupportedHostServicesApiVersion
-                          << "). Falling back to local plugin logging." << std::endl;
+                          << "). Falling back to local plugin logging." << '\n' << std::flush;
             }
             return;
         }

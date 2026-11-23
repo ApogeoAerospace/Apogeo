@@ -37,7 +37,7 @@ PLUGIN_EXPORT int32_t plugin_configure(PluginHandle handle, const char* json_par
         reinterpret_cast<PropulsionPluginInstance*>(handle)->module.load_from_csv(path);
         return 0;
     } catch (const std::exception& error) {
-        std::fprintf(stderr, "[Propulsion] %s\n", error.what());
+        static_cast<void>(std::fprintf(stderr, "[Propulsion] %s\n", error.what()));
         return -4;
     } catch (...) { return -4; }
 }

@@ -33,9 +33,13 @@ public:
     }
 
     void stop() {
-        bool expected = true;
-        if (!running_.compare_exchange_strong(expected, false)) {
-            return;
+        {
+            // Serialize the stop predicate with wait() so its wakeup cannot be lost.
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!running_) {
+                return;
+            }
+            running_ = false;
         }
 
         cv_.notify_all();
@@ -50,8 +54,8 @@ private:
             std::string line;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                cv_.wait(lock, [this]() { return !running_.load() || !queue_.empty(); });
-                if (!running_.load() && queue_.empty()) {
+                cv_.wait(lock, [this]() { return !running_ || !queue_.empty(); });
+                if (!running_ && queue_.empty()) {
                     return;
                 }
                 line = std::move(queue_.front());
@@ -66,7 +70,7 @@ private:
     std::mutex mutex_;
     std::condition_variable cv_;
     std::deque<std::string> queue_;
-    std::atomic<bool> running_{false};
+    bool running_; // Protected by mutex_.
     std::thread writer_thread_;
 };
 
@@ -273,7 +277,6 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
             }
 
             bool run_ticks_failed = false;
-            simulation_active = true;
             emit_event("simulation_started", {
                 {"mode", "run_ticks"},
                 {"count", count},
@@ -333,7 +336,6 @@ int runIpcStdioSession(SimulationEngine& engine, Logger& logger) {
             telemetry_interval_ticks.store(throttle_settings.telemetry_interval_ticks);
             output_manager.setOutputInterval(static_cast<int>(throttle_settings.telemetry_interval_ticks));
 
-            simulation_active = true;
             emit_event("simulation_started", {
                 {"mode", "run_full"},
                 {"tick_event_interval", throttle_settings.tick_event_interval},

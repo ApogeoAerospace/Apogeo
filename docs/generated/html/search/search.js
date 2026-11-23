@@ -626,7 +626,7 @@ function createResults(resultsPath) {
     srLink.setAttribute('id','Item'+index);
     setKeyActions(srLink,'return searchResults.Nav(event,'+index+')');
     setClassAttr(srLink,'SRSymbol');
-    srLink.innerHTML = decodeHtml(elem[1][0]);
+    srLink.textContent = decodeHtml(elem[1][0]);
     srEntry.appendChild(srLink);
     if (elem[1].length==2) { // single result
       if (elem[1][1][0].startsWith('http://') || elem[1][1][0].startsWith('https://')) { // absolute path
@@ -642,7 +642,7 @@ function createResults(resultsPath) {
       }
       const srScope = document.createElement('span');
       setClassAttr(srScope,'SRScope');
-      srScope.innerHTML = decodeHtml(elem[1][1][2]);
+      srScope.textContent = decodeHtml(elem[1][1][2]);
       srEntry.appendChild(srScope);
     } else { // multiple results
       srLink.setAttribute('href','javascript:searchResults.Toggle("SR_'+id+'")');
@@ -664,7 +664,7 @@ function createResults(resultsPath) {
         } else {
          srChild.setAttribute('target','_blank');
         }
-        srChild.innerHTML = decodeHtml(elem[1][c+1][2]);
+        srChild.textContent = decodeHtml(elem[1][c+1][2]);
         srChildren.appendChild(srChild);
       }
       srEntry.appendChild(srChildren);

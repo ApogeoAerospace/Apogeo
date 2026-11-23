@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../src/FlightComputerContext.h"
+#include "FlightComputerContext.h"
 #include <filesystem>
 #include <iostream>
 

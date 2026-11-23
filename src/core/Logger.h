@@ -139,7 +139,13 @@ public:
                 now.time_since_epoch()) % 1000;
 
             std::stringstream ss;
-            ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S");
+            std::tm local_time_parts{};
+#ifdef _WIN32
+            if (localtime_s(&local_time_parts, &time_t) != 0) return;
+#else
+            if (localtime_r(&time_t, &local_time_parts) == nullptr) return;
+#endif
+            ss << std::put_time(&local_time_parts, "%Y-%m-%d %H:%M:%S");
             ss << '.' << std::setfill('0') << std::setw(3) << ms.count();
             ss << " [" << levelToString(level) << "]";
 
@@ -158,7 +164,7 @@ public:
 
             // Output to console
             if (console_output_enabled_) {
-                std::cout << log_line << std::endl;
+                std::cout << log_line << '\n' << std::flush;
             }
 
             // Output to file if available
@@ -167,7 +173,7 @@ public:
                     log_file_.open(log_file_path_, std::ios::app);
                 }
                 if (log_file_.is_open()) {
-                    log_file_ << log_line << std::endl;
+                    log_file_ << log_line << '\n' << std::flush;
                     log_file_.flush();
                     log_file_.close();
                 }
@@ -180,7 +186,8 @@ public:
             try {
                 structured_sink(level, message, component);
             } catch (...) {
-                // Structured sink does not break normal logging path.
+                // A failing optional sink must not propagate through the logging API.
+                return;
             }
         }
     }
