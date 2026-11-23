@@ -75,6 +75,16 @@ CODEOWNERS if using required code-owner review. Workflow files cannot apply thes
 repository settings. Enable the dependency graph and code scanning, including
 appropriate GitHub security entitlements for private repositories.
 
+Dependency review needs only `contents: read`; `pull-requests: write` is needed
+only when posting PR comments, which this workflow disables. If its diff API
+returns 403, verify the repository's dependency graph is enabled under Settings /
+Advanced Security, then check token permissions, rate limits and any required
+private-repository entitlement. Enable dependency graph and Dependabot alerts
+before rerunning the failed job. Do not bypass an unavailable API with warn-only
+mode or skipped checks. CI pins pytest 9.2.0; development installs require at
+least 9.0.3 to exclude the vulnerable temporary-directory handling tracked in
+[GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g).
+
 Fork PRs enforce CodeQL locally without attempting privileged SARIF upload.
 All reports remain available as artifacts after a findings-gate failure.
 

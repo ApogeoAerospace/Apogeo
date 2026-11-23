@@ -325,13 +325,18 @@ jobs:
   dependency-review:
     name: Security / Dependencies
     if: github.event_name == 'pull_request'
+    # Dependency graph must be enabled in repository settings.
+    # PR write access is unnecessary while comment-summary-in-pr is never.
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
+      - name: Review dependency vulnerabilities
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: moderate
           fail-on-scopes: runtime, development, unknown
