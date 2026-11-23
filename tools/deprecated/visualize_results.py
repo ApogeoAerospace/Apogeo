@@ -176,7 +176,7 @@ def plot_trajectory_3d(df: pd.DataFrame, metadata: dict, plots_dir: str) -> plt.
         return None
 
     fig = plt.figure(figsize=(12, 8))
-    ax = fig.add_subplot(111, projection=Axes3D.name)
+    ax = fig.add_subplot(111, projection="3d")
 
     tcol = _time_column(df)
     sc = ax.scatter(
