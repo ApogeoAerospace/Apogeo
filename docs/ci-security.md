@@ -21,6 +21,12 @@ All six native OS/configuration combinations belong to the single
 macOS use Ninja. Build, CTest, artifacts, and the required aggregate result are
 shared across that matrix.
 
+macOS native, web API and browser jobs use `macos-15-intel`, matching CodeQL,
+with the `x64-osx` native triplet. GitHub's ARM64 runner pool previously cancelled
+jobs before any steps ran because no runner could acquire them. This avoids that
+specific pool; it does not guarantee runner availability. macOS coverage is Intel,
+not Apple Silicon. Infrastructure cancellations still block the quality gate.
+
 Native tests have separate executables, CTest labels, CI steps and JUnit reports:
 
 | Suite label | Location | Scope |

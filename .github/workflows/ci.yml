@@ -34,13 +34,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2022]
+        os: [ubuntu-24.04, macos-15-intel, windows-2022]
         build_type: [Debug, Release]
         include:
           - os: ubuntu-24.04
             triplet: x64-linux
-          - os: macos-15
-            triplet: arm64-osx
+          - os: macos-15-intel
+            triplet: x64-osx
           - os: windows-2022
             triplet: x64-windows
 
@@ -408,7 +408,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2022]
+        os: [ubuntu-24.04, macos-15-intel, windows-2022]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -434,7 +434,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2022]
+        os: [ubuntu-24.04, macos-15-intel, windows-2022]
     env:
       REQUIRE_BROWSER_TESTS: '1'
       BROWSER_ARTIFACT_DIR: out/browser-tests
