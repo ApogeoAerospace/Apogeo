@@ -30,21 +30,23 @@ jobs:
   build-and-test:
     name: Test / Native (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: [ubuntu-24.04, macos-15, windows-2022]
         build_type: [Debug, Release]
         include:
           - os: ubuntu-24.04
             triplet: x64-linux
           - os: macos-15
             triplet: arm64-osx
+          - os: windows-2022
+            triplet: x64-windows
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -54,6 +56,7 @@ jobs:
           triplet: ${{ matrix.triplet }}
 
       - name: Configure CMake
+        if: runner.os != 'Windows'
         run: |
           flags=()
           if [[ "${{ matrix.os }}" == ubuntu-24.04 && "${{ matrix.build_type }}" == Debug ]]; then
@@ -65,15 +68,23 @@ jobs:
             -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
             -G Ninja
 
+      - name: Configure Windows with matching MSVC compiler and headers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} -DENABLE_TESTING=ON
+
       - name: Build project
-        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel 2
 
       - name: Install coverage tools
         if: matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug'
         run: sudo apt-get install -y lcov
 
       - name: Run native tests
-        run: ctest --test-dir build --output-on-failure --no-tests=error --timeout 120
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure --no-tests=error --timeout 120
 
       - name: Generate coverage report
         if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/bin/simulator') != '' }}
@@ -118,7 +129,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ !cancelled() && matrix.os == 'ubuntu-24.04' && matrix.build_type == 'Debug' && hashFiles('build/coverage_filtered.info') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report
           path: |
@@ -134,7 +145,7 @@ jobs:
 
       - name: Upload build artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apogeo-build-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
@@ -149,7 +160,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -183,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -250,7 +261,7 @@ jobs:
 
       - name: Upload analysis report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: static-analysis-report
           path: clang-tidy-report.txt
@@ -264,7 +275,7 @@ jobs:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-native
@@ -281,7 +292,7 @@ jobs:
             -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure --no-tests=error --timeout 120
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: sanitizer-test-results
@@ -292,11 +303,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: stable
           cache: false
@@ -317,7 +328,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
@@ -337,40 +348,6 @@ jobs:
       actions: read
     uses: ./.github/workflows/codeql.yml
 
-  windows-tests:
-    name: Test / Native (windows-2022, ${{ matrix.build_type }})
-    runs-on: windows-2022
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Debug, Release]
-    defaults:
-      run:
-        shell: pwsh
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-native
-        with:
-          triplet: x64-windows
-      - name: Configure Windows with matching MSVC compiler and headers
-        run: >-
-          cmake -S . -B build-windows -G "Visual Studio 17 2022" -A x64
-          -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake"
-          -DVCPKG_TARGET_TRIPLET=x64-windows -DENABLE_TESTING=ON
-      - name: Build Windows project and tests
-        run: cmake --build build-windows --config ${{ matrix.build_type }} --parallel 2
-      - name: Run Windows unit tests
-        run: ctest --test-dir build-windows -C ${{ matrix.build_type }} --output-on-failure --no-tests=error --timeout 120
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: always()
-        with:
-          name: windows-tests-${{ matrix.build_type }}
-          path: build-windows/Testing/
-          retention-days: 14
-
   api-tests:
     name: Test / Python API (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -380,17 +357,17 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15, windows-2022]
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
       - name: Install test dependencies
         run: python -m pip install -r tools/ci/requirements.txt
       - name: Test API
         run: python -m pytest tools/web_server/tests -q --junitxml=api-tests.xml
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: api-tests-${{ matrix.os }}
@@ -401,7 +378,7 @@ jobs:
     name: Quality Summary
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: [windows-tests, build-and-test, api-tests, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
+    needs: [build-and-test, api-tests, static-analysis, code-quality, sanitizer-tests, security-checks, dependency-review, codeql]
     if: always()
     steps:
       - name: Enforce all quality and security gates

@@ -15,6 +15,11 @@ merge commit for pull requests to main/develop or merge-queue entries.
 | Analyze | Focused clang-tidy diagnostics and address/undefined-behavior sanitizers |
 | Quality Summary | Requires every applicable group to pass |
 
+All six native OS/configuration combinations belong to the single
+`build-and-test` matrix. Windows uses the Visual Studio generator; Linux and
+macOS use Ninja. Build, CTest, artifacts, and the required aggregate result are
+shared across that matrix.
+
 Linux Debug is instrumented for coverage and uses its native test run to produce
 coverage reports. There is no duplicate Linux unit-test or coverage build.
 FlatBuffers schemas are compiled by every native build rather than checked again
@@ -86,6 +91,12 @@ Inspect failures under the group that owns the failed check. Download API JUnit,
 native CTest, coverage HTML/LCOV, clang-tidy, and codeql-language-os SARIF artifacts
 as applicable. Syntax tests do not establish that hosted builds or security scans
 pass. Passing CI reduces risk; it does not prove correctness or security.
+
+The current physics implementation also has explicit limitations: aerodynamics
+force/torque output remains neutral, and propulsion engine-cycle and mass-flow
+calculations are placeholders. A passing pipeline verifies the implemented
+contracts and regression tests; it does not establish that these models are
+complete, physically validated, or ready for production flight use.
 
 External actions are pinned to commits. Dependabot updates actions and Python
 dependencies weekly against develop. Review pinned Go security tools and native
