@@ -42,11 +42,13 @@ def load_simulation_data(output_dir="output"):
                     try:
                         row[key] = int(row[key])
                     except ValueError:
+                        # Preserve textual CSV fields when they are not numeric.
                         pass
                 else:
                     try:
                         row[key] = float(row[key])
                     except ValueError:
+                        # Preserve textual CSV fields when they are not numeric.
                         pass
             data.append(row)
     

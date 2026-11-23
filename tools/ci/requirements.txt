@@ -1,0 +1,2 @@
+# Used by the Linux, macOS, and Windows API test jobs.
+pytest==8.4.2

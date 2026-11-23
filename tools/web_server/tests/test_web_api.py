@@ -20,7 +20,7 @@ import sys
 import tempfile
 import threading
 import time
-import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -154,7 +154,7 @@ class ApiTestCase(unittest.TestCase):
             if status["status"] in terminal:
                 return status
             time.sleep(0.05)
-        self.fail(f"job did not finish, last status: {status}")
+        raise AssertionError(f"job did not finish, last status: {status}")
 
     def last_run(self):
         return json.loads((self.tmp / "output" / "fake_run.json").read_text(encoding="utf-8"))
@@ -656,7 +656,7 @@ class PlatformLayoutTests(unittest.TestCase):
         return path
 
     def test_simulator_and_library_are_found_for_each_layout(self):
-        from unittest import mock
+        mock = unittest.mock
         from web_server.config import discover_build_dir
         from web_server.plugin_registry import PluginRegistry
         from web_server.utils import get_simulator_path
@@ -683,7 +683,7 @@ class PlatformLayoutTests(unittest.TestCase):
                     self.assertEqual(found, lib)
 
     def test_a_library_of_another_platform_is_not_taken_for_this_one(self):
-        from unittest import mock
+        mock = unittest.mock
         from web_server.plugin_registry import PluginRegistry
 
         root = self.tmp / "mixed"

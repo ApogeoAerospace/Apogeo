@@ -15,8 +15,6 @@ import sys
 import webbrowser
 from pathlib import Path
 import datetime
-import urllib.parse
-import time
 import platform
 
 class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
@@ -3052,6 +3050,7 @@ class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
             if not isinstance(filename, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,80}', filename):
                 self.send_json_response({"success": False, "error": "Invalid configuration filename"})
                 return
+            filename = os.path.basename(filename)
             config_file = (self.config_dir / f"{filename}.json").resolve()
             if config_file.parent != self.config_dir.resolve():
                 self.send_json_response({"success": False, "error": "Invalid configuration path"})
@@ -3076,8 +3075,9 @@ class ApogeoWebHandler(http.server.SimpleHTTPRequestHandler):
                         "filename": config_file.stem,
                         "config": config_data
                     })
-                except:
-                    pass
+                except (OSError, ValueError, TypeError):
+                    # Skip malformed saved files and continue listing valid configurations.
+                    continue
         self.send_json_response(configs)
     
     def send_json_response(self, data):
@@ -3104,7 +3104,7 @@ def main():
             # Try to open browser
             try:
                 webbrowser.open(f'http://localhost:{port}')
-            except:
+            except (OSError, webbrowser.Error):
                 print("[WARN] Could not open browser automatically")
                 print(f"   Please open: http://localhost:{port}")
             

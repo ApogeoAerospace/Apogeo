@@ -11,8 +11,9 @@ runs are expected; the standalone check protects branches independently of CI ed
 
 ## Limits
 
-Windows Server 2022 builds and runs C++ unit tests in both Debug and Release,
-plus the Python web API and security gate tests. The Visual Studio generator
+Linux, macOS, and Windows build and run native tests in both Debug and Release,
+plus the Python web API tests using pinned pytest dependencies. CTest also runs
+the actual simulator's CLI and IPC lifecycle integration tests. The Windows Visual Studio generator
 selects a matching MSVC compiler, headers, and libraries. Both configurations
 are required by Quality Summary. Browser smoke tests require Playwright and
 are skipped when it is unavailable.
@@ -62,10 +63,13 @@ warning/error findings block with no baseline allowance. Suppression markers and
 unchanged-result flags in SARIF do not bypass this local gate. Low-severity security
 findings remain visible in the uploaded reports. Failed scanner invocations, error
 notifications, missing reports, invalid severities, and invalid rule references fail.
-C++ builds project targets and tests in Debug mode under CodeQL tracing; dependencies
-are installed before tracing. Only dependency binary packages are cached, so a
-cached project object cannot silently escape extraction. This Linux build does not
-cover code compiled exclusively under Windows or macOS platform conditions.
+C++ builds project targets and tests in Debug mode under CodeQL tracing on Linux,
+Intel macOS 15, and Windows Server 2022. Dependencies are installed before tracing.
+Only dependency binary packages are cached, so a cached project object cannot
+silently escape extraction. Categories and report artifact names include the OS,
+so platform findings do not overwrite one another. Interpreted-language and workflow
+analysis runs on Linux; Python runtime tests run on all three platforms. Coverage,
+clang-tidy, and sanitizers remain Linux-specific checks.
 
 ## Testing CodeQL on a feature branch
 
@@ -89,9 +93,9 @@ including `ci_pipeline_refactor`; no default-branch merge or pull request is nee
 GitHub cannot scan edits that exist only in the local workspace.
 
 In GitHub Actions, open **CodeQL Advanced**, select the run whose commit SHA
-matches the pushed branch, and check all four **Analyze** jobs plus
-**CodeQL Security Gate**. Download `codeql-actions`, `codeql-c-cpp`,
-`codeql-javascript-typescript`, and `codeql-python` for the SARIF reports. Reports
+matches the pushed branch, and check all six **Analyze** jobs plus
+**CodeQL Security Gate**. Download the `codeql-<language>-<os>` artifacts
+for the SARIF reports. Reports
 are retained even if the findings gate fails after analysis. To recheck a downloaded
 report directory locally, run `python tools/ci/check_sarif.py <report-directory>`.
 

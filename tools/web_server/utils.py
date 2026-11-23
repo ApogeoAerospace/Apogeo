@@ -52,6 +52,7 @@ def get_simulator_path(build_dir: Path) -> Path:
             if candidate.is_file():
                 return candidate
     except OSError:
+        # Continue with remaining available paths or valid data rows.
         pass
 
     # Keep previous behavior as deterministic fallback when not found.
@@ -204,6 +205,7 @@ def _calculate_summary_statistics(rows: List[List[Any]]) -> Dict[str, Any]:
                     dz = rows[i][5] - rows[i-1][5]  # position_z
                     total_distance += (dx**2 + dy**2 + dz**2)**0.5
                 except (IndexError, TypeError):
+                    # Continue with remaining available paths or valid data rows.
                     pass
     
     # Build summary

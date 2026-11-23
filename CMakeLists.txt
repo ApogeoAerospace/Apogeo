@@ -381,4 +381,9 @@ if(ENABLE_TESTING)
     gtest_discover_tests(propulsion_tests WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
     message(STATUS "Unit tests enabled")
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME simulator_process
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/test_simulator_process.py"
+                --binary "$<TARGET_FILE:simulator>")
+    set_tests_properties(simulator_process PROPERTIES TIMEOUT 120)
 endif()

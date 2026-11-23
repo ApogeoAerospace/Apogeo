@@ -382,6 +382,7 @@ class SimulationManager:
                 if line:
                     sink.append(line)
         except (ValueError, OSError):
+            # The stream or process may already be closing during teardown.
             pass
 
     # Seconds allowed for commands that should answer quickly; ``run_full`` may take as
@@ -403,6 +404,7 @@ class SimulationManager:
             for line in stream:
                 lines.put(line)
         except (ValueError, OSError):
+            # The stream or process may already be closing during teardown.
             pass
         finally:
             lines.put(None)
@@ -462,6 +464,7 @@ class SimulationManager:
                 try:
                     process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
+                    # The stream or process may already be closing during teardown.
                     pass
                 time.sleep(0.05)
                 stderr = "\n".join(job.stderr_tail).strip()

@@ -244,7 +244,6 @@ const Results = {
      * FIXED: Use proper threshold and prefer INITIAL position for detection
      */
     isGeocentricCoordinates(initialPos, finalPos) {
-        const EARTH_RADIUS = 6378137.0; // meters (WGS84)
         // FIX: Threshold based on Earth radius
         // In geocentric coordinates, magnitude is ~6.4M meters
         // In local coordinates, magnitude is typically < 500,000 meters
