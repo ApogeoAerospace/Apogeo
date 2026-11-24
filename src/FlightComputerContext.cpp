@@ -13,6 +13,46 @@ namespace Apogeo {
 
 namespace {
 
+// ==========================================
+// LUA STATE PERSISTENCE HELPERS
+// ==========================================
+
+/**
+ * @brief Checks if a Lua table is a contiguous 1-based sequential array.
+ * @param tbl The Lua table to inspect.
+ * @param[out] count Number of contiguous elements found.
+ * @return true if keys are contiguous integers from 1 to N, false otherwise.
+ */
+bool is_sequential_array(const sol::table& tbl, size_t& count) {
+    count = 0;
+    for (const auto& pair : tbl) {
+        (void)pair;
+        ++count;
+    }
+    if (count == 0) {
+        return false;
+    }
+
+    for (const auto& pair : tbl) {
+        if (!pair.first.is<int>()) {
+            return false;
+        }
+        int idx = pair.first.as<int>();
+        if (idx < 1 || static_cast<size_t>(idx) > count) {
+            return false;
+        }
+    }
+
+    for (size_t i = 1; i <= count; ++i) {
+        sol::object item = tbl[i];
+        if (!item.valid() || item.get_type() == sol::type::lua_nil) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 nlohmann::json sol_table_to_json(const sol::table& tbl, std::unordered_set<const void*>& visited) {
     const void* ptr = tbl.pointer();
     if (visited.find(ptr) != visited.end()) {
@@ -20,46 +60,12 @@ nlohmann::json sol_table_to_json(const sol::table& tbl, std::unordered_set<const
     }
     visited.insert(ptr);
 
-    // Determine if table is a contiguous 1-based sequential array
-    size_t count = 0;
-    for (const auto& pair : tbl) {
-        (void)pair;
-        ++count;
-    }
-
-    bool is_array = false;
-    if (count > 0) {
-        bool all_int_keys = true;
-        for (const auto& pair : tbl) {
-            if (!pair.first.is<int>()) {
-                all_int_keys = false;
-                break;
-            }
-            int idx = pair.first.as<int>();
-            if (idx < 1 || static_cast<size_t>(idx) > count) {
-                all_int_keys = false;
-                break;
-            }
-        }
-        if (all_int_keys) {
-            bool contiguous = true;
-            for (size_t i = 1; i <= count; ++i) {
-                sol::object item = tbl[i];
-                if (!item.valid() || item.get_type() == sol::type::lua_nil) {
-                    contiguous = false;
-                    break;
-                }
-            }
-            if (contiguous) {
-                is_array = true;
-            }
-        }
-    }
-
+    size_t array_count = 0;
     nlohmann::json result;
-    if (is_array) {
+
+    if (is_sequential_array(tbl, array_count)) {
         result = nlohmann::json::array();
-        for (size_t i = 1; i <= count; ++i) {
+        for (size_t i = 1; i <= array_count; ++i) {
             sol::object item = tbl[i];
             sol::type t = item.get_type();
             if (t == sol::type::number) {
