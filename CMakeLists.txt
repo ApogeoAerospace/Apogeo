@@ -328,7 +328,10 @@ if(ENABLE_TESTING)
         tests/test_ipc_session.cpp
         tests/test_aerodynamics_module.cpp
         plugins/aerodynamics/aerodynamics_module.cpp
+        plugins/structures/structures_module.cpp
         tests/test_flight_computer.cpp
+        tests/test_structures_persistence.cpp
+        tests/test_persistence.cpp
         tests/test_example_plugin_physics.cpp
         src/ipc/IpcSession.cpp
     )
@@ -346,6 +349,7 @@ if(ENABLE_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin
         ${HDF5_INCLUDE_DIRS}
         ${GENERATED_DIR}

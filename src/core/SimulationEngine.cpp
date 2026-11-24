@@ -1,7 +1,9 @@
 #include <iostream>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <cmath>
+#include <nlohmann/json.hpp>
 #include "SimulationEngine.h"
 #include "PluginManager.h"
 #include "InitialStateLoader.h"
@@ -365,6 +367,183 @@ void SimulationEngine::print_performance_metrics() const { // PERFORMANCE METRIC
             LOG_INFO("  Last time: " + std::to_string(metric.last_execution_time) + "ms", "SimulationEngine");
         }
     }
+}
+
+namespace {
+static std::string base64_encode(const uint8_t* data, size_t len) {
+    static const char* tbl = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    out.reserve(((len + 2) / 3) * 4);
+    for (size_t i = 0; i < len; i += 3) {
+        uint32_t val = (data[i] << 16);
+        if (i + 1 < len) val |= (data[i + 1] << 8);
+        if (i + 2 < len) val |= data[i + 2];
+        out.push_back(tbl[(val >> 18) & 0x3F]);
+        out.push_back(tbl[(val >> 12) & 0x3F]);
+        out.push_back((i + 1 < len) ? tbl[(val >> 6) & 0x3F] : '=');
+        out.push_back((i + 2 < len) ? tbl[val & 0x3F] : '=');
+    }
+    return out;
+}
+
+static std::vector<uint8_t> base64_decode(const std::string& in) {
+    std::vector<uint8_t> out;
+    if (in.empty()) return out;
+    std::vector<int> T(256, -1);
+    const char* tbl = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    for (int i = 0; i < 64; ++i) T[static_cast<uint8_t>(tbl[i])] = i;
+
+    uint32_t val = 0;
+    int valb = -8;
+    for (uint8_t c : in) {
+        if (T[c] == -1) break;
+        val = (val << 6) + T[c];
+        valb += 6;
+        if (valb >= 0) {
+            out.push_back(static_cast<uint8_t>((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+    return out;
+}
+} // namespace
+
+bool SimulationEngine::save_state(const std::string& filepath) const {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+
+    if (current_state_buffer_.empty()) {
+        LOG_ERROR("Cannot save state: current state buffer is empty", "SimulationEngine");
+        return false;
+    }
+
+    nlohmann::json root;
+    root["apogeo_save"] = {
+        {"version", "1.0"},
+        {"format", "apogeo-state"}
+    };
+
+    root["engine_state"] = {
+        {"simulation_time", simulation_time_.load()},
+        {"iteration_count", iteration_count_.load()},
+        {"is_running", is_running_.load()}
+    };
+
+    auto& time_mgr = TimeManager::getInstance();
+    root["time_state"] = {
+        {"simulation_time", time_mgr.getSimulationTime()},
+        {"utc_start_time", time_mgr.getStartUTC()}
+    };
+
+    root["state_buffer_b64"] = base64_encode(current_state_buffer_.data(), current_state_buffer_.size());
+
+    // Plugins state
+    if (plugin_manager_) {
+        std::string pstate = plugin_manager_->save_plugins_state();
+        try {
+            root["plugins"] = nlohmann::json::parse(pstate);
+        } catch (...) {
+            root["plugins"] = nlohmann::json::object();
+        }
+    }
+
+    // Lua globals
+    if (flight_computer_ && flight_computer_->is_valid()) {
+        std::string lstate = flight_computer_->save_lua_globals();
+        try {
+            root["lua_globals"] = nlohmann::json::parse(lstate);
+        } catch (...) {
+            root["lua_globals"] = nlohmann::json::object();
+        }
+    } else {
+        root["lua_globals"] = nlohmann::json::object();
+    }
+
+    try {
+        std::ofstream file(filepath);
+        if (!file.is_open()) {
+            LOG_ERROR("Failed to open file for saving state: " + filepath, "SimulationEngine");
+            return false;
+        }
+        file << root.dump(4);
+        LOG_INFO("Simulation state saved successfully to: " + filepath, "SimulationEngine");
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Error writing state file: " + std::string(e.what()), "SimulationEngine");
+        return false;
+    }
+}
+
+bool SimulationEngine::load_state(const std::string& filepath) {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+
+    nlohmann::json root;
+    try {
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            LOG_ERROR("Failed to open file for loading state: " + filepath, "SimulationEngine");
+            return false;
+        }
+        file >> root;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to parse state file: " + std::string(e.what()), "SimulationEngine");
+        return false;
+    }
+
+    // Pre-validation: verify required keys
+    if (!root.contains("apogeo_save") || !root.contains("engine_state") ||
+        !root.contains("state_buffer_b64")) {
+        LOG_ERROR("Invalid state file schema: missing core fields", "SimulationEngine");
+        return false;
+    }
+
+    // Decode buffer
+    std::string b64 = root["state_buffer_b64"].get<std::string>();
+    std::vector<uint8_t> new_buffer = base64_decode(b64);
+    if (new_buffer.empty()) {
+        LOG_ERROR("State buffer in save file is empty or invalid", "SimulationEngine");
+        return false;
+    }
+
+    // Validate general state in decoded buffer
+    flatbuffers::Verifier verifier(new_buffer.data(), new_buffer.size());
+    if (!state_vector::VerifyGeneralStateBuffer(verifier)) {
+        LOG_ERROR("Decoded buffer failed FlatBuffer verification", "SimulationEngine");
+        return false;
+    }
+
+    // Validate and restore plugins first -> guarantees atomic failure before touching engine state
+    if (root.contains("plugins") && plugin_manager_) {
+        std::string pstr = root["plugins"].dump();
+        if (!plugin_manager_->restore_plugins_state(pstr)) {
+            LOG_ERROR("Failed to restore plugins state; load_state aborted without changes", "SimulationEngine");
+            return false;
+        }
+    }
+
+    // Validate and restore Lua globals
+    if (root.contains("lua_globals") && flight_computer_) {
+        std::string lstr = root["lua_globals"].dump();
+        if (!flight_computer_->restore_lua_globals(lstr)) {
+            LOG_ERROR("Failed to restore Lua globals; load_state aborted", "SimulationEngine");
+            return false;
+        }
+    }
+
+    // All pre-checks and component restorations passed. Apply state changes atomically.
+    current_state_buffer_ = std::move(new_buffer);
+
+    const auto& eng_state = root["engine_state"];
+    simulation_time_.store(eng_state.value("simulation_time", 0.0));
+    iteration_count_.store(eng_state.value("iteration_count", uint64_t{0}));
+    is_running_.store(eng_state.value("is_running", false));
+
+    if (root.contains("time_state")) {
+        auto& time_mgr = TimeManager::getInstance();
+        time_mgr.setSimulationTime(root["time_state"].value("simulation_time", simulation_time_.load()));
+    }
+
+    LOG_INFO("Simulation state restored successfully from: " + filepath, "SimulationEngine");
+    return true;
 }
 
 } // namespace Apogeo

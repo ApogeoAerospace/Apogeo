@@ -197,4 +197,58 @@ double StructuresModule::warningGLoad() const {
     return limits_.warning_g_load;
 }
 
+std::string StructuresModule::saveState() const {
+    nlohmann::json j;
+    j["schema_version"] = 1;
+    j["fuel_mass_kg"] = fuel_mass_kg_;
+    j["center_of_mass"] = {
+        {"x", center_of_mass_.x},
+        {"y", center_of_mass_.y},
+        {"z", center_of_mass_.z}
+    };
+    j["inertia_tensor"] = {
+        {"ixx", inertia_tensor_.ixx},
+        {"iyy", inertia_tensor_.iyy},
+        {"izz", inertia_tensor_.izz},
+        {"ixy", inertia_tensor_.ixy},
+        {"ixz", inertia_tensor_.ixz},
+        {"iyz", inertia_tensor_.iyz}
+    };
+    return j.dump();
+}
+
+bool StructuresModule::loadState(const std::string& state_json) {
+    try {
+        const auto j = nlohmann::json::parse(state_json);
+        if (!j.contains("schema_version") || j["schema_version"].get<uint32_t>() != 1) {
+            return false;
+        }
+
+        if (j.contains("fuel_mass_kg")) {
+            fuel_mass_kg_ = j["fuel_mass_kg"].get<double>();
+        }
+
+        if (j.contains("center_of_mass") && j["center_of_mass"].is_object()) {
+            const auto& cm = j["center_of_mass"];
+            center_of_mass_.x = cm.value("x", center_of_mass_.x);
+            center_of_mass_.y = cm.value("y", center_of_mass_.y);
+            center_of_mass_.z = cm.value("z", center_of_mass_.z);
+        }
+
+        if (j.contains("inertia_tensor") && j["inertia_tensor"].is_object()) {
+            const auto& it = j["inertia_tensor"];
+            inertia_tensor_.ixx = it.value("ixx", inertia_tensor_.ixx);
+            inertia_tensor_.iyy = it.value("iyy", inertia_tensor_.iyy);
+            inertia_tensor_.izz = it.value("izz", inertia_tensor_.izz);
+            inertia_tensor_.ixy = it.value("ixy", inertia_tensor_.ixy);
+            inertia_tensor_.ixz = it.value("ixz", inertia_tensor_.ixz);
+            inertia_tensor_.iyz = it.value("iyz", inertia_tensor_.iyz);
+        }
+
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 } // namespace structures

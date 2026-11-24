@@ -146,6 +146,21 @@ public:
      */
     void print_performance_metrics() const;
 
+    /**
+     * @brief Saves entire simulation state (engine, plugins, Lua, state buffer) to file.
+     * @param filepath Path to save destination.
+     * @return true if successfully saved.
+     */
+    bool save_state(const std::string& filepath) const;
+
+    /**
+     * @brief Restores entire simulation state from file.
+     * Validates schema and components beforehand to guarantee atomic all-or-nothing restoration.
+     * @param filepath Path to save file.
+     * @return true on success, false if invalid or restoration failed (state remains untouched).
+     */
+    bool load_state(const std::string& filepath);
+
 private:
     // Plugin manager
     std::unique_ptr<PluginManager> plugin_manager_;
