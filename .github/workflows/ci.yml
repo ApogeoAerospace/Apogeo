@@ -92,10 +92,10 @@ jobs:
       - name: Verify vcpkg installation
         run: |
           if [ -d "vcpkg" ]; then
-            echo "✅ vcpkg configured correctly"
+            echo "vcpkg configured correctly"
             ls -la vcpkg/
           else
-            echo "❌ ERROR: vcpkg not found"
+            echo "ERROR: vcpkg not found"
             exit 1
           fi
 
@@ -167,7 +167,7 @@ jobs:
 
       - name: Verify generated binaries
         run: |
-          echo "✅ Verifying generated binaries..."
+          echo "Verifying generated binaries..."
           ls -lh build/bin/
           ls -lh build/lib/
           file build/bin/simulator
@@ -183,7 +183,7 @@ jobs:
       - name: Report Python validation warning
         if: steps.validate-python.outcome == 'failure'
         run: |
-          echo "::warning::⚠️ Some Python scripts have syntax errors. Review tools/*.py"
+          echo "::warning::Some Python scripts have syntax errors. Review tools/*.py"
 
       - name: Upload build artifacts
         if: always()
@@ -207,7 +207,7 @@ jobs:
           echo "Verifying file formatting"
           # Ensure there are no files with trailing whitespace
           ! git grep -I -n '[[:space:]]$' -- '*.cpp' '*.h' '*.hpp' || (
-            echo "⚠️ Trailing whitespace was found"
+            echo "Trailing whitespace was found"
             exit 1
           )
 
@@ -234,21 +234,21 @@ jobs:
             find src/schemas -name '*.fbs' -type f | while read -r schema_file; do
               echo "Validating: $schema_file"
               if ! flatc --cpp --binary "$schema_file" -o /tmp/flatbuffers_validation 2>&1; then
-                echo "::error::❌ Error validating $schema_file"
+                echo "::error::Error validating $schema_file"
                 VALIDATION_FAILED=1
               else
-                echo "✅ $schema_file is valid"
+                echo "$schema_file is valid"
               fi
             done
             
             if [ $VALIDATION_FAILED -eq 1 ]; then
-              echo "❌ ERROR: Some FlatBuffers schemas have syntax errors"
+              echo "ERROR: Some FlatBuffers schemas have syntax errors"
               exit 1
             else
-              echo "✅ All FlatBuffers schemas are valid"
+              echo "All FlatBuffers schemas are valid"
             fi
           else
-            echo "⚠️ WARNING: src/schemas directory not found"
+            echo "WARNING: src/schemas directory not found"
           fi
 
   unit-tests:
@@ -302,7 +302,7 @@ jobs:
           cd build
           # Run ctest and capture results
           if ! ctest --output-on-failure > test_results.txt 2>&1; then
-            echo "::warning::⚠️ Some unit tests failed"
+            echo "::warning::Some unit tests failed"
             TEST_FAILED=true
           else
             TEST_FAILED=false
@@ -317,10 +317,10 @@ jobs:
               SUCCESS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
               echo "Passed tests: $PASSED/$TOTAL ($SUCCESS_RATE%)"
               if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
-                echo "❌ ERROR: Test success rate below required 95%"
+                echo "ERROR: Test success rate below required 95%"
                 exit 1
               fi
-              echo "✅ Test success rate: $SUCCESS_RATE% (>= 95%)"
+              echo "Test success rate: $SUCCESS_RATE% (>= 95%)"
             fi
           fi
           
@@ -385,7 +385,10 @@ jobs:
         run: |
           cd build
           lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch,inconsistent
-          lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' --output-file coverage_filtered.info --ignore-errors unused
+          lcov --remove coverage.info '/usr/*' '*/vcpkg_installed/*' '*/tests/*' \
+            --output-file coverage_filtered.info \
+            --ignore-errors unused \
+            --ignore-errors inconsistent
           lcov --list coverage_filtered.info
       
       - name: Validate minimum coverage
@@ -393,7 +396,7 @@ jobs:
           cd build
           # Verify that the coverage file exists and is not empty
           if [ ! -s coverage_filtered.info ]; then
-            echo "❌ ERROR: Coverage file is empty or missing"
+            echo "ERROR: Coverage file is empty or missing"
             exit 1
           fi
           
@@ -412,18 +415,18 @@ jobs:
           
           # Validate that a numeric value was obtained
           if [[ -z "$COVERAGE" ]] || ! [[ "$COVERAGE" =~ ^[0-9]+\.?[0-9]*$ ]]; then
-            echo "⚠️ WARNING: Could not automatically extract coverage percentage"
+            echo "WARNING: Could not automatically extract coverage percentage"
             echo "Showing full lcov output:"
             lcov --summary coverage_filtered.info
-            echo "❌ ERROR: Cannot validate minimum coverage without a numeric value"
+            echo "ERROR: Cannot validate minimum coverage without a numeric value"
             exit 1
           fi
           
-          echo "📊 Code coverage: $COVERAGE%"
+          echo "Code coverage: $COVERAGE%"
           
           # STRICT VALIDATION: Minimum coverage 44%
           if (( $(echo "$COVERAGE < 44" | bc -l) )); then
-            echo "❌ ERROR: Insufficient code coverage"
+            echo "   ERROR: Insufficient code coverage"
             echo "   Current: $COVERAGE%"
             echo "   Required minimum: 44%"
             echo "   Deficit: $(echo "44 - $COVERAGE" | bc -l)%"
@@ -431,7 +434,7 @@ jobs:
             echo "🔧 Required action: Add more unit tests to reach 44% coverage"
             exit 1
           else
-            echo "✅ Acceptable code coverage: $COVERAGE% (>= 44%)"
+            echo "  Acceptable code coverage: $COVERAGE% (>= 44%)"
           fi
 
       - name: Generate HTML report
@@ -508,34 +511,34 @@ jobs:
         run: |
           WARNING_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: warning:" clang-tidy-report.txt || echo "0")
           ERROR_COUNT=$(grep -cE "^[^:]+:[0-9]+:[0-9]+: error:" clang-tidy-report.txt || echo "0")
-          echo "📊 Warnings found: $WARNING_COUNT"
-          echo "📊 Errors found: $ERROR_COUNT"
+          echo "  Warnings found: $WARNING_COUNT"
+          echo "  Errors found: $ERROR_COUNT"
           
           # Report as warning if there were execution issues
           if [ "${CLANG_TIDY_EXIT_CODE:-0}" -ne 0 ]; then
-            echo "::warning::⚠️ clang-tidy reported issues during analysis (exit code: ${CLANG_TIDY_EXIT_CODE})"
+            echo "::warning::  clang-tidy reported issues during analysis (exit code: ${CLANG_TIDY_EXIT_CODE})"
           fi
           
           # STRICT VALIDATION: Maximum 10 warnings allowed
           if [ "$WARNING_COUNT" -ge 445 ]; then
-            echo "❌ ERROR: Too many clang-tidy warnings"
+            echo "  ERROR: Too many clang-tidy warnings"
             echo "   Current: $WARNING_COUNT warnings"
             echo "   Maximum allowed: 10 warnings"
             echo "   Excess: $((WARNING_COUNT - 10)) warnings"
             echo ""
-            echo "🔧 Required action: Fix warnings before continuing"
+            echo "   Required action: Fix warnings before continuing"
             echo "   Please review the clang-tidy report and address warnings"
             exit 1
           elif [ "$WARNING_COUNT" -gt 50 ]; then
-            echo "::warning::⚠️ Many clang-tidy warnings ($WARNING_COUNT). It is recommended to fix them."
+            echo "::warning::  Many clang-tidy warnings ($WARNING_COUNT). It is recommended to fix them."
           else
-            echo "✅ Warnings within acceptable limit: $WARNING_COUNT <= 10"
+            echo "  Warnings within acceptable limit: $WARNING_COUNT <= 10"
           fi
           
           if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "❌ ERROR: Found $ERROR_COUNT clang-tidy errors"
+            echo "  ERROR: Found $ERROR_COUNT clang-tidy errors"
           else
-            echo "✅ No clang-tidy errors"
+            echo "  No clang-tidy errors"
           fi
 
       - name: Check critical warnings
@@ -570,11 +573,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build & Test | ${{ needs.build-and-test.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Coverage | ${{ needs.code-coverage.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Test | ${{ needs.build-and-test.result == 'success' && 'Success' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && 'Success' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Coverage | ${{ needs.code-coverage.result == 'success' && 'Success' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && 'Success' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && 'Success' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Quality Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -584,11 +587,11 @@ jobs:
           echo "- **FlatBuffers Schemas**: full syntax validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.build-and-test.result }}" == "success" && "${{ needs.unit-tests.result }}" == "success" && "${{ needs.code-coverage.result }}" == "success" && "${{ needs.static-analysis.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then
-            echo "## ✅ CI Pipeline Completed Successfully" >> $GITHUB_STEP_SUMMARY
+            echo "## CI Pipeline Completed Successfully" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "All quality checks passed. The code is ready to merge." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ CI Pipeline Failed" >> $GITHUB_STEP_SUMMARY
+            echo "## CI Pipeline Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Some quality checks failed. Please review the logs for details." >> $GITHUB_STEP_SUMMARY
           fi

@@ -23,9 +23,10 @@ const Templates = {
                         duration: 30.0,
                         max_iterations: 3000
                     },
+                    environment: {
+                        gravity: { enabled: true, magnitude: 9.81, direction: [0, 0, -1] }
+                    },
                     physics: {
-                        enable_gravity: true,
-                        gravity_magnitude: 9.81,
                         enable_atmospheric_drag: false,
                         integrator_type: "runge_kutta_4"
                     },
@@ -55,9 +56,10 @@ const Templates = {
                         duration: 60.0,
                         max_iterations: 600
                     },
+                    environment: {
+                        gravity: { enabled: true, magnitude: 9.81, direction: [0, 0, -1] }
+                    },
                     physics: {
-                        enable_gravity: true,
-                        gravity_magnitude: 9.81,
                         enable_atmospheric_drag: true,
                         integrator_type: "runge_kutta_4"
                     },
@@ -77,9 +79,10 @@ const Templates = {
                         duration: 120.0,
                         max_iterations: 6000
                     },
+                    environment: {
+                        gravity: { enabled: true, magnitude: 9.81, direction: [0, 0, -1] }
+                    },
                     physics: {
-                        enable_gravity: true,
-                        gravity_magnitude: 9.81,
                         enable_atmospheric_drag: true,
                         integrator_type: "runge_kutta_4"
                     },
@@ -99,9 +102,10 @@ const Templates = {
                         duration: 600.0,
                         max_iterations: 6000
                     },
+                    environment: {
+                        gravity: { enabled: true, magnitude: 9.81, direction: [0, 0, -1] }
+                    },
                     physics: {
-                        enable_gravity: true,
-                        gravity_magnitude: 9.81,
                         enable_atmospheric_drag: true,
                         integrator_type: "runge_kutta_4"
                     },
@@ -173,11 +177,12 @@ const Templates = {
         
         // Apply physics parameters
         if (config.physics) {
-            UI.setCheckboxValue('enable-gravity', config.physics.enable_gravity);
-            UI.setInputValue('gravity-magnitude', config.physics.gravity_magnitude);
             UI.setCheckboxValue('enable-drag', config.physics.enable_atmospheric_drag);
             UI.setInputValue('integrator-type', config.physics.integrator_type);
         }
+
+        // Gravity belongs to the environment domain (legacy physics.* still understood)
+        UI.setGravityFormValues(config);
         
         // Store initial state for simulation
         if (config.initial_state) {
@@ -216,11 +221,11 @@ const Templates = {
         }
 
         if (config.plugins) {
+            // Fire-and-forget on purpose: it reports its own result in the status bar.
             this.applyPluginPreset(config.plugins);
+        } else if (window.app) {
+            window.app.refreshEnvironment();
         }
-        
-        // Note: Plugin configuration would be applied here if plugins are loaded
-        // This is handled separately in the plugins module
     },
     
     /**
@@ -241,28 +246,37 @@ const Templates = {
         }));
     },
 
-    applyPluginPreset(pluginConfig) {
-        if (!window.availablePlugins || !Array.isArray(window.availablePlugins)) {
-            return;
-        }
-
-        const enabledSet = new Set((pluginConfig.enabled || []).map(p => String(p).toLowerCase()));
+    /**
+     * Apply a template's plugin set through the backend registry.
+     *
+     * The backend applies the whole set atomically and skips plugins that are not
+     * built, so a template that asks for the Environment module still loads on a
+     * checkout where that module does not exist yet; the user is told what was skipped.
+     */
+    async applyPluginPreset(pluginConfig) {
+        const enabled = (pluginConfig.enabled || []).map(p => String(p).toLowerCase());
         const overrides = pluginConfig.overrides || {};
 
-        window.availablePlugins.forEach(plugin => {
-            const id = String(plugin.id || plugin.name || '').toLowerCase().replace(/\s+/g, '_');
-            plugin.enabled = enabledSet.has(id);
-
-            if (plugin.enabled && overrides[id] && typeof overrides[id] === 'object') {
-                plugin.parameters = {
-                    ...(plugin.parameters || {}),
-                    ...overrides[id]
-                };
+        try {
+            const response = await API.applyPluginPreset(enabled, overrides);
+            if (window.app) {
+                window.app.setPlugins(response.plugins);
             }
-        });
 
-        if (window.app && typeof window.app.updatePluginsList === 'function') {
-            window.app.updatePluginsList();
+            const skipped = response.plugins.filter(p => p.skipped).map(p => p.name);
+            if (skipped.length > 0) {
+                UI.updateStatus(
+                    `Template loaded, but these plugins are not built and were skipped: ${skipped.join(', ')}`,
+                    'warning'
+                );
+            }
+        } catch (error) {
+            console.error('Error applying plugin preset:', error);
+            UI.updateStatus(`Could not apply the template's plugins: ${error.message}`, 'error');
+        }
+
+        if (window.app) {
+            await window.app.refreshEnvironment();
         }
     }
 };

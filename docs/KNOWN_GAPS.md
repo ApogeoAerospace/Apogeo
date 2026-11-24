@@ -14,12 +14,11 @@
 
 - Legacy web parsing path is deprecated in favor of `--ipc stdio` command/event protocol.
 - The web UI sends physics/output sections that current `ConfigManager` does not parse.
-- Port mismatch:
-  - launcher message: `8080`
-  - Python server: `8082`
 
----
-
-Documentation status: **Current**
-
-Back to: [`docs/README.md`](./README.md)
+## Web control panel and Environment module gaps
+- **Deprecated Plugins:** The Environment module (`plugins/deprecated/environment/`) and other plugins in `plugins/deprecated/` are unvalidated prototype versions and are intentionally ignored for the web control panel and current simulation runs.
+- `GET /api/plugins` is built from `default_config.json`; the plugin entries in `web_config.json` are not used for it.
+- The panel loads Chart.js and the Inter font from CDNs; without internet the charts do not render.
+- The web server listens on all network interfaces and has no authentication.
+- The IPC command loop is sequential: a run cannot be paused, cancelled or queried while it executes (see [IPC_PROTOCOL_PROPOSALS.md](./IPC_PROTOCOL_PROPOSALS.md)).
+- **Test Suite Execution:** On Linux environments, the test `tools/web_server/tests/test_example.py::TestServerConfig::test_port_validation` is known to fail due to local socket binding behavior. Test outputs have been updated to print clear summaries and explicit skip reasons for headless browser tests.

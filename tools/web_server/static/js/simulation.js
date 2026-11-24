@@ -7,6 +7,12 @@
 const Simulation = {
     currentJobId: null,
     progressInterval: null,
+    pollInFlight: false,
+    consecutivePollFailures: 0,
+    lastRenderedLogCount: -1,
+
+    // Give up after this many unreachable polls in a row (~5 s at the 250 ms cadence).
+    MAX_POLL_FAILURES: 20,
     
     /**
      * Run a new simulation
@@ -32,7 +38,12 @@ const Simulation = {
             
             if (response.success) {
                 this.currentJobId = response.job_id;
-                UI.updateStatus('Simulation started', 'success');
+                this.lastRenderedLogCount = -1;
+                this.renderWarnings(response.warnings);
+                UI.updateStatus(
+                    response.warnings && response.warnings.length ? response.warnings[0] : 'Simulation started',
+                    response.warnings && response.warnings.length ? 'warning' : 'success'
+                );
                 
                 // Start monitoring progress (REAL progress, not fake!)
                 this.startProgressMonitoring();
@@ -55,14 +66,33 @@ const Simulation = {
         if (this.progressInterval) {
             clearInterval(this.progressInterval);
         }
-        
+
+        const jobId = this.currentJobId;
+        this.pollInFlight = false;
+        this.consecutivePollFailures = 0;
+
         this.progressInterval = setInterval(async () => {
+            // Skip a tick while the previous request is still pending: overlapping
+            // responses could otherwise trigger the completion handler twice.
+            if (this.pollInFlight) {
+                return;
+            }
+            this.pollInFlight = true;
+
             try {
-                const status = await API.getSimulationStatus(this.currentJobId);
-                
+                const status = await API.getSimulationStatus(jobId);
+
+                // The user may have cancelled/finished and started another job meanwhile.
+                if (jobId !== this.currentJobId) {
+                    return;
+                }
+
+                this.consecutivePollFailures = 0;
+
                 // Update progress with REAL data from server
                 UI.updateProgress(status.progress, status.message);
-                
+                this.renderJobLog(status);
+
                 // Check if simulation is complete
                 if (status.status === 'completed') {
                     this.onSimulationComplete(status);
@@ -71,12 +101,62 @@ const Simulation = {
                 } else if (status.status === 'cancelled') {
                     this.onSimulationCancelled(status);
                 }
-                
+
             } catch (error) {
                 console.error('Error checking simulation status:', error);
-                // Continue polling - don't stop on network errors
+                this.consecutivePollFailures += 1;
+
+                if (this.consecutivePollFailures >= this.MAX_POLL_FAILURES) {
+                    this.onSimulationFailed({
+                        error: 'Lost connection with the web server while the simulation was running.'
+                    });
+                }
+            } finally {
+                this.pollInFlight = false;
             }
         }, CONFIG.POLLING.SIMULATION_PROGRESS);
+    },
+
+    /**
+     * Show non-blocking warnings returned when the job was created
+     */
+    renderWarnings(warnings) {
+        const box = document.getElementById('progress-warnings');
+        if (box) {
+            box.textContent = (warnings || []).join(' ');
+        }
+    },
+
+    /**
+     * Render the simulator's IPC "log" events (plugin and core messages)
+     */
+    renderJobLog(status) {
+        const details = document.getElementById('job-log-details');
+        const output = document.getElementById('job-log');
+        const counter = document.getElementById('job-log-count');
+        if (!details || !output || !Array.isArray(status.logs)) {
+            return;
+        }
+
+        if (status.log_count === this.lastRenderedLogCount) {
+            return;
+        }
+        this.lastRenderedLogCount = status.log_count;
+
+        details.style.display = status.logs.length ? 'block' : 'none';
+        if (counter) {
+            counter.textContent = `(${status.log_count})`;
+        }
+
+        // textContent only: log text comes from plugins and must never be parsed as HTML.
+        output.textContent = '';
+        status.logs.forEach(entry => {
+            const line = document.createElement('div');
+            line.className = `log-${entry.level}`;
+            line.textContent = `[${entry.level}] ${entry.component ? entry.component + ': ' : ''}${entry.message}`;
+            output.appendChild(line);
+        });
+        output.scrollTop = output.scrollHeight;
     },
     
     /**
@@ -158,6 +238,7 @@ const Simulation = {
         UI.toggleRunButtons(false);
         UI.updateProgress(0, '');
         this.currentJobId = null;
+        this.pollInFlight = false;
     },
     
     /**

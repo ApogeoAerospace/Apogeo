@@ -11,6 +11,8 @@ const App = {
     
     // State
     availablePlugins: [],
+    environment: null,           // last GET /api/environment response
+    pluginBusy: new Set(),       // plugin ids with a request in flight
     
     /**
      * Initialize the application
@@ -27,6 +29,10 @@ const App = {
         
         // Initialize templates
         await Templates.init();
+
+        // Plugin list and gravity inputs use event delegation, bound once.
+        this.bindPluginEvents();
+        this.bindGravityEvents();
         
         // Load initial data
         await this.loadInitialData();
@@ -75,28 +81,96 @@ const App = {
     },
     
     /**
-     * Load available plugins
+     * Load available plugins (the backend registry is the source of truth)
      */
     async loadPlugins() {
         try {
             console.log('Loading plugins...');
-            
+
             const plugins = await API.getPlugins();
-            this.availablePlugins = plugins;
-            
-            // Make available globally for backward compatibility
-            window.availablePlugins = plugins;
-            
-            this.updatePluginsList();
-            
+            this.setPlugins(plugins);
+            await this.refreshEnvironment();
+
             console.log(`Loaded ${plugins.length} plugins`);
-            
+
         } catch (error) {
             console.error('Error loading plugins:', error);
             this.showPluginsError('Failed to load plugins: ' + error.message);
         }
     },
-    
+
+    /**
+     * Replace the plugin list and re-render
+     */
+    setPlugins(plugins) {
+        this.availablePlugins = plugins;
+
+        // Make available globally for backward compatibility (templates read it)
+        window.availablePlugins = plugins;
+
+        this.updatePluginsList();
+    },
+
+    /**
+     * Replace one plugin with the state returned by the backend
+     */
+    replacePlugin(plugin) {
+        const index = this.availablePlugins.findIndex(p => p.id === plugin.id);
+        if (index >= 0) {
+            this.availablePlugins[index] = plugin;
+        }
+    },
+
+    /**
+     * Refresh environment info (which plugins apply gravity) and the gravity notice
+     */
+    async refreshEnvironment() {
+        try {
+            this.environment = await API.getEnvironment();
+        } catch (error) {
+            console.error('Error loading environment info:', error);
+            this.environment = null;
+        }
+
+        UI.renderGravityNotice(this.environment);
+    },
+
+    /**
+     * Bind plugin list events once (event delegation survives re-renders)
+     */
+    bindPluginEvents() {
+        const list = document.getElementById('plugins-list');
+        if (list) {
+            list.addEventListener('change', (event) => {
+                const target = event.target;
+                const action = target.dataset ? target.dataset.action : null;
+
+                if (action === 'toggle') {
+                    this.togglePlugin(target.dataset.pluginId, target.checked);
+                } else if (action === 'param') {
+                    this.onParameterInput(target);
+                }
+            });
+        }
+
+        const reset = document.querySelector('[data-action="reset-plugins"]');
+        if (reset) {
+            reset.addEventListener('click', () => this.resetPlugins());
+        }
+    },
+
+    /**
+     * Re-evaluate the gravity notice when the gravity inputs change
+     */
+    bindGravityEvents() {
+        ['enable-gravity', 'gravity-magnitude'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', () => UI.renderGravityNotice(this.environment));
+            }
+        });
+    },
+
     /**
      * Update plugins list UI
      */
@@ -109,19 +183,47 @@ const App = {
         }
         
         let html = '';
-        this.availablePlugins.forEach((plugin, index) => {
-            const enabledClass = plugin.enabled ? 'enabled' : '';
-            
+        this.availablePlugins.forEach((plugin) => {
+            const busy = this.pluginBusy.has(plugin.id);
+            const unavailable = !plugin.library_found;
+            const classes = [
+                'plugin-card',
+                plugin.enabled ? 'enabled' : '',
+                unavailable ? 'unavailable' : '',
+                busy ? 'busy' : ''
+            ].filter(Boolean).join(' ');
+
+            // A missing library can always be switched off, but never on.
+            const switchDisabled = busy || (unavailable && !plugin.enabled);
+            const switchTitle = unavailable && !plugin.enabled
+                ? 'This plugin library is not built. Build the project to enable it.'
+                : (plugin.enabled ? 'Disable plugin' : 'Enable plugin');
+
+            const badge = unavailable
+                ? '<span class="plugin-badge warn">Not built</span>'
+                : '<span class="plugin-badge ok">Built</span>';
+
             html += `
-                <div class="plugin-card ${enabledClass}" onclick="app.togglePlugin(${index})">
+                <div class="${classes}" data-plugin-id="${this.escapeAttr(plugin.id)}">
                     <div class="plugin-header">
                         <div>
-                            <h4>${plugin.enabled ? '' : ''} ${this.escapeHtml(plugin.name)}</h4>
+                            <div class="plugin-title">
+                                <h4>${this.escapeHtml(plugin.name)}</h4>
+                                <label class="plugin-switch" title="${this.escapeAttr(switchTitle)}">
+                                    <input type="checkbox" data-action="toggle"
+                                           data-plugin-id="${this.escapeAttr(plugin.id)}"
+                                           ${plugin.enabled ? 'checked' : ''}
+                                           ${switchDisabled ? 'disabled' : ''}>
+                                    <span>${plugin.enabled ? 'Enabled' : 'Disabled'}</span>
+                                </label>
+                                ${badge}
+                            </div>
                             <p class="plugin-description">${this.escapeHtml(plugin.description)}</p>
+                            ${plugin.notes ? `<p class="plugin-note">ℹ️ ${this.escapeHtml(plugin.notes)}</p>` : ''}
                             <span class="plugin-type">Type: ${plugin.type === 0 ? 'Sequential' : 'Parallel Physics'}</span>
                         </div>
                     </div>
-                    ${plugin.enabled && plugin.parameters ? this.generateParametersForm(plugin, index) : ''}
+                    ${plugin.enabled && plugin.parameters ? this.generateParametersForm(plugin) : ''}
                 </div>
             `;
         });
@@ -132,40 +234,43 @@ const App = {
     /**
      * Generate parameters form for a plugin
      */
-    generateParametersForm(plugin, index) {
-        if (!plugin.parameters) return '';
-        
-        let html = '<div class="plugin-parameters" onclick="event.stopPropagation();">';
+    generateParametersForm(plugin) {
+        const entries = Object.entries(plugin.parameters || {});
+        if (entries.length === 0) return '';
+
+        const busy = this.pluginBusy.has(plugin.id) ? 'disabled' : '';
+        let html = '<div class="plugin-parameters">';
         html += '<h5>⚙️ Parameters:</h5>';
         
-        Object.entries(plugin.parameters).forEach(([key, value]) => {
-            const inputId = `plugin-${index}-${key}`;
+        entries.forEach(([key, value]) => {
+            const inputId = `plugin-${plugin.id}-${key}`;
             const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const data = `data-action="param" data-plugin-id="${this.escapeAttr(plugin.id)}" data-key="${this.escapeAttr(key)}"`;
             
             if (typeof value === 'boolean') {
                 html += `
                     <div class="param-group">
                         <label>
-                            <input type="checkbox" id="${inputId}" ${value ? 'checked' : ''} 
-                                   onchange="app.updatePluginParameter(${index}, '${key}', this.checked)">
-                            ${label}
+                            <input type="checkbox" id="${this.escapeAttr(inputId)}" ${data} data-kind="boolean"
+                                   ${value ? 'checked' : ''} ${busy}>
+                            ${this.escapeHtml(label)}
                         </label>
                     </div>
                 `;
             } else if (typeof value === 'number') {
                 html += `
                     <div class="param-group">
-                        <label for="${inputId}">${label}</label>
-                        <input type="number" id="${inputId}" value="${value}" step="any"
-                               onchange="app.updatePluginParameter(${index}, '${key}', parseFloat(this.value))">
+                        <label for="${this.escapeAttr(inputId)}">${this.escapeHtml(label)}</label>
+                        <input type="number" id="${this.escapeAttr(inputId)}" ${data} data-kind="number"
+                               value="${value}" step="any" ${busy}>
                     </div>
                 `;
             } else {
                 html += `
                     <div class="param-group">
-                        <label for="${inputId}">${label}</label>
-                        <input type="text" id="${inputId}" value="${this.escapeHtml(String(value))}"
-                               onchange="app.updatePluginParameter(${index}, '${key}', this.value)">
+                        <label for="${this.escapeAttr(inputId)}">${this.escapeHtml(label)}</label>
+                        <input type="text" id="${this.escapeAttr(inputId)}" ${data} data-kind="string"
+                               value="${this.escapeAttr(String(value))}" ${busy}>
                     </div>
                 `;
             }
@@ -176,27 +281,110 @@ const App = {
     },
     
     /**
-     * Toggle plugin enabled state
+     * Enable/disable a plugin in the backend, then show what the backend reports.
+     *
+     * The UI never assumes the change worked: on any failure it re-reads the real
+     * state, so the toggle can never show something the backend does not have.
+     *
+     * @param {string} pluginId
+     * @param {boolean} enabled  Explicit target state (idempotent request)
      */
-    togglePlugin(index) {
-        if (index < 0 || index >= this.availablePlugins.length) return;
-        
-        this.availablePlugins[index].enabled = !this.availablePlugins[index].enabled;
+    async togglePlugin(pluginId, enabled) {
+        if (this.pluginBusy.has(pluginId)) return;
+
+        this.pluginBusy.add(pluginId);
         this.updatePluginsList();
-    },
-    
-    /**
-     * Update plugin parameter value
-     */
-    updatePluginParameter(pluginIndex, paramKey, value) {
-        if (pluginIndex < 0 || pluginIndex >= this.availablePlugins.length) return;
-        
-        if (!this.availablePlugins[pluginIndex].parameters) {
-            this.availablePlugins[pluginIndex].parameters = {};
+
+        try {
+            const response = await API.togglePlugin(pluginId, enabled);
+            this.replacePlugin(response.plugin);
+            UI.updateStatus(`${response.plugin.name} ${response.plugin.enabled ? 'enabled' : 'disabled'}`, 'success');
+        } catch (error) {
+            console.error('Error toggling plugin:', error);
+            UI.updateStatus(`Could not ${enabled ? 'enable' : 'disable'} "${pluginId}": ${error.message}`, 'error');
+            await this.reloadPluginsQuietly();
+        } finally {
+            this.pluginBusy.delete(pluginId);
+            this.updatePluginsList();
+            await this.refreshEnvironment();
         }
-        
-        this.availablePlugins[pluginIndex].parameters[paramKey] = value;
-        console.log(`Updated plugin ${pluginIndex} parameter ${paramKey} = ${value}`);
+    },
+
+    /**
+     * Read a parameter control and send it to the backend
+     */
+    onParameterInput(input) {
+        const kind = input.dataset.kind;
+        let value;
+
+        if (kind === 'boolean') {
+            value = input.checked;
+        } else if (kind === 'number') {
+            value = parseFloat(input.value);
+            if (!Number.isFinite(value)) {
+                UI.updateStatus(`"${input.dataset.key}" needs a valid number`, 'error');
+                this.updatePluginsList();
+                return;
+            }
+        } else {
+            value = input.value;
+        }
+
+        this.updatePluginParameter(input.dataset.pluginId, input.dataset.key, value);
+    },
+
+    /**
+     * Update plugin parameter value in the backend
+     */
+    async updatePluginParameter(pluginId, paramKey, value) {
+        if (this.pluginBusy.has(pluginId)) return;
+
+        this.pluginBusy.add(pluginId);
+        this.updatePluginsList();
+
+        try {
+            const response = await API.setPluginParameters(pluginId, { [paramKey]: value });
+            this.replacePlugin(response.plugin);
+        } catch (error) {
+            console.error('Error updating plugin parameter:', error);
+            UI.updateStatus(`Could not update "${paramKey}": ${error.message}`, 'error');
+            await this.reloadPluginsQuietly();
+        } finally {
+            this.pluginBusy.delete(pluginId);
+            this.updatePluginsList();
+            await this.refreshEnvironment();
+        }
+    },
+
+    /**
+     * Drop every override and go back to the configuration defaults
+     */
+    async resetPlugins() {
+        if (!UI.confirm('Reset all plugins and their parameters to the defaults?')) {
+            return;
+        }
+
+        try {
+            const response = await API.resetPlugins();
+            this.setPlugins(response.plugins);
+            UI.updateStatus('Plugins reset to defaults', 'success');
+        } catch (error) {
+            console.error('Error resetting plugins:', error);
+            UI.updateStatus(`Could not reset plugins: ${error.message}`, 'error');
+        }
+
+        await this.refreshEnvironment();
+    },
+
+    /**
+     * Re-sync the list with the backend after a failed request (keeps the error message)
+     */
+    async reloadPluginsQuietly() {
+        try {
+            this.setPlugins(await API.getPlugins());
+        } catch (error) {
+            console.error('Error reloading plugins:', error);
+        }
     },
     
     /**
@@ -252,6 +440,18 @@ const App = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    /**
+     * Escape a value for use inside a double-quoted HTML attribute
+     */
+    escapeAttr(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 };
 

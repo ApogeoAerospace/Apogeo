@@ -183,6 +183,12 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
         )
     endif()
 
+    if(_plugin_name STREQUAL "example_plugin")
+        list(APPEND _plugin_private_libs
+            nlohmann_json::nlohmann_json
+        )
+    endif()
+
     if(_plugin_name STREQUAL "aerodynamics")
         list(APPEND _plugin_sources
             "plugins/aerodynamics/aerodynamics_module.cpp"
@@ -214,6 +220,12 @@ foreach(_plugin_name IN LISTS PLUGIN_NAMES)
     if(_plugin_name STREQUAL "structures")
         target_include_directories(${_plugin_name} PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures"
+        )
+    endif()
+
+    if(_plugin_name STREQUAL "example_plugin")
+        target_include_directories(${_plugin_name} PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin"
         )
     endif()
 
@@ -320,6 +332,7 @@ if(ENABLE_TESTING)
         tests/test_flight_computer.cpp
         tests/test_structures_persistence.cpp
         tests/test_persistence.cpp
+        tests/test_example_plugin_physics.cpp
         src/ipc/IpcSession.cpp
     )
 
@@ -337,6 +350,7 @@ if(ENABLE_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/api
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/aerodynamics
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins/structures
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins/example_plugin
         ${HDF5_INCLUDE_DIRS}
         ${GENERATED_DIR}
     )
